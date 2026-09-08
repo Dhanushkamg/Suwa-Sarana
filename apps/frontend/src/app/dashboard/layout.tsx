@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, LogOut, Home, Droplets, Bell } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useI18n } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { t } = useI18n();
   const { isAuthenticated, user, logout } = useAuthStore();
 
   useEffect(() => {
@@ -28,11 +31,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 flex flex-col border-r border-white/5 bg-[#0d0d14]/90 backdrop-blur-xl z-40">
         {/* Logo */}
-        <div className="h-16 flex items-center gap-2.5 px-6 border-b border-white/5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30">
-            <Heart className="w-4 h-4 text-white fill-white" />
-          </div>
-          <span className="font-bold text-white">Suwa Sarana</span>
+        <div className="h-16 flex items-center justify-between px-6 border-b border-white/5">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30">
+              <Heart className="w-4 h-4 text-white fill-white" />
+            </div>
+            <span className="font-bold text-white">Suwa Sarana</span>
+          </Link>
         </div>
 
         {/* User badge */}
@@ -43,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <div className="min-w-0">
               <div className="text-xs font-medium text-white truncate">{user?.email}</div>
-              <div className="text-xs text-gray-600 capitalize">{user?.role?.toLowerCase().replace('_', ' ')}</div>
+              <div className="text-xs text-gray-500 capitalize">{user?.role?.toLowerCase().replace('_', ' ')}</div>
             </div>
           </div>
         </div>
@@ -51,11 +56,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {[
-            { href: '/dashboard', label: 'Overview', icon: Home },
+            { href: '/dashboard', label: t('common.overview'), icon: Home },
             ...(user?.role === 'DONOR'
-              ? [{ href: '/dashboard/donor', label: 'My Profile', icon: Droplets }]
-              : [{ href: '/dashboard/requests', label: 'Blood Requests', icon: Droplets }]),
-            { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
+              ? [{ href: '/dashboard/donor', label: t('common.myProfile'), icon: Droplets }]
+              : [{ href: '/dashboard/requests', label: t('common.bloodRequests'), icon: Droplets }]),
+            { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
           ].map((item) => (
             <Link
               key={item.href}
@@ -68,14 +73,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-white/5">
+        {/* Language switch & Logout */}
+        <div className="p-4 border-t border-white/5 space-y-2">
+          <div className="flex justify-center pb-2">
+            <LanguageSwitcher className="w-full" />
+          </div>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/8 transition-all duration-200 text-sm"
           >
             <LogOut className="w-4 h-4" />
-            Sign out
+            {t('common.signOut')}
           </button>
         </div>
       </aside>
