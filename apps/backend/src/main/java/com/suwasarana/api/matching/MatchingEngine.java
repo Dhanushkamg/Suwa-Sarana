@@ -2,6 +2,8 @@ package com.suwasarana.api.matching;
 
 import com.suwasarana.api.donor.DeferralService;
 import com.suwasarana.api.donor.DonorProfile;
+import com.suwasarana.api.notification.NotificationMessage;
+import com.suwasarana.api.notification.NotificationService;
 import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.request.RequestRepository;
 import org.slf4j.Logger;
@@ -29,6 +31,9 @@ public class MatchingEngine {
 
     @Autowired
     private DeferralService deferralService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Transactional
     public void runMatchingForRequest(Long requestId) {
@@ -60,7 +65,14 @@ public class MatchingEngine {
                 requestMatchRepository.save(match);
                 matchedCount++;
                 
-                // TODO: Send push notification to donor in Phase 6
+                // Send real-time SSE notification (or fallback log)
+                NotificationMessage message = new NotificationMessage(
+                        "Urgent Blood Request!",
+                        "A patient needs " + request.getPatientBloodType() + " blood nearby.",
+                        "NEW_MATCH",
+                        request.getId()
+                );
+                notificationService.sendNotification(candidate.getUser().getId(), message);
             }
         }
 
