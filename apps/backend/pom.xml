@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.suwasarana</groupId>
-	<artifactId>api</artifactId>
+	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>api</name>
-	<description/>
+	<name>backend</name>
+	<description>Suwa Sarana API</description>
 	<url/>
 	<licenses>
 		<license/>
