@@ -1,13 +1,14 @@
 'use client';
 
 import { useAuthStore } from '@/store/authStore';
+import { useI18n } from '@/lib/i18n';
 import { Heart, Droplets, Bell, ArrowRight, LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 
 interface QuickAction {
   icon: LucideIcon;
-  title: string;
-  desc: string;
+  titleKey: string;
+  descKey: string;
   href: string;
   color: string;
 }
@@ -15,15 +16,15 @@ interface QuickAction {
 const DONOR_ACTIONS: QuickAction[] = [
   {
     icon: Droplets,
-    title: 'Update availability',
-    desc: 'Toggle your donor status on or off',
+    titleKey: 'dashboard.updateAvailability',
+    descKey: 'dashboard.updateAvailabilityDesc',
     href: '/dashboard/donor',
     color: 'from-red-500 to-rose-600',
   },
   {
     icon: Bell,
-    title: 'Notifications',
-    desc: 'Check for nearby blood requests',
+    titleKey: 'dashboard.notifications',
+    descKey: 'dashboard.notificationsDesc',
     href: '/dashboard/notifications',
     color: 'from-orange-500 to-red-500',
   },
@@ -32,15 +33,15 @@ const DONOR_ACTIONS: QuickAction[] = [
 const REQUESTER_ACTIONS: QuickAction[] = [
   {
     icon: Heart,
-    title: 'New blood request',
-    desc: 'Create an urgent request for a patient',
+    titleKey: 'dashboard.newBloodRequest',
+    descKey: 'dashboard.newBloodRequestDesc',
     href: '/dashboard/requests/new',
     color: 'from-red-500 to-rose-600',
   },
   {
     icon: Droplets,
-    title: 'Active requests',
-    desc: 'Track the status of your requests',
+    titleKey: 'dashboard.activeRequests',
+    descKey: 'dashboard.activeRequestsDesc',
     href: '/dashboard/requests',
     color: 'from-orange-500 to-red-500',
   },
@@ -48,6 +49,7 @@ const REQUESTER_ACTIONS: QuickAction[] = [
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { t } = useI18n();
   const isDonor = user?.role === 'DONOR';
   const actions: QuickAction[] = isDonor ? DONOR_ACTIONS : REQUESTER_ACTIONS;
 
@@ -56,13 +58,13 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white">
-          Welcome back
+          {t('dashboard.welcome')}
           <span className="gradient-text ml-2">👋</span>
         </h1>
-        <p className="text-gray-500 mt-2">
+        <p className="text-gray-400 mt-2">
           {isDonor
-            ? "Thank you for being a part of Sri Lanka's donor community."
-            : 'Manage your blood requests and find compatible donors.'}
+            ? t('dashboard.donorSubtitle')
+            : t('dashboard.requesterSubtitle')}
         </p>
       </div>
 
@@ -80,8 +82,8 @@ export default function DashboardPage() {
               <action.icon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="font-semibold text-white mb-1">{action.title}</div>
-              <div className="text-sm text-gray-500">{action.desc}</div>
+              <div className="font-semibold text-white mb-1">{t(action.titleKey)}</div>
+              <div className="text-sm text-gray-500">{t(action.descKey)}</div>
             </div>
           </Link>
         ))}
@@ -91,8 +93,8 @@ export default function DashboardPage() {
           <div className="w-10 h-10 rounded-xl bg-white/4 group-hover:bg-red-500/10 flex items-center justify-center transition-colors">
             <Bell className="w-4 h-4 text-gray-600 group-hover:text-red-400 transition-colors" />
           </div>
-          <span className="text-sm text-gray-600 group-hover:text-gray-400 transition-colors">
-            More features coming soon
+          <span className="text-sm text-gray-500 group-hover:text-gray-400 transition-colors">
+            {t('dashboard.comingSoon')}
           </span>
         </div>
       </div>
@@ -106,19 +108,19 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-white mb-1">
-              {isDonor ? 'Your profile is active' : 'Platform status'}
+              {isDonor ? t('dashboard.donorProfileActive') : t('dashboard.platformStatus')}
             </h3>
-            <p className="text-sm text-gray-500 leading-relaxed">
+            <p className="text-sm text-gray-400 leading-relaxed">
               {isDonor
-                ? 'You are registered as a blood donor. Keep your availability and location updated to receive match alerts in real time.'
-                : 'You can post blood requests for patients in need. The matching engine will find compatible donors near the hospital.'}
+                ? t('dashboard.donorProfileDesc')
+                : t('dashboard.platformDesc')}
             </p>
           </div>
           <Link
             href={isDonor ? '/dashboard/donor' : '/dashboard/requests/new'}
             className="flex-shrink-0 flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
           >
-            {isDonor ? 'Edit profile' : 'New request'}
+            {isDonor ? t('dashboard.editProfile') : t('dashboard.newRequest')}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
