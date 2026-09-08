@@ -7,11 +7,13 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/store/authStore';
+import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { User } from '@/types';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const login = useAuthStore((s) => s.login);
 
   const [email, setEmail] = useState('');
@@ -43,7 +45,7 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Invalid email or password.';
+        t('common.error');
       setError(message);
     } finally {
       setLoading(false);
@@ -53,8 +55,8 @@ export default function LoginPage() {
   return (
     <div>
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white">Welcome back</h2>
-        <p className="text-gray-400 mt-2">Sign in to your Suwa Sarana account</p>
+        <h2 className="text-3xl font-bold text-white">{t('auth.loginTitle')}</h2>
+        <p className="text-gray-400 mt-2">{t('auth.loginSubtitle')}</p>
       </div>
 
       {error && (
@@ -67,7 +69,7 @@ export default function LoginPage() {
         <Input
           id="email"
           type="email"
-          label="Email address"
+          label={t('auth.email')}
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -79,10 +81,10 @@ export default function LoginPage() {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <label htmlFor="password" className="text-sm font-medium text-gray-300">
-              Password
+              {t('auth.password')}
             </label>
             <Link href="/forgot-password" className="text-xs text-red-400 hover:text-red-300 transition-colors">
-              Forgot password?
+              {t('auth.forgotPassword')}
             </Link>
           </div>
           <div className="relative">
@@ -112,16 +114,16 @@ export default function LoginPage() {
 
         <div className="pt-2">
           <Button type="submit" size="lg" className="w-full" loading={loading}>
-            Sign in
+            {t('auth.signIn')}
           </Button>
         </div>
       </form>
 
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-500">
-          Don&apos;t have an account?{' '}
+          {t('auth.noAccount')}{' '}
           <Link href="/register" className="font-medium text-red-400 hover:text-red-300 transition-colors">
-            Register now
+            {t('auth.registerNow')}
           </Link>
         </p>
       </div>
