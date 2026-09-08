@@ -21,27 +21,15 @@ export const metadata: Metadata = {
   },
 };
 
-async function loadMessages(locale: string) {
-  try {
-    return (await import(`../../messages/${locale}.json`)).default;
-  } catch {
-    return (await import('../../messages/en.json')).default;
-  }
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Default locale — middleware will handle locale-prefixed routes
-  const locale = 'en';
-  const messages = await loadMessages(locale);
-
   return (
-    <html lang={locale} className={`${inter.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
-        <I18nProvider locale={locale} messages={messages}>
+        <I18nProvider defaultLocale="en">
           {children}
         </I18nProvider>
       </body>
