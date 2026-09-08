@@ -8,17 +8,19 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useAuthStore } from '@/store/authStore';
+import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { User } from '@/types';
 
-const ROLE_OPTIONS = [
-  { value: 'DONOR', label: '🩸 I want to donate blood' },
-  { value: 'REQUESTER', label: '🏥 I need blood for a patient' },
-];
-
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const login = useAuthStore((s) => s.login);
+
+  const roleOptions = [
+    { value: 'DONOR', label: t('auth.roleDonor') },
+    { value: 'REQUESTER', label: t('auth.roleRequester') },
+  ];
 
   const [form, setForm] = useState({
     email: '',
@@ -77,16 +79,12 @@ export default function RegisterPage() {
 
       login(res.data.accessToken, user);
 
-      // Redirect to profile setup for donors
-      if (user.role === 'DONOR') {
-        router.push('/dashboard/donor/setup');
-      } else {
-        router.push('/dashboard');
-      }
+      // Redirect to dashboard
+      router.push('/dashboard');
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Registration failed. Please try again.';
+        t('common.error');
       setServerError(message);
     } finally {
       setLoading(false);
@@ -96,8 +94,8 @@ export default function RegisterPage() {
   return (
     <div>
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white">Create account</h2>
-        <p className="text-gray-400 mt-2">Join Sri Lanka&apos;s blood donor community</p>
+        <h2 className="text-3xl font-bold text-white">{t('auth.registerTitle')}</h2>
+        <p className="text-gray-400 mt-2">{t('auth.registerSubtitle')}</p>
       </div>
 
       {serverError && (
@@ -109,8 +107,8 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <Select
           id="role"
-          label="I am registering as..."
-          options={ROLE_OPTIONS}
+          label={t('auth.roleLabel')}
+          options={roleOptions}
           value={form.role}
           onChange={handleChange('role')}
         />
@@ -118,7 +116,7 @@ export default function RegisterPage() {
         <Input
           id="reg-email"
           type="email"
-          label="Email address"
+          label={t('auth.email')}
           placeholder="you@example.com"
           value={form.email}
           onChange={handleChange('email')}
@@ -130,7 +128,7 @@ export default function RegisterPage() {
         <Input
           id="reg-phone"
           type="tel"
-          label="Phone number"
+          label={t('auth.phone')}
           placeholder="0712345678"
           value={form.phoneNumber}
           onChange={handleChange('phoneNumber')}
@@ -142,7 +140,7 @@ export default function RegisterPage() {
         {/* Password */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="reg-password" className="text-sm font-medium text-gray-300">
-            Password
+            {t('auth.password')}
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
@@ -153,7 +151,7 @@ export default function RegisterPage() {
               type={showPassword ? 'text' : 'password'}
               value={form.password}
               onChange={handleChange('password')}
-              placeholder="Min. 8 characters"
+              placeholder="••••••••"
               autoComplete="new-password"
               className={`w-full rounded-xl border bg-white/5 pl-10 pr-11 py-3 text-sm text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 ${errors.password ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/30' : 'border-white/10 focus:border-red-500/60 focus:ring-red-500/20'}`}
             />
@@ -172,7 +170,7 @@ export default function RegisterPage() {
         <Input
           id="reg-confirm-password"
           type="password"
-          label="Confirm password"
+          label={t('auth.confirmPassword')}
           placeholder="••••••••"
           value={form.confirmPassword}
           onChange={handleChange('confirmPassword')}
@@ -183,18 +181,18 @@ export default function RegisterPage() {
 
         <div className="pt-2">
           <Button type="submit" size="lg" className="w-full" loading={loading}>
-            Create account
+            {t('auth.createAccount')}
           </Button>
         </div>
 
         <p className="text-center text-xs text-gray-600 leading-relaxed">
-          By creating an account, you agree to our{' '}
+          {t('auth.termsNote')}{' '}
           <Link href="/terms" className="text-gray-400 hover:text-white transition-colors underline underline-offset-2">
-            Terms of Service
+            {t('auth.termsLink')}
           </Link>{' '}
-          and{' '}
+          {t('auth.andText')}{' '}
           <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors underline underline-offset-2">
-            Privacy Policy
+            {t('auth.privacyLink')}
           </Link>
           .
         </p>
@@ -202,9 +200,9 @@ export default function RegisterPage() {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-500">
-          Already have an account?{' '}
+          {t('auth.haveAccount')}{' '}
           <Link href="/login" className="font-medium text-red-400 hover:text-red-300 transition-colors">
-            Sign in
+            {t('auth.signInLink')}
           </Link>
         </p>
       </div>
