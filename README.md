@@ -82,7 +82,7 @@ The application will be accessible at `http://localhost:3000`.
 
 ## 👨‍💻 Development Journey
 
-This project was developed rapidly within a single day (6:00 AM to 3:00 PM), focusing on building a highly scalable and robust architecture from scratch, including complex domain logic like geo-matching and real-time streaming.
+This project focusing on building a highly scalable and robust architecture from scratch, including complex domain logic like geo-matching and real-time streaming.
 
 ## 📝 License
 
