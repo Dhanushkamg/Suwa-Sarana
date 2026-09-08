@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: suwasarana-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: suwa_sarana_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - suwa_sarana_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d suwa_sarana_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: suwasarana-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/suwa_sarana_dev
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LXRvLW1lZXQtam1hYy1yZXF1aXJlbWVudHM=
+      CORS_ALLOWED_ORIGIN: http://localhost:3000
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: suwasarana-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    ports:
+      - "3000:3000"
+
+volumes:
+  suwa_sarana_db_data:
