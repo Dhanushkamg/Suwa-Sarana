@@ -1,14 +1,10 @@
-import createMiddleware from 'next-intl/middleware';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/request';
 
-export default createMiddleware({
-  locales: ['en', 'si', 'ta'],
-  defaultLocale: 'en',
-  localePrefix: 'as-needed', // /en is omitted, /si and /ta are prefixed
-});
+export function middleware(request: NextRequest) {
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: [
-    // Match all pathnames except for Next.js internals and static files
-    '/((?!_next|_vercel|.*\\..*).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
