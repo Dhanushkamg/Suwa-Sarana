@@ -1,0 +1,7 @@
+node_modules/
+.next/
+target/
+*.log
+.env*.local
+apps/api/**/application-local.yml
+api.zip
