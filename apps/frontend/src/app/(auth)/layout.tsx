@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -58,7 +59,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Right panel - Form */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 lg:px-16">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 lg:px-16 relative">
+        <div className="absolute top-6 right-6">
+          <LanguageSwitcher />
+        </div>
         {/* Mobile logo */}
         <Link href="/" className="flex items-center gap-3 mb-10 lg:hidden">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30">
