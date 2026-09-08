@@ -1,7 +1,6 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+// next-intl plugin removed — messages are loaded directly without the webpack alias
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

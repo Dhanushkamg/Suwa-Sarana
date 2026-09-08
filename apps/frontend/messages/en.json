@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "howItWorks": "How it works",
+    "features": "Features",
+    "impact": "Impact",
+    "signIn": "Sign in",
+    "donateBlood": "Donate blood"
+  },
+  "hero": {
+    "badge": "Sri Lanka's first real-time donor matching platform",
+    "headline1": "Every",
+    "headline2": "drop",
+    "headline3": "counts.",
+    "headline4": "Every",
+    "headline5": "second",
+    "headline6": "matters.",
+    "subtitle": "Suwa Sarana connects voluntary blood donors with patients across Sri Lanka — instantly, intelligently, and in your language.",
+    "registerDonor": "Register as donor",
+    "requestBlood": "Request blood"
+  },
+  "stats": {
+    "units": "Units collected yearly",
+    "bloodBanks": "Blood banks covered",
+    "districts": "Districts connected",
+    "bloodTypes": "Blood types matched"
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "subtitle": "Three steps to save a life",
+    "step1Title": "Register & Set Up",
+    "step1Desc": "Create your account, provide your blood type, and share your location. Donors set availability; requesters create patient profiles.",
+    "step2Title": "Smart Matching",
+    "step2Desc": "Our engine instantly matches compatible, eligible donors near the hospital — using geospatial scoring and reliability ratings.",
+    "step3Title": "Respond & Save",
+    "step3Desc": "Matched donors receive real-time alerts, confirm availability, and donate. The request auto-escalates if no response in time."
+  },
+  "features": {
+    "title": "Built for real emergencies",
+    "subtitle": "Every feature designed to save time when every minute counts",
+    "geo": "Geospatial donor matching",
+    "geoDesc": "PostGIS-powered radius search finds the closest compatible donors first, then auto-expands if no match is found.",
+    "sse": "Real-time SSE notifications",
+    "sseDesc": "Donors receive instant Server-Sent Event alerts the moment a matching request is raised in their area.",
+    "escalation": "Escalation engine",
+    "escalationDesc": "Automated escalation every 15 minutes widens the search radius until a match is confirmed or the request expires.",
+    "reliability": "Reliability scoring",
+    "reliabilityDesc": "Donors earn score for confirmed donations; no-shows are penalized — prioritising the most reliable donors first."
+  },
+  "cta": {
+    "title": "Be someone's hero today",
+    "subtitle": "One unit of blood can save up to three lives. Register as a donor and be ready when your community needs you most.",
+    "button": "Register now — it's free"
+  },
+  "footer": {
+    "rights": "Suwa Sarana © 2026. All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "contact": "Contact"
+  },
+  "auth": {
+    "loginTitle": "Welcome back",
+    "loginSubtitle": "Sign in to your Suwa Sarana account",
+    "registerTitle": "Create account",
+    "registerSubtitle": "Join Sri Lanka's blood donor community",
+    "email": "Email address",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "phone": "Phone number",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "noAccount": "Don't have an account?",
+    "registerNow": "Register now",
+    "haveAccount": "Already have an account?",
+    "signInLink": "Sign in",
+    "roleLabel": "I am registering as...",
+    "roleDonor": "🩸 I want to donate blood",
+    "roleRequester": "🏥 I need blood for a patient",
+    "termsNote": "By creating an account, you agree to our",
+    "termsLink": "Terms of Service",
+    "andText": "and",
+    "privacyLink": "Privacy Policy"
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "donorSubtitle": "Thank you for being a part of Sri Lanka's donor community.",
+    "requesterSubtitle": "Manage your blood requests and find compatible donors.",
+    "comingSoon": "More features coming soon",
+    "donorProfileActive": "Your profile is active",
+    "donorProfileDesc": "You are registered as a blood donor. Keep your availability and location updated to receive match alerts in real time.",
+    "platformStatus": "Platform status",
+    "platformDesc": "You can post blood requests for patients in need. The matching engine will find compatible donors near the hospital.",
+    "editProfile": "Edit profile",
+    "newRequest": "New request",
+    "updateAvailability": "Update availability",
+    "updateAvailabilityDesc": "Toggle your donor status on or off",
+    "notifications": "Notifications",
+    "notificationsDesc": "Check for nearby blood requests",
+    "newBloodRequest": "New blood request",
+    "newBloodRequestDesc": "Create an urgent request for a patient",
+    "activeRequests": "Active requests",
+    "activeRequestsDesc": "Track the status of your requests"
+  }
+}
