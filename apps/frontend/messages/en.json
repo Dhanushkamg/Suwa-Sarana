@@ -1,4 +1,17 @@
 {
+  "common": {
+    "signOut": "Sign out",
+    "overview": "Overview",
+    "myProfile": "My Profile",
+    "bloodRequests": "Blood Requests",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "An error occurred. Please try again."
+  },
   "nav": {
     "howItWorks": "How it works",
     "features": "Features",
@@ -100,5 +113,45 @@
     "newBloodRequestDesc": "Create an urgent request for a patient",
     "activeRequests": "Active requests",
     "activeRequestsDesc": "Track the status of your requests"
+  },
+  "bloodTypes": {
+    "APositive": "A+ (A Positive)",
+    "ANegative": "A- (A Negative)",
+    "BPositive": "B+ (B Positive)",
+    "BNegative": "B- (B Negative)",
+    "ABPositive": "AB+ (Universal Recipient)",
+    "ABNegative": "AB- (AB Negative)",
+    "OPositive": "O+ (O Positive)",
+    "ONegative": "O- (Universal Donor)"
+  },
+  "urgency": {
+    "ROUTINE": "Routine (Scheduled / 48 hrs)",
+    "URGENT": "Urgent (Within 6-12 hrs)",
+    "CRITICAL": "Critical / Emergency (Immediate)"
+  },
+  "request": {
+    "title": "Create Blood Request",
+    "subtitle": "Submit an emergency or routine blood requirement for immediate donor matching",
+    "patientBloodType": "Patient Blood Type",
+    "unitsNeeded": "Units Needed",
+    "urgencyLevel": "Urgency Level",
+    "hospitalName": "Hospital Name",
+    "district": "District",
+    "latitude": "Hospital Latitude",
+    "longitude": "Hospital Longitude",
+    "submit": "Broadcast Blood Request",
+    "successMessage": "Blood request created! Escalation and matching engine active.",
+    "statusOpen": "Open",
+    "statusEscalating": "Escalating",
+    "statusMatched": "Matched",
+    "statusFulfilled": "Fulfilled",
+    "statusCancelled": "Cancelled",
+    "statusExpired": "Expired"
+  },
+  "alerts": {
+    "smsCritical": "EMERGENCY: Urgent blood need for {bloodType} at {hospitalName}, {district}. Can you donate? Reply YES to confirm.",
+    "pushMatch": "Compatible blood request for {bloodType} at {hospitalName} ({distanceKm} km away).",
+    "escalationNotice": "Request #{requestId} escalated: Search radius expanded to {radiusKm} km.",
+    "donationConfirmed": "Thank you! Your donation for request #{requestId} has been confirmed. +5 reliability points earned."
   }
 }
