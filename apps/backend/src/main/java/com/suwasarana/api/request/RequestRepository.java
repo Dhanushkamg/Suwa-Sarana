@@ -21,4 +21,8 @@ public interface RequestRepository extends JpaRepository<BloodRequest, Long> {
     @Modifying
     @Query("UPDATE BloodRequest r SET r.status = :status WHERE r.id = :id")
     void updateStatus(@Param("id") Long id, @Param("status") RequestStatus status);
+
+    @Modifying
+    @Query("DELETE FROM BloodRequest r WHERE r.expiresAt < :cutoffDate")
+    int deleteByExpiresAtBefore(@Param("cutoffDate") java.time.LocalDateTime cutoffDate);
 }
