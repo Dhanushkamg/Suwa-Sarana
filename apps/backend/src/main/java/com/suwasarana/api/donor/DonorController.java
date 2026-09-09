@@ -43,4 +43,10 @@ public class DonorController {
         DonorProfileDto profile = donorService.updateAvailability(userDetails.getId(), availabilityDto);
         return ResponseEntity.ok(ApiResponse.success(profile, "Availability updated successfully"));
     }
+
+    @GetMapping("/matches")
+    public ResponseEntity<ApiResponse<java.util.List<com.suwasarana.api.matching.RequestMatch>>> getMyMatches(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(ApiResponse.success(donorService.getMyMatches(userDetails.getId())));
+    }
 }

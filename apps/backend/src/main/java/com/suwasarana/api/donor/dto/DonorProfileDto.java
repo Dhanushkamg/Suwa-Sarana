@@ -16,6 +16,8 @@ public class DonorProfileDto {
     private BigDecimal reliabilityScore;
     private LocalTime quietHoursStart;
     private LocalTime quietHoursEnd;
+    private Integer totalDonations;
+    private Integer livesHelpedEstimate;
 
     // Getters and Setters
     public String getBloodType() { return bloodType; }
@@ -38,4 +40,8 @@ public class DonorProfileDto {
     public void setQuietHoursStart(LocalTime quietHoursStart) { this.quietHoursStart = quietHoursStart; }
     public LocalTime getQuietHoursEnd() { return quietHoursEnd; }
     public void setQuietHoursEnd(LocalTime quietHoursEnd) { this.quietHoursEnd = quietHoursEnd; }
+    public Integer getTotalDonations() { return totalDonations; }
+    public void setTotalDonations(Integer totalDonations) { this.totalDonations = totalDonations; }
+    public Integer getLivesHelpedEstimate() { return livesHelpedEstimate; }
+    public void setLivesHelpedEstimate(Integer livesHelpedEstimate) { this.livesHelpedEstimate = livesHelpedEstimate; }
 }

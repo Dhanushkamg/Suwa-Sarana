@@ -3,6 +3,8 @@ package com.suwasarana.api.donor;
 import com.suwasarana.api.donor.dto.AvailabilityDto;
 import com.suwasarana.api.donor.dto.DonorProfileDto;
 import com.suwasarana.api.donor.dto.UpdateDonorProfileDto;
+import com.suwasarana.api.matching.RequestMatch;
+import com.suwasarana.api.matching.RequestMatchRepository;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,9 @@ public class DonorService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RequestMatchRepository requestMatchRepository;
 
     public DonorProfileDto getDonorProfile(Long userId) {
         DonorProfile profile = donorRepository.findByUserId(userId)
@@ -71,6 +76,13 @@ public class DonorService {
         dto.setReliabilityScore(profile.getReliabilityScore());
         dto.setQuietHoursStart(profile.getQuietHoursStart());
         dto.setQuietHoursEnd(profile.getQuietHoursEnd());
+        dto.setTotalDonations(profile.getTotalDonations());
+        dto.setLivesHelpedEstimate(profile.getLivesHelpedEstimate());
         return dto;
     }
-}
+
+    public java.util.List<RequestMatch> getMyMatches(Long userId) {
+        DonorProfile profile = donorRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Donor profile not found"));
+        return requestMatchRepository.findByDonorId(profile.getId());
+    }
