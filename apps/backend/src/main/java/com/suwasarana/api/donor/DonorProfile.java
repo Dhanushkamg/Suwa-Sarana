@@ -45,6 +45,12 @@ public class DonorProfile {
     private LocalTime quietHoursStart;
     private LocalTime quietHoursEnd;
 
+    @Column(nullable = false)
+    private Integer totalDonations = 0;
+
+    @Column(nullable = false)
+    private Integer livesHelpedEstimate = 0;
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -70,4 +76,8 @@ public class DonorProfile {
     public void setQuietHoursStart(LocalTime quietHoursStart) { this.quietHoursStart = quietHoursStart; }
     public LocalTime getQuietHoursEnd() { return quietHoursEnd; }
     public void setQuietHoursEnd(LocalTime quietHoursEnd) { this.quietHoursEnd = quietHoursEnd; }
+    public Integer getTotalDonations() { return totalDonations; }
+    public void setTotalDonations(Integer totalDonations) { this.totalDonations = totalDonations; }
+    public Integer getLivesHelpedEstimate() { return livesHelpedEstimate; }
+    public void setLivesHelpedEstimate(Integer livesHelpedEstimate) { this.livesHelpedEstimate = livesHelpedEstimate; }
 }

@@ -21,19 +21,38 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterDto registerDto, HttpServletResponse response) {
         AuthResponse authResponse = authService.register(registerDto);
-        setRefreshTokenCookie(response, "dummy-refresh-token-for-now");
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success(authResponse));
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginDto loginDto, HttpServletResponse response) {
         AuthResponse authResponse = authService.login(loginDto);
-        setRefreshTokenCookie(response, "dummy-refresh-token-for-now");
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
+        return ResponseEntity.ok(ApiResponse.success(authResponse));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(
+            @CookieValue(name = "refresh_token", required = false) String refreshToken,
+            HttpServletResponse response) {
+        
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new RuntimeException("Refresh Token is empty!");
+        }
+
+        AuthResponse authResponse = authService.refreshToken(refreshToken);
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success(authResponse));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.suwasarana.api.security.UserDetailsImpl userDetails,
+            HttpServletResponse response) {
+            
+        authService.logout(userDetails.getId());
+        
         Cookie cookie = new Cookie("refresh_token", null);
         cookie.setHttpOnly(true);
         cookie.setSecure(true);

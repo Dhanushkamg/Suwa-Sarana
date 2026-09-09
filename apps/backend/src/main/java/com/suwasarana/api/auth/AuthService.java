@@ -30,6 +30,9 @@ public class AuthService {
     @Autowired
     private JwtTokenProvider tokenProvider;
 
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
     public AuthResponse register(RegisterDto registerDto) {
         if (userRepository.existsByEmail(registerDto.getEmail())) {
             throw new RuntimeException("Email is already in use!");
@@ -54,8 +57,9 @@ public class AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
+        String refreshToken = createRefreshToken(savedUser);
 
-        return new AuthResponse(jwt, savedUser.getId(), savedUser.getRole());
+        return new AuthResponse(jwt, savedUser.getId(), savedUser.getRole(), refreshToken);
     }
 
     public AuthResponse login(LoginDto loginDto) {
@@ -68,7 +72,52 @@ public class AuthService {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         User user = userRepository.findById(userDetails.getId()).orElseThrow();
+        
+        String refreshToken = createRefreshToken(user);
 
-        return new AuthResponse(jwt, user.getId(), user.getRole());
+        return new AuthResponse(jwt, user.getId(), user.getRole(), refreshToken);
+    }
+
+    private String createRefreshToken(User user) {
+        String tokenStr = java.util.UUID.randomUUID().toString();
+        // Simple hash (In production, use SHA-256)
+        String tokenHash = org.springframework.util.DigestUtils.md5DigestAsHex(tokenStr.getBytes());
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setUser(user);
+        refreshToken.setTokenHash(tokenHash);
+        refreshToken.setExpiresAt(java.time.Instant.now().plus(java.time.Duration.ofDays(7)));
+        
+        refreshTokenRepository.save(refreshToken);
+        
+        return tokenStr; // Return raw token to the user
+    }
+
+    public AuthResponse refreshToken(String requestRefreshToken) {
+        String tokenHash = org.springframework.util.DigestUtils.md5DigestAsHex(requestRefreshToken.getBytes());
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
+
+        if (refreshToken.getExpiresAt().compareTo(java.time.Instant.now()) < 0) {
+            refreshTokenRepository.delete(refreshToken);
+            throw new RuntimeException("Refresh token was expired. Please make a new signin request");
+        }
+
+        User user = refreshToken.getUser();
+        
+        // Generate new Access Token
+        String token = tokenProvider.generateTokenFromUsername(user.getEmail());
+        
+        // Generate new Refresh Token (Rotation)
+        refreshTokenRepository.delete(refreshToken);
+        String newRefreshToken = createRefreshToken(user);
+        
+        return new AuthResponse(token, user.getId(), user.getRole(), newRefreshToken);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void logout(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        refreshTokenRepository.deleteByUser(user);
     }
 }
