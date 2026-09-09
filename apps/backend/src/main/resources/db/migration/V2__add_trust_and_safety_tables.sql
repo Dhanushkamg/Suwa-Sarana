@@ -28,3 +28,7 @@ CREATE INDEX idx_request_reports_request ON request_reports (request_id);
 ALTER TABLE donor_profiles
 ADD COLUMN total_donations INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN lives_helped_estimate INTEGER NOT NULL DEFAULT 0;
+
+-- 4. Escalation timestamp
+ALTER TABLE blood_requests
+ADD COLUMN last_escalated_at TIMESTAMPTZ NOT NULL DEFAULT now();

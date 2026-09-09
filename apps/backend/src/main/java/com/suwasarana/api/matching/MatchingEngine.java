@@ -33,7 +33,7 @@ public class MatchingEngine {
     private DeferralService deferralService;
 
     @Autowired
-    private NotificationService notificationService;
+    private NotificationCascadeService notificationCascadeService;
 
     @Transactional
     public void runMatchingForRequest(Long requestId) {
@@ -65,14 +65,9 @@ public class MatchingEngine {
                 requestMatchRepository.save(match);
                 matchedCount++;
                 
-                // Send real-time SSE notification (or fallback log)
-                NotificationMessage message = new NotificationMessage(
-                        "Urgent Blood Request!",
-                        "A patient needs " + request.getPatientBloodType() + " blood nearby.",
-                        "NEW_MATCH",
-                        request.getId()
-                );
-                notificationService.sendNotification(candidate.getUser().getId(), message);
+                // 3. Trigger SSE/SMS
+                notificationCascadeService.sendNotification(candidate, request);
+                log.info("Matched Request {} with Donor {}", request.getId(), candidate.getId());
             }
         }
 

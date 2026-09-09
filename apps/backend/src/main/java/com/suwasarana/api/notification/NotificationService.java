@@ -31,7 +31,7 @@ public class NotificationService {
         return emitter;
     }
 
-    public void sendNotification(Long userId, NotificationMessage message) {
+    public boolean sendNotificationIfConnected(Long userId, NotificationMessage message) {
         SseEmitter emitter = emitters.get(userId);
         if (emitter != null) {
             try {
@@ -39,13 +39,12 @@ public class NotificationService {
                         .name(message.getType())
                         .data(message));
                 log.info("Sent SSE notification to user {}", userId);
+                return true;
             } catch (IOException e) {
                 log.error("Error sending SSE notification to user {}. Removing emitter.", userId);
                 emitters.remove(userId);
             }
-        } else {
-            // Here in a real application, you would fallback to push notifications (FCM) or SMS.
-            log.info("User {} is not connected via SSE. Fallback to Push/SMS needed.", userId);
         }
+        return false;
     }
 }

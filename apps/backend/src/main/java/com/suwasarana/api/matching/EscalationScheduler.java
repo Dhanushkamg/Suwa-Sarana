@@ -25,8 +25,8 @@ public class EscalationScheduler {
     @Autowired
     private MatchingEngine matchingEngine;
 
-    // Run every 15 minutes
-    @Scheduled(cron = "0 0/15 * * * *")
+    // Run every 5 minutes
+    @Scheduled(cron = "0 0/5 * * * *")
     @Transactional
     public void processEscalations() {
         log.info("Running escalation scheduler...");
@@ -42,14 +42,26 @@ public class EscalationScheduler {
                 continue;
             }
 
-            // Simple escalation logic: If it's been OPEN/ESCALATING for a while and not fulfilled, expand radius
-            if (request.getCurrentRadiusKm() < MAX_RADIUS_KM) {
+            // Severity-based timeouts
+            long minutesSinceLastEscalation = java.time.Duration.between(request.getLastEscalatedAt(), now).toMinutes();
+            boolean shouldEscalate = false;
+
+            if (request.getUrgency() == com.suwasarana.api.request.Urgency.CRITICAL && minutesSinceLastEscalation >= 5) {
+                shouldEscalate = true;
+            } else if (request.getUrgency() == com.suwasarana.api.request.Urgency.URGENT && minutesSinceLastEscalation >= 10) {
+                shouldEscalate = true;
+            } else if (request.getUrgency() == com.suwasarana.api.request.Urgency.ROUTINE && minutesSinceLastEscalation >= 20) {
+                shouldEscalate = true;
+            }
+
+            if (shouldEscalate && request.getCurrentRadiusKm() < MAX_RADIUS_KM) {
                 short newRadius = (short) Math.min(request.getCurrentRadiusKm() + RADIUS_INCREMENT, MAX_RADIUS_KM);
                 request.setCurrentRadiusKm(newRadius);
+                request.setLastEscalatedAt(now);
                 request.setStatus(com.suwasarana.api.request.RequestStatus.ESCALATING);
                 requestRepository.save(request);
 
-                log.info("Escalated Request {} radius to {}km", request.getId(), newRadius);
+                log.info("Escalated Request {} (Urgency: {}) radius to {}km", request.getId(), request.getUrgency(), newRadius);
 
                 // Run matching engine to find donors in the new wider radius
                 matchingEngine.runMatchingForRequest(request.getId());
