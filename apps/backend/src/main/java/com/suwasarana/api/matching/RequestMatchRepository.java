@@ -9,4 +9,5 @@ import java.util.List;
 public interface RequestMatchRepository extends JpaRepository<RequestMatch, Long> {
     List<RequestMatch> findByRequestId(Long requestId);
     boolean existsByRequestIdAndDonorId(Long requestId, Long donorId);
+    long countByRequestAndStatus(com.suwasarana.api.request.BloodRequest request, MatchStatus status);
 }
