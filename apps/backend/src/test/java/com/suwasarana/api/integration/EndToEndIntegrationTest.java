@@ -118,7 +118,9 @@ public class EndToEndIntegrationTest {
         request.setDistrict("Colombo");
         request.setLatitude(6.9271); 
         request.setLongitude(79.8612);
+        request.setUnitsNeeded((short) 1);
         request.setExpiresAt(LocalDateTime.now().plusDays(2));
+        request.setLastEscalatedAt(LocalDateTime.now());
         request.setCurrentRadiusKm((short) 5); // 5km radius initially
         BloodRequest savedRequest = requestRepository.save(request);
 

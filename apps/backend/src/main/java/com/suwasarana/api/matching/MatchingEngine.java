@@ -2,8 +2,7 @@ package com.suwasarana.api.matching;
 
 import com.suwasarana.api.donor.DeferralService;
 import com.suwasarana.api.donor.DonorProfile;
-import com.suwasarana.api.notification.NotificationMessage;
-import com.suwasarana.api.notification.NotificationService;
+import com.suwasarana.api.notification.NotificationCascadeService;
 import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.request.RequestRepository;
 import org.slf4j.Logger;
