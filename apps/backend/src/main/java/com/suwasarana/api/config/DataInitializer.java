@@ -3,6 +3,7 @@ package com.suwasarana.api.config;
 import com.suwasarana.api.user.Role;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
+import com.suwasarana.api.user.VerificationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class DataInitializer implements CommandLineRunner {
             }
             user.setPasswordHash(passwordEncoder.encode(password));
             user.setRole(role);
-            user.setVerified(true);
+            user.setVerificationStatus(VerificationStatus.VERIFIED);
             userRepository.save(user);
             log.info("Initialized test account: {} with role: {}", email, role);
         } catch (Exception e) {

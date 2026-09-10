@@ -8,6 +8,7 @@ import com.suwasarana.api.request.dto.CreateRequestDto;
 import com.suwasarana.api.user.Role;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
+import com.suwasarana.api.user.VerificationStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,9 @@ public class RequestControllerIntegrationTest {
     @Autowired
     private RequestRepository requestRepository;
 
+    @Autowired
+    private com.suwasarana.api.auth.RefreshTokenRepository refreshTokenRepository;
+
     private String unverifiedToken;
     private String verifiedToken;
     private String otherVerifiedToken;
@@ -56,6 +60,7 @@ public class RequestControllerIntegrationTest {
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
         requestRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
 
         // 1. Unverified Requester
@@ -79,7 +84,7 @@ public class RequestControllerIntegrationTest {
         
         // Mark as verified manually
         User vUser = userRepository.findById(verifiedUserId).orElseThrow();
-        vUser.setVerified(true);
+        vUser.setVerificationStatus(VerificationStatus.VERIFIED);
         userRepository.save(vUser);
 
         // 3. Other Verified Requester
@@ -92,7 +97,7 @@ public class RequestControllerIntegrationTest {
         otherVerifiedToken = otherAuth.getAccessToken();
         
         User oUser = userRepository.findById(otherAuth.getUserId()).orElseThrow();
-        oUser.setVerified(true);
+        oUser.setVerificationStatus(VerificationStatus.VERIFIED);
         userRepository.save(oUser);
 
         // 4. Create Active Request for Verified User
@@ -127,11 +132,8 @@ public class RequestControllerIntegrationTest {
                 .header("Authorization", "Bearer " + unverifiedToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-                // Depending on the exception handler, this could be 403 or 400. 
-                // The current code throws RuntimeException which is 500, let's just expect client/server error.
-                // Spring Boot's default for RuntimeException without @ResponseStatus is 500.
-                // We'll update the check in the code to throw an AccessDeniedException in Milestone 2.
-                .andExpect(status().is5xxServerError());
+                // We updated the code to throw RequesterNotVerifiedException which is mapped to 403 Forbidden.
+                .andExpect(status().isForbidden());
     }
     
     @Test

@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, MapPin, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Heart, MapPin, AlertCircle, CheckCircle2, ArrowLeft, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
+import { useAuthStore } from '@/store/authStore';
 
 const DISTRICTS = [
   'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
@@ -21,6 +22,8 @@ const DISTRICTS = [
 export default function NewBloodRequestPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const { user } = useAuthStore();
+  const isVerified = user?.verificationStatus === 'VERIFIED';
 
   const [form, setForm] = useState({
     patientBloodType: 'O+',
@@ -50,7 +53,11 @@ export default function NewBloodRequestPage() {
   const urgencyOptions = [
     { value: 'ROUTINE', label: t('urgency.ROUTINE') },
     { value: 'URGENT', label: t('urgency.URGENT') },
-    { value: 'CRITICAL', label: t('urgency.CRITICAL') },
+    {
+      value: 'CRITICAL',
+      label: isVerified ? t('urgency.CRITICAL') : `${t('urgency.CRITICAL')} (Verified Only)`,
+      disabled: !isVerified,
+    },
   ];
 
   const districtOptions = DISTRICTS.map((d) => ({ value: d, label: d }));
@@ -58,6 +65,12 @@ export default function NewBloodRequestPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (form.urgency === 'CRITICAL' && !isVerified) {
+      setError('CRITICAL urgency is restricted to verified accounts.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -159,13 +172,27 @@ export default function NewBloodRequestPage() {
           />
         </div>
 
-        <Select
-          id="urgency"
-          label={t('request.urgencyLevel')}
-          options={urgencyOptions}
-          value={form.urgency}
-          onChange={(e) => setForm({ ...form, urgency: e.target.value })}
-        />
+        <div>
+          <Select
+            id="urgency"
+            label={t('request.urgencyLevel')}
+            options={urgencyOptions}
+            value={form.urgency}
+            onChange={(e) => setForm({ ...form, urgency: e.target.value })}
+          />
+          {!isVerified && (
+            <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-300">
+              <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-400" />
+              <span>
+                <strong>Account Verification Required:</strong> CRITICAL urgency is restricted to admin-verified requesters and hospitals. Your current status is{' '}
+                <span className="font-semibold uppercase text-white bg-amber-500/30 px-1.5 py-0.5 rounded">
+                  {user?.verificationStatus || 'PENDING'}
+                </span>
+                .
+              </span>
+            </div>
+          )}
+        </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <Input

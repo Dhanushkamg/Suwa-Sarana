@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { useI18n } from '@/lib/i18n';
 

@@ -4,6 +4,7 @@ import com.suwasarana.api.request.RequestReport;
 import com.suwasarana.api.request.RequestReportRepository;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
+import com.suwasarana.api.user.VerificationStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +26,7 @@ public class AdminService {
     public void verifyUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setVerified(true);
+        user.setVerificationStatus(VerificationStatus.VERIFIED);
         userRepository.save(user);
     }
 

@@ -36,6 +36,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access Denied: " + ex.getMessage()));
     }
 
+    @ExceptionHandler(com.suwasarana.api.exception.RequesterNotVerifiedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRequesterNotVerifiedException(com.suwasarana.api.exception.RequesterNotVerifiedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(ex.getMessage()));

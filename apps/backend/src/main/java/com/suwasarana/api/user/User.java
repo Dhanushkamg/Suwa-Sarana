@@ -26,8 +26,9 @@ public class User {
     @Column(unique = true, length = 20)
     private String nicNumber;
 
-    @Column(nullable = false)
-    private boolean isVerified = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -53,8 +54,8 @@ public class User {
     public void setRole(Role role) { this.role = role; }
     public String getNicNumber() { return nicNumber; }
     public void setNicNumber(String nicNumber) { this.nicNumber = nicNumber; }
-    public boolean isVerified() { return isVerified; }
-    public void setVerified(boolean verified) { isVerified = verified; }
+    public VerificationStatus getVerificationStatus() { return verificationStatus; }
+    public void setVerificationStatus(VerificationStatus verificationStatus) { this.verificationStatus = verificationStatus; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

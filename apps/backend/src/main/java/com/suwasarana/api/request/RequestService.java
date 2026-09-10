@@ -5,7 +5,9 @@ import com.suwasarana.api.request.dto.RequestResponseDto;
 import com.suwasarana.api.user.Role;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
+import com.suwasarana.api.user.VerificationStatus;
 import com.suwasarana.api.matching.MatchingEngine;
+import com.suwasarana.api.exception.RequesterNotVerifiedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,8 +31,8 @@ public class RequestService {
     public RequestResponseDto createRequest(Long userId, CreateRequestDto dto) {
         User requester = userRepository.findById(userId).orElseThrow();
 
-        if (!requester.isVerified() && requester.getRole() != Role.HOSPITAL_REQUESTER && requester.getRole() != Role.ADMIN && dto.getUrgency() == Urgency.CRITICAL) {
-            throw new RuntimeException("Unverified users cannot create CRITICAL requests.");
+        if (requester.getVerificationStatus() != VerificationStatus.VERIFIED && requester.getRole() != Role.ADMIN && dto.getUrgency() == Urgency.CRITICAL) {
+            throw new RequesterNotVerifiedException("Unverified users cannot create CRITICAL requests.");
         }
 
         BloodRequest request = new BloodRequest();

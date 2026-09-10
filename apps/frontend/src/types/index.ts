@@ -3,6 +3,7 @@ export interface User {
   email: string;
   phoneNumber: string;
   role: 'DONOR' | 'REQUESTER' | 'HOSPITAL_REQUESTER' | 'ADMIN';
+  verificationStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
 }
 
 export interface DonorProfile {

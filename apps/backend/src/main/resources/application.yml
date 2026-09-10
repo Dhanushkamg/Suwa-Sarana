@@ -13,6 +13,8 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    clean-disabled: false
+    clean-on-validation-error: true
 
 jwt:
   secret: ${JWT_SECRET:dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LXRvLW1lZXQtam1hYy1yZXF1aXJlbWVudHM=}
