@@ -50,4 +50,12 @@ public class RequestController {
         RequestResponseDto request = requestService.getRequestById(id);
         return ResponseEntity.ok(ApiResponse.success(request));
     }
+
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<Void>> cancelRequest(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        requestService.cancelRequest(userDetails.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Request cancelled successfully"));
+    }
 }

@@ -61,6 +61,22 @@ public class RequestService {
         return mapToDto(request);
     }
 
+    @Transactional
+    public void cancelRequest(Long userId, Long requestId) {
+        BloodRequest request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+        
+        User requester = userRepository.findById(userId).orElseThrow();
+        
+        // Only the owner or an Admin can cancel
+        if (!request.getRequester().getId().equals(userId) && requester.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot cancel another user's request");
+        }
+        
+        request.setStatus(RequestStatus.CANCELLED);
+        requestRepository.save(request);
+    }
+
     public List<RequestResponseDto> getAllRequests() {
         return requestRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
