@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
+import { Heart, ArrowLeft } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -60,8 +60,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Right panel - Form */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 lg:px-16 relative">
-        <div className="absolute top-6 right-6">
-          <LanguageSwitcher />
+        <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
+          {/* Back to Home — visible on all screen sizes */}
+          <Link
+            href="/"
+            className="hidden lg:inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-white transition-colors group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            Home
+          </Link>
+          <div className="ml-auto">
+            <LanguageSwitcher />
+          </div>
         </div>
         {/* Mobile logo */}
         <Link href="/" className="flex items-center gap-3 mb-10 lg:hidden">
