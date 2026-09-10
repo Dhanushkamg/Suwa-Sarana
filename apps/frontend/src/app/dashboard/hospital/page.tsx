@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Building2, Plus, AlertCircle, Droplets, Clock, Activity, ShieldCheck, ArrowRight, Radio } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Building2, Plus, AlertCircle, Droplets, Clock, Activity, ShieldCheck, ArrowRight, Radio, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
@@ -13,44 +13,31 @@ export default function HospitalRequesterDashboardPage() {
   const { t } = useI18n();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadHospitalData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiClient.get<any>('/requests');
+      const reqData = res.data?.data ?? res.data;
+      if (Array.isArray(reqData)) {
+        setRequests(reqData);
+      } else {
+        setRequests([]);
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || 'Failed to load hospital requests telemetry.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function loadHospitalData() {
-      try {
-        const res = await apiClient.get<any>('/requests');
-        const reqData = res.data?.data ?? res.data;
-        setRequests(reqData || []);
-      } catch {
-        // Fallback for demonstration
-        setRequests([
-          {
-            id: 201,
-            patientBloodType: 'A+',
-            urgency: 'CRITICAL',
-            status: 'ESCALATING',
-            hospitalName: 'Teaching Hospital Anuradhapura',
-            district: 'Anuradhapura',
-            currentRadiusKm: 10,
-            expiresAt: new Date(Date.now() + 3600000 * 6).toISOString(),
-          },
-          {
-            id: 202,
-            patientBloodType: 'O-',
-            urgency: 'URGENT',
-            status: 'MATCHED',
-            hospitalName: 'Teaching Hospital Anuradhapura',
-            district: 'Anuradhapura',
-            currentRadiusKm: 5,
-            expiresAt: new Date(Date.now() + 3600000 * 12).toISOString(),
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadHospitalData();
-  }, []);
+  }, [loadHospitalData]);
 
   const criticalCount = requests.filter((r) => r.urgency === 'CRITICAL').length;
   const activeCount = requests.filter((r) => r.status === 'OPEN' || r.status === 'ESCALATING').length;
@@ -83,6 +70,14 @@ export default function HospitalRequesterDashboardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={loadHospitalData}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-medium transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh Feed
+            </button>
             <Link
               href="/dashboard/requests/new"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-sm px-6 py-3.5 rounded-2xl shadow-xl shadow-red-500/30 transition-all duration-200 transform hover:-translate-y-0.5"
@@ -93,6 +88,13 @@ export default function HospitalRequesterDashboardPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 animate-in fade-in duration-200">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -153,7 +155,10 @@ export default function HospitalRequesterDashboardPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-500">{t('common.loading')}</div>
+          <div className="glass-card rounded-2xl p-12 text-center text-gray-400 border border-white/5">
+            <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p>{t('common.loading')}</p>
+          </div>
         ) : requests.length === 0 ? (
           <div className="glass-card rounded-2xl p-12 text-center border-dashed border-white/10 space-y-3">
             <Droplets className="w-12 h-12 text-gray-600 mx-auto" />
@@ -212,7 +217,7 @@ export default function HospitalRequesterDashboardPage() {
                     href="/dashboard/requests/new"
                     className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-colors"
                   >
-                    Post Update
+                    Post Request
                   </Link>
                 </div>
               </div>

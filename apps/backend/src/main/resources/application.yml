@@ -23,3 +23,8 @@ jwt:
 
 cors:
   allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+
+app:
+  sms:
+    provider-api-key: ${SMS_PROVIDER_API_KEY:mock_key}
+    cascade-timeout-seconds: ${SMS_CASCADE_TIMEOUT_SECONDS:180}

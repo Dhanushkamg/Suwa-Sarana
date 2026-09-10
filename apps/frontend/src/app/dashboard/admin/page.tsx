@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ArrowLeft, ShieldCheck, BarChart3, Users, AlertTriangle, CheckCircle2, Flag } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, ShieldCheck, BarChart3, Users, AlertTriangle, CheckCircle2, Flag, UserCheck, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import apiClient from '@/lib/apiClient';
 
@@ -19,38 +19,40 @@ export default function AdminDashboardPage() {
   const [verifyUserId, setVerifyUserId] = useState('');
   const [verifyStatus, setVerifyStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const maxCount = Math.max(...Object.values(analytics), 1);
+  const loadAdminData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [analyticsRes, reportsRes] = await Promise.all([
+        apiClient.get<any>('/admin/analytics'),
+        apiClient.get<any>('/admin/reports'),
+      ]);
+      const analyticsData = analyticsRes.data?.data ?? analyticsRes.data;
+      const reportsData = reportsRes.data?.data ?? reportsRes.data;
+      setAnalytics(analyticsData || {});
+      setReports(Array.isArray(reportsData) ? reportsData : []);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || 'Failed to load admin telemetry data.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [analyticsRes, reportsRes] = await Promise.all([
-          apiClient.get<any>('/admin/analytics'),
-          apiClient.get<any>('/admin/reports'),
-        ]);
-        const analyticsData = analyticsRes.data?.data ?? analyticsRes.data;
-        const reportsData = reportsRes.data?.data ?? reportsRes.data;
-        setAnalytics(analyticsData || {});
-        setReports(reportsData || []);
-      } catch {
-        // Mock fallback
-        setAnalytics({ Colombo: 150, Gampaha: 90, Kandy: 60, Jaffna: 15, Galle: 40 });
-        setReports([
-          { id: 1, requestId: 102, reason: 'Suspected fraudulent request', createdAt: new Date().toISOString() },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+    loadAdminData();
+  }, [loadAdminData]);
+
+  const maxCount = Math.max(...Object.values(analytics).map((v) => Number(v) || 0), 1);
 
   const handleVerify = async () => {
     if (!verifyUserId.trim()) return;
     setVerifyStatus('loading');
     try {
-      await apiClient.post(`/admin/requesters/${verifyUserId.trim()}/verify`);
+      await apiClient.put(`/admin/verifications/${verifyUserId.trim()}/approve`);
       setVerifyStatus('success');
       setTimeout(() => setVerifyStatus('idle'), 3000);
     } catch {
@@ -61,33 +63,66 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <div>
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Link>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-          <ShieldCheck className="w-8 h-8 text-purple-500" />
-          Admin Dashboard
-        </h1>
-        <p className="text-gray-400 mt-2">Platform oversight, analytics, and user verification.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Link>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <ShieldCheck className="w-8 h-8 text-purple-500" />
+            Admin Overview & Telemetry
+          </h1>
+          <p className="text-gray-400 mt-1">Platform oversight, live geographic load metrics, and moderation queue.</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={loadAdminData}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-medium transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <Link
+            href="/dashboard/admin/verifications"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-red-500/25 transition-all"
+          >
+            <UserCheck className="w-4 h-4" />
+            Verification Portal
+          </Link>
+        </div>
       </div>
+
+      {error && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 animate-in fade-in duration-200">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
 
       {/* Analytics Heatmap */}
       <section className="glass-card rounded-2xl p-6 border border-white/10">
         <h2 className="text-xl font-bold text-white flex items-center gap-3 mb-6">
           <BarChart3 className="w-6 h-6 text-blue-400" />
-          Blood Request Heatmap by District
+          Blood Request Distribution by District
         </h2>
 
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading analytics...</div>
+          <div className="text-center py-8 text-gray-500">
+            <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p>Loading analytics...</p>
+          </div>
+        ) : Object.keys(analytics).length === 0 ? (
+          <p className="text-gray-500 text-center py-6">No district analytics data available.</p>
         ) : (
           <div className="space-y-3">
             {Object.entries(analytics)
-              .sort(([, a], [, b]) => b - a)
+              .sort(([, a], [, b]) => Number(b) - Number(a))
               .map(([district, count]) => {
-                const pct = Math.round((count / maxCount) * 100);
+                const numCount = Number(count) || 0;
+                const pct = Math.round((numCount / maxCount) * 100);
                 const color =
                   pct > 70 ? 'bg-red-500' : pct > 40 ? 'bg-amber-500' : 'bg-emerald-500';
                 return (
@@ -96,10 +131,10 @@ export default function AdminDashboardPage() {
                     <div className="flex-1 h-7 rounded-lg bg-white/5 overflow-hidden relative">
                       <div
                         className={`h-full ${color} opacity-80 rounded-lg transition-all duration-700`}
-                        style={{ width: `${pct}%` }}
+                        style={{ width: `${Math.max(pct, 5)}%` }}
                       />
                       <span className="absolute inset-0 flex items-center pl-3 text-xs font-semibold text-white">
-                        {count} requests
+                        {numCount} requests
                       </span>
                     </div>
                   </div>
@@ -109,12 +144,23 @@ export default function AdminDashboardPage() {
         )}
       </section>
 
-      {/* User Verification */}
+      {/* Quick User Verification */}
       <section className="glass-card rounded-2xl p-6 border border-white/10">
-        <h2 className="text-xl font-bold text-white flex items-center gap-3 mb-6">
-          <Users className="w-6 h-6 text-emerald-400" />
-          Verify Requester
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-3">
+            <Users className="w-6 h-6 text-emerald-400" />
+            Quick Requester Verification
+          </h2>
+          <Link
+            href="/dashboard/admin/verifications"
+            className="text-xs text-red-400 hover:text-red-300 font-medium inline-flex items-center gap-1"
+          >
+            Open full queue →
+          </Link>
+        </div>
+        <p className="text-xs text-gray-400 mb-4">
+          Quickly approve an individual hospital or requester account ID directly, or use the full verification queue.
+        </p>
         <div className="flex gap-3">
           <input
             type="number"
@@ -133,25 +179,25 @@ export default function AdminDashboardPage() {
             ) : verifyStatus === 'success' ? (
               <><CheckCircle2 className="w-4 h-4" /> Verified!</>
             ) : (
-              <><ShieldCheck className="w-4 h-4" /> Verify</>
+              <><ShieldCheck className="w-4 h-4" /> Verify User</>
             )}
           </button>
         </div>
         {verifyStatus === 'error' && (
           <p className="text-red-400 text-sm mt-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" /> Failed. Check the user ID.
+            <AlertTriangle className="w-4 h-4" /> Failed. Check that the User ID exists and is pending.
           </p>
         )}
       </section>
 
-      {/* Abuse Reports */}
+      {/* Abuse & Moderation Reports */}
       <section className="glass-card rounded-2xl p-6 border border-white/10">
         <h2 className="text-xl font-bold text-white flex items-center gap-3 mb-6">
           <Flag className="w-6 h-6 text-red-400" />
-          Flagged Requests ({reports.length})
+          Flagged Reports ({reports.length})
         </h2>
         {reports.length === 0 ? (
-          <p className="text-gray-500 text-center py-6">No reports at this time.</p>
+          <p className="text-gray-500 text-center py-6">No flagged reports at this time. Platform is healthy.</p>
         ) : (
           <div className="space-y-3">
             {reports.map((report) => (

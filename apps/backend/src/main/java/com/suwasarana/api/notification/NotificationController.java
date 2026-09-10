@@ -13,11 +13,15 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequestMapping("/api/notifications")
 public class NotificationController {
 
+    private final SseNotificationService sseNotificationService;
+
     @Autowired
-    private NotificationService notificationService;
+    public NotificationController(SseNotificationService sseNotificationService) {
+        this.sseNotificationService = sseNotificationService;
+    }
 
     @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamNotifications(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        return notificationService.subscribe(userDetails.getId());
+        return sseNotificationService.subscribe(userDetails.getId());
     }
 }

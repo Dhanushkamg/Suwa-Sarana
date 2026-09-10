@@ -1,7 +1,9 @@
 package com.suwasarana.api.admin;
 
+import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.request.RequestReport;
 import com.suwasarana.api.request.RequestReportRepository;
+import com.suwasarana.api.request.RequestRepository;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import com.suwasarana.api.user.VerificationStatus;
@@ -9,9 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 @Service
 public class AdminService {
@@ -21,6 +23,9 @@ public class AdminService {
 
     @Autowired
     private RequestReportRepository requestReportRepository;
+
+    @Autowired
+    private RequestRepository requestRepository;
 
     @Transactional
     public void verifyUser(Long userId) {
@@ -35,12 +40,23 @@ public class AdminService {
     }
 
     public Map<String, Object> getDistrictAnalytics() {
-        // Mock data for analytics
+        List<BloodRequest> requests = requestRepository.findAll();
         Map<String, Object> analytics = new HashMap<>();
-        analytics.put("Colombo", 150);
-        analytics.put("Gampaha", 90);
-        analytics.put("Jaffna", 15);
-        analytics.put("Kandy", 60);
+
+        if (requests.isEmpty()) {
+            // Baseline seed display if no requests created yet
+            analytics.put("Colombo", 12);
+            analytics.put("Gampaha", 8);
+            analytics.put("Kandy", 5);
+            analytics.put("Galle", 3);
+            return analytics;
+        }
+
+        for (BloodRequest request : requests) {
+            String district = request.getDistrict() != null ? request.getDistrict() : "Unknown";
+            analytics.put(district, (Integer) analytics.getOrDefault(district, 0) + 1);
+        }
+
         return analytics;
     }
 }

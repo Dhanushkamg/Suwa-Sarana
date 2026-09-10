@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, Zap, Radio, ArrowLeft } from 'lucide-react';
+import { Bell, Zap, Radio, ArrowLeft, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
+import { API_BASE_URL } from '@/lib/constants';
 
 interface NotificationItem {
   id: string;
-  type: 'MATCH' | 'ESCALATION' | 'DONATION';
+  type: 'MATCH' | 'ESCALATION' | 'DONATION' | 'SYSTEM';
   title: string;
   message: string;
   timestamp: string;
@@ -21,82 +22,108 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   useEffect(() => {
-    // Seed initial notifications demonstration
+    // Initial activity stream baseline
     setNotifications([
       {
-        id: '1',
-        type: 'MATCH',
-        title: 'Emergency Blood Request',
-        message: t('alerts.pushMatch', {
-          bloodType: 'O+',
-          hospitalName: 'National Hospital Colombo',
-          distanceKm: '4.2',
-        }),
-        timestamp: 'Just now',
-      },
-      {
-        id: '2',
-        type: 'ESCALATION',
-        title: 'Search Radius Escalated',
-        message: t('alerts.escalationNotice', {
-          requestId: '104',
-          radiusKm: '15',
-        }),
-        timestamp: '12m ago',
-      },
-      {
-        id: '3',
-        type: 'DONATION',
-        title: 'Donation Confirmed',
-        message: t('alerts.donationConfirmed', {
-          requestId: '98',
-        }),
-        timestamp: '2h ago',
+        id: 'init-1',
+        type: 'SYSTEM',
+        title: 'Notification Stream Initialized',
+        message: 'Listening for real-time donor matches, emergency escalation alerts, and platform broadcasts.',
+        timestamp: 'Active',
       },
     ]);
 
-    // Connect to SSE stream if available
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+    if (typeof window === 'undefined') return;
+
+    let eventSource: EventSource | null = null;
     try {
-      const eventSource = new EventSource(`${apiUrl}/notifications/stream?userId=${user?.id || 1}`);
-      
+      eventSource = new EventSource(`${API_BASE_URL}/notifications/stream`);
+
       eventSource.onopen = () => {
         setConnected(true);
       };
 
-      eventSource.onmessage = (event) => {
+      eventSource.addEventListener('NEW_MATCH', (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
           setNotifications((prev) => [
             {
-              id: String(Date.now()),
-              type: data.type || 'MATCH',
-              title: data.title || 'Live Match Alert',
-              message: data.message || JSON.stringify(data),
-              timestamp: 'Just now',
+              id: String(Date.now()) + Math.random(),
+              type: 'MATCH',
+              title: data.title || 'New Blood Match Dispatch',
+              message: data.body || data.message || 'A new urgent blood request match has been dispatched to your account.',
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             },
             ...prev,
           ]);
         } catch {
           // Plain message
         }
+      });
+
+      eventSource.addEventListener('ESCALATION', (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data);
+          setNotifications((prev) => [
+            {
+              id: String(Date.now()) + Math.random(),
+              type: 'ESCALATION',
+              title: data.title || 'Search Radius Escalation',
+              message: data.body || data.message || 'Geospatial search radius expanded for pending request.',
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            },
+            ...prev,
+          ]);
+        } catch {
+          // Plain message
+        }
+      });
+
+      eventSource.onmessage = (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data);
+          setNotifications((prev) => [
+            {
+              id: String(Date.now()) + Math.random(),
+              type: data.type || 'SYSTEM',
+              title: data.title || 'Platform Notification',
+              message: data.body || data.message || JSON.stringify(data),
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            },
+            ...prev,
+          ]);
+        } catch {
+          // Handle text message
+          if (event.data) {
+            setNotifications((prev) => [
+              {
+                id: String(Date.now()) + Math.random(),
+                type: 'SYSTEM',
+                title: 'Platform Alert',
+                message: event.data,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              },
+              ...prev,
+            ]);
+          }
+        }
       };
 
       eventSource.onerror = () => {
         setConnected(false);
       };
-
-      return () => {
-        eventSource.close();
-      };
     } catch {
-      // SSE not available or offline
+      setConnected(false);
     }
+
+    return () => {
+      eventSource?.close();
+    };
   }, [t, user?.id]);
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Link
             href="/dashboard"
@@ -113,10 +140,10 @@ export default function NotificationsPage() {
         </div>
 
         {/* Live SSE status indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs">
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/5 border border-white/10 text-xs self-start sm:self-auto">
           <Radio className={`w-3.5 h-3.5 ${connected ? 'text-emerald-400 animate-pulse' : 'text-amber-400'}`} />
-          <span className={connected ? 'text-emerald-400' : 'text-gray-400'}>
-            {connected ? 'Live SSE Connected' : 'Simulated Feed'}
+          <span className={connected ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium'}>
+            {connected ? 'Live SSE Stream Connected' : 'SSE Disconnected (Auto-reconnecting)'}
           </span>
         </div>
       </div>
@@ -133,11 +160,13 @@ export default function NotificationsPage() {
                   ? 'bg-red-500/15 text-red-400'
                   : notif.type === 'ESCALATION'
                   ? 'bg-amber-500/15 text-amber-400'
-                  : 'bg-emerald-500/15 text-emerald-400'
+                  : notif.type === 'DONATION'
+                  ? 'bg-emerald-500/15 text-emerald-400'
+                  : 'bg-blue-500/15 text-blue-400'
               }`}
             >
               {notif.type === 'MATCH' ? (
-                <Bell className="w-5 h-5" />
+                <Heart className="w-5 h-5 fill-current" />
               ) : notif.type === 'ESCALATION' ? (
                 <Zap className="w-5 h-5" />
               ) : (
@@ -147,7 +176,7 @@ export default function NotificationsPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-semibold text-white text-sm">{notif.title}</span>
-                <span className="text-xs text-gray-500">{notif.timestamp}</span>
+                <span className="text-xs text-gray-500 font-mono">{notif.timestamp}</span>
               </div>
               <p className="text-sm text-gray-400 leading-relaxed">{notif.message}</p>
             </div>
