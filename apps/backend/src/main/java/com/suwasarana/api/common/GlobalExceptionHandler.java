@@ -1,5 +1,8 @@
 package com.suwasarana.api.common;
 
+import com.suwasarana.api.exception.CircleExpiredException;
+import com.suwasarana.api.exception.CircleNotFoundException;
+import com.suwasarana.api.exception.RequesterNotVerifiedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -36,9 +39,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access Denied: " + ex.getMessage()));
     }
 
-    @ExceptionHandler(com.suwasarana.api.exception.RequesterNotVerifiedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleRequesterNotVerifiedException(com.suwasarana.api.exception.RequesterNotVerifiedException ex) {
+    @ExceptionHandler(RequesterNotVerifiedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRequesterNotVerifiedException(RequesterNotVerifiedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CircleNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCircleNotFoundException(CircleNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CircleExpiredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCircleExpiredException(CircleExpiredException ex) {
+        return ResponseEntity.status(HttpStatus.GONE).body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)
