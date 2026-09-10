@@ -92,8 +92,16 @@ function RegisterForm() {
 
       login(res.data.accessToken, user);
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Role-based redirection
+      if (user.role === 'DONOR') {
+        router.push('/dashboard/donor');
+      } else if (user.role === 'ADMIN') {
+        router.push('/dashboard/admin');
+      } else if (user.role === 'HOSPITAL_REQUESTER') {
+        router.push('/dashboard/hospital');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
