@@ -7,6 +7,7 @@ import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import com.suwasarana.api.user.VerificationStatus;
 import com.suwasarana.api.matching.MatchingEngine;
+import com.suwasarana.api.ai.RequestTriageAiService;
 import com.suwasarana.api.exception.RequesterNotVerifiedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,11 +28,15 @@ public class RequestService {
     @Autowired
     private MatchingEngine matchingEngine;
 
+    @Autowired
+    private RequestTriageAiService requestTriageAiService;
+
     @Transactional
     public RequestResponseDto createRequest(Long userId, CreateRequestDto dto) {
-        User requester = userRepository.findById(userId).orElseThrow();
+        User requester = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (requester.getVerificationStatus() != VerificationStatus.VERIFIED && requester.getRole() != Role.ADMIN && dto.getUrgency() == Urgency.CRITICAL) {
+        if (dto.getUrgency() == Urgency.CRITICAL && requester.getVerificationStatus() != VerificationStatus.VERIFIED) {
             throw new RequesterNotVerifiedException("Unverified users cannot create CRITICAL requests.");
         }
 
@@ -50,6 +55,13 @@ public class RequestService {
         request.setExpiresAt(LocalDateTime.now().plusHours(6));
 
         BloodRequest savedRequest = requestRepository.save(request);
+
+        // Perform AI Fraud & Duplicate Triage
+        try {
+            savedRequest = requestTriageAiService.triageRequest(savedRequest);
+        } catch (Exception e) {
+            // Triage error should never block request creation
+        }
 
         // Trigger immediate matching
         matchingEngine.runMatchingForRequest(savedRequest.getId());
@@ -107,6 +119,9 @@ public class RequestService {
         dto.setCurrentRadiusKm(request.getCurrentRadiusKm());
         dto.setCreatedAt(request.getCreatedAt());
         dto.setExpiresAt(request.getExpiresAt());
+        dto.setFraudRiskScore(request.getFraudRiskScore());
+        dto.setAiFlagReason(request.getAiFlagReason());
+        dto.setTriagedAt(request.getTriagedAt());
         return dto;
     }
 }

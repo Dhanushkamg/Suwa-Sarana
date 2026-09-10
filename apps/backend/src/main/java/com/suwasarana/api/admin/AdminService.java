@@ -170,4 +170,17 @@ public class AdminService {
         }
         return "BALANCED";
     }
+
+    public List<BloodRequest> getTriageQueue() {
+        return requestRepository.findAllByOrderByFraudRiskScoreDesc();
+    }
+
+    @Transactional
+    public void reviewTriageRequest(Long requestId, String adminNotes) {
+        BloodRequest request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+        request.setFraudRiskScore(0);
+        request.setAiFlagReason("Reviewed and resolved by admin. Notes: " + (adminNotes != null ? adminNotes : "None"));
+        requestRepository.save(request);
+    }
 }

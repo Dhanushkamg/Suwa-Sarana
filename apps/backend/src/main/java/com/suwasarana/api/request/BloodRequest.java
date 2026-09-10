@@ -54,6 +54,15 @@ public class BloodRequest {
     @Column(nullable = false)
     private LocalDateTime lastEscalatedAt = LocalDateTime.now();
 
+    @Column
+    private Integer fraudRiskScore = 0;
+
+    @Column(length = 255)
+    private String aiFlagReason;
+
+    @Column
+    private LocalDateTime triagedAt;
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -83,4 +92,10 @@ public class BloodRequest {
     public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
     public LocalDateTime getLastEscalatedAt() { return lastEscalatedAt; }
     public void setLastEscalatedAt(LocalDateTime lastEscalatedAt) { this.lastEscalatedAt = lastEscalatedAt; }
+    public Integer getFraudRiskScore() { return fraudRiskScore; }
+    public void setFraudRiskScore(Integer fraudRiskScore) { this.fraudRiskScore = fraudRiskScore; }
+    public String getAiFlagReason() { return aiFlagReason; }
+    public void setAiFlagReason(String aiFlagReason) { this.aiFlagReason = aiFlagReason; }
+    public LocalDateTime getTriagedAt() { return triagedAt; }
+    public void setTriagedAt(LocalDateTime triagedAt) { this.triagedAt = triagedAt; }
 }

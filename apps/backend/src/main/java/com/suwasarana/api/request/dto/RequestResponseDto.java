@@ -17,6 +17,9 @@ public class RequestResponseDto {
     private short currentRadiusKm;
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
+    private Integer fraudRiskScore;
+    private String aiFlagReason;
+    private LocalDateTime triagedAt;
     
     // Getters and setters
     public Long getId() { return id; }
@@ -54,4 +57,13 @@ public class RequestResponseDto {
 
     public LocalDateTime getExpiresAt() { return expiresAt; }
     public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
+
+    public Integer getFraudRiskScore() { return fraudRiskScore; }
+    public void setFraudRiskScore(Integer fraudRiskScore) { this.fraudRiskScore = fraudRiskScore; }
+
+    public String getAiFlagReason() { return aiFlagReason; }
+    public void setAiFlagReason(String aiFlagReason) { this.aiFlagReason = aiFlagReason; }
+
+    public LocalDateTime getTriagedAt() { return triagedAt; }
+    public void setTriagedAt(LocalDateTime triagedAt) { this.triagedAt = triagedAt; }
 }

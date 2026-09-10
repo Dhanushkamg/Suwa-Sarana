@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, ShieldCheck, BarChart3, Users, AlertTriangle, CheckCircle2, Flag, UserCheck, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, ShieldAlert, BarChart3, Users, AlertTriangle, CheckCircle2, Flag, UserCheck, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import apiClient from '@/lib/apiClient';
 
@@ -85,6 +85,13 @@ export default function AdminDashboardPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
+          <Link
+            href="/dashboard/admin/triage"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-purple-600/25 transition-all"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            AI Triage Queue
+          </Link>
           <Link
             href="/dashboard/admin/analytics"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-blue-600/25 transition-all"

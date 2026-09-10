@@ -16,6 +16,10 @@ public interface RequestRepository extends JpaRepository<BloodRequest, Long> {
 
     List<BloodRequest> findAllByOrderByCreatedAtDesc();
 
+    List<BloodRequest> findAllByOrderByFraudRiskScoreDesc();
+
+    List<BloodRequest> findByRequesterId(Long requesterId);
+
     List<BloodRequest> findByRequesterIdOrderByCreatedAtDesc(Long requesterId);
 
     @Modifying
