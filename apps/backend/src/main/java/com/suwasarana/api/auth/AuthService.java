@@ -59,7 +59,7 @@ public class AuthService {
         String jwt = tokenProvider.generateToken(authentication);
         String refreshToken = createRefreshToken(savedUser);
 
-        return new AuthResponse(jwt, savedUser.getId(), savedUser.getRole(), refreshToken);
+        return new AuthResponse(jwt, savedUser.getId(), savedUser.getRole(), savedUser.getEmail(), savedUser.getPhoneNumber(), refreshToken);
     }
 
     public AuthResponse login(LoginDto loginDto) {
@@ -75,7 +75,7 @@ public class AuthService {
         
         String refreshToken = createRefreshToken(user);
 
-        return new AuthResponse(jwt, user.getId(), user.getRole(), refreshToken);
+        return new AuthResponse(jwt, user.getId(), user.getRole(), user.getEmail(), user.getPhoneNumber(), refreshToken);
     }
 
     private String createRefreshToken(User user) {
@@ -112,7 +112,7 @@ public class AuthService {
         refreshTokenRepository.delete(refreshToken);
         String newRefreshToken = createRefreshToken(user);
         
-        return new AuthResponse(token, user.getId(), user.getRole(), newRefreshToken);
+        return new AuthResponse(token, user.getId(), user.getRole(), user.getEmail(), user.getPhoneNumber(), newRefreshToken);
     }
 
     @org.springframework.transaction.annotation.Transactional
