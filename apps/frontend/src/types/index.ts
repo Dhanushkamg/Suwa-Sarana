@@ -16,8 +16,9 @@ export interface DonorProfile {
 export interface BloodRequest {
   id: number;
   patientBloodType: string;
+  unitsNeeded?: number;
   urgency: 'ROUTINE' | 'URGENT' | 'CRITICAL';
-  status: 'OPEN' | 'ESCALATING' | 'FULFILLED' | 'EXPIRED';
+  status: 'OPEN' | 'ESCALATING' | 'MATCHED' | 'FULFILLED' | 'CANCELLED' | 'EXPIRED';
   hospitalName: string;
   district: string;
   currentRadiusKm: number;
