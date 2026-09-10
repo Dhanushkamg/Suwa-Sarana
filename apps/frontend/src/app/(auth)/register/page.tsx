@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, Phone, Eye, EyeOff } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Mail, Lock, Phone, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -12,8 +12,9 @@ import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { User } from '@/types';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
   const login = useAuthStore((s) => s.login);
 
@@ -22,24 +23,36 @@ export default function RegisterPage() {
     { value: 'REQUESTER', label: t('auth.roleRequester') },
   ];
 
+  // Read ?role= from URL and default to DONOR if not provided
+  const initialRole = searchParams.get('role') === 'REQUESTER' ? 'REQUESTER' : 'DONOR';
+
   const [form, setForm] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     phoneNumber: '',
-    role: 'DONOR',
+    role: initialRole,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState('');
 
+  // Sync role if the URL param changes after mount (e.g. back/forward navigation)
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+    if (roleParam === 'REQUESTER' || roleParam === 'DONOR') {
+      setForm((prev) => ({ ...prev, role: roleParam }));
+    }
+  }, [searchParams]);
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!form.email) newErrors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Enter a valid email';
     if (!form.phoneNumber) newErrors.phoneNumber = 'Phone number is required';
-    else if (!/^0\d{9}$/.test(form.phoneNumber)) newErrors.phoneNumber = 'Enter a valid Sri Lankan number (07XXXXXXXX)';
+    // Accept local format (07XXXXXXXX) or international Sri Lanka format (+94XXXXXXXXX)
+    else if (!/^(\+94|0)\d{9}$/.test(form.phoneNumber)) newErrors.phoneNumber = 'Enter a valid number: 07XXXXXXXX or +94XXXXXXXXX';
     if (!form.password) newErrors.password = 'Password is required';
     else if (form.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
     if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
@@ -93,6 +106,17 @@ export default function RegisterPage() {
 
   return (
     <div>
+      {/* Back to Home link */}
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-white transition-colors group"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          {t('common.backToHome')}
+        </Link>
+      </div>
+
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-white">{t('auth.registerTitle')}</h2>
         <p className="text-gray-400 mt-2">{t('auth.registerSubtitle')}</p>
@@ -129,7 +153,7 @@ export default function RegisterPage() {
           id="reg-phone"
           type="tel"
           label={t('auth.phone')}
-          placeholder="0712345678"
+          placeholder="07XXXXXXXX or +94XXXXXXXXX"
           value={form.phoneNumber}
           onChange={handleChange('phoneNumber')}
           error={errors.phoneNumber}
@@ -207,5 +231,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="text-gray-400 text-sm">Loading...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
