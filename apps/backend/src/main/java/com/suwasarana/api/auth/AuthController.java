@@ -4,6 +4,8 @@ import com.suwasarana.api.auth.dto.AuthResponse;
 import com.suwasarana.api.auth.dto.LoginDto;
 import com.suwasarana.api.auth.dto.RegisterDto;
 import com.suwasarana.api.common.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -13,11 +15,13 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "User registration, login, token refresh, and session logout endpoints")
 public class AuthController {
 
     @Autowired
     private AuthService authService;
 
+    @Operation(summary = "Register a new user", description = "Creates a new user account (Donor, Hospital, or Requester) and returns JWT tokens.")
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterDto registerDto, HttpServletResponse response) {
         AuthResponse authResponse = authService.register(registerDto);
@@ -25,6 +29,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(authResponse));
     }
 
+    @Operation(summary = "User login", description = "Authenticates user credentials and issues access & refresh tokens.")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginDto loginDto, HttpServletResponse response) {
         AuthResponse authResponse = authService.login(loginDto);
@@ -32,6 +37,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(authResponse));
     }
 
+    @Operation(summary = "Refresh access token", description = "Generates a new access token using an httpOnly refresh token cookie.")
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(
             @CookieValue(name = "refresh_token", required = false) String refreshToken,
@@ -46,6 +52,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(authResponse));
     }
 
+    @Operation(summary = "Logout user", description = "Invalidates the refresh token and clears authentication cookies.")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.suwasarana.api.security.UserDetailsImpl userDetails,

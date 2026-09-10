@@ -1,89 +1,131 @@
-# Suwa Sarana (සුව සරණ) - Blood Donation & Matching Platform
+# Suwa Sarana (සුව සරණ / சுவ சரண) — Emergency Blood Donation & Dispatch Platform
 
-![Suwa Sarana Banner](https://via.placeholder.com/1200x300?text=Suwa+Sarana)
+[![CI Pipeline](https://github.com/Dhanushkamg/Suwa-Sarana/actions/workflows/ci.yml/badge.svg)](https://github.com/Dhanushkamg/Suwa-Sarana/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Next.js 14](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Java 21](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-Suwa Sarana is a comprehensive, modern, trilingual (English, Sinhala, Tamil) blood donation and matching platform. The system bridges the gap between blood donors and recipients in real-time, utilizing geo-spatial matching, real-time notifications, and advanced eligibility deferral engines to save lives efficiently.
+**Suwa Sarana** is a real-time, emergency blood coordination and donor dispatch platform built for Sri Lanka. It bridges the critical response gap between patients, hospitals, and voluntary donors using spatial proximity matching, automated notification cascades, private replacement circles, interactive district shortage heatmaps, and Groq-powered multilingual AI assistants.
 
-## 🚀 Key Features
+---
 
-* **Trilingual Support (i18n):** Full support for English, Sinhala, and Tamil out-of-the-box.
-* **Smart Matching Engine:** Geo-spatial queries (PostGIS/Earthdistance) to find the nearest eligible donors for an urgent blood request.
-* **Eligibility & Deferral Engine:** Rule-based engine to determine donor eligibility based on recent donations, medical history, and weight restrictions.
-* **Real-time Notifications:** Server-Sent Events (SSE) provide instant alerts to donors when a matching blood request is raised in their vicinity.
-* **Escalation Mechanism:** Automatic escalation of unmatched requests to a wider radius via cron-based background jobs.
-* **Responsive Dashboard:** A modern, clean, responsive UI built with Next.js, TailwindCSS, and Radix UI primitives.
+## 🌟 Key Platform Features
 
-## 🛠️ Technology Stack
+- **🌐 Trilingual Localization**: Native support for **English**, **Sinhala (සිංහල)**, and **Tamil (தமிழ்)** across all public and authenticated interfaces.
+- **📍 Geo-Spatial Proximity Matching**: Sub-millisecond spherical distance calculations (PostgreSQL `earthdistance`) locating the closest eligible donors within progressive search radii (5km → 15km → 25km).
+- **⚡ Two-Tier Notification Cascade**: Real-time Server-Sent Events (SSE) notification stream backed by an automated SMS fallback cascade when donors are offline.
+- **🛡️ Requester & Hospital Trust Verification**: Multi-factor identity and hospital verification portal with critical requisition access control.
+- **🔒 Security Hardening & Rate Limiting**: Token-bucket rate limiting via Bucket4j, strict CORS protection, and secure JWT authentication with refresh token rotation.
+- **👥 Private Replacement-Donor Circles**: Secure, tokenized share links allowing families to rally private volunteer circles before/alongside public dispatch.
+- **🖼️ Shareable Open Graph Cards**: Dynamic 1200×630 emergency requisition summary cards generated for seamless Facebook, WhatsApp, and Viber community sharing without exposing private patient identity.
+- **🗺️ Interactive Sri Lanka District Heatmap**: Leaflet choropleth visualization monitoring live blood inventory, donor density, and shortage indicators across all 25 districts.
+- **🤖 Multilingual AI Request Intake (Groq LLM)**: Natural language conversational request intake extracting blood type, urgency, hospital, and units needed from unstructured text in EN, SI, or TA.
+- **💬 Grounded AI Donor FAQ Chatbot**: Trilingual eligibility assistant grounded strictly in National Blood Transfusion Service (NBTS) deferral rules.
+- **⚖️ AI Fraud & Duplicate Triage Console**: Advisory AI scoring engine that prioritizes the moderation queue for human administrators with explainable diagnostic flags.
+- **📖 OpenAPI 3.0 & Swagger UI**: Full interactive API documentation available at `/swagger-ui.html`.
+- **🔄 Automated GitHub Actions CI/CD**: Matrix pipeline executing full backend JUnit test suites and frontend Next.js builds on every commit.
 
-### Frontend
-* **Framework:** Next.js 14 (App Router)
-* **Styling:** Tailwind CSS
-* **Components:** Radix UI, Lucide Icons
-* **State Management:** React Context (for I18n)
-* **Package Manager:** pnpm
+---
+
+## 🏗️ Architecture & Technology Stack
+
+```
+suwa-sarana/
+├── .github/workflows/          # GitHub Actions CI/CD pipeline
+├── apps/
+│   ├── backend/                # Spring Boot 3.2 (Java 21), Spring Security, Flyway, JPA
+│   └── frontend/               # Next.js 14 App Router, TypeScript, Tailwind CSS, Leaflet
+├── packages/
+│   └── shared-types/           # Shared TypeScript interfaces
+├── docs/                       # Architectural specs, audit notes & deployment runbook
+├── docker-compose.yml          # Local multi-service container orchestration
+└── .env.example                # Root environment configuration template
+```
 
 ### Backend
-* **Framework:** Spring Boot 3.2 (Java 21)
-* **Database:** PostgreSQL (with `cube` and `earthdistance` extensions)
-* **ORM:** Hibernate / Spring Data JPA
-* **Migrations:** Flyway
-* **Security:** Spring Security (JWT-based, currently mocked for development ease)
+- **Framework**: Spring Boot 3.2 / Java 21
+- **Database**: PostgreSQL 16 (`cube` + `earthdistance` extensions)
+- **Migrations**: Flyway (7 versioned migrations: `V1` to `V7`)
+- **Security & Limiting**: Spring Security 6, JJWT (0.12.5), Bucket4j (8.10.1)
+- **API Documentation**: SpringDoc OpenAPI 3.0 / Swagger UI
+- **Testing**: JUnit 5, Mockito, Spring Boot Test, Spring Security Test, H2 In-Memory
 
-### Infrastructure
-* **Containerization:** Docker & Docker Compose
-* **Build Tools:** Maven & pnpm
+### Frontend
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS, Radix UI Primitives, Lucide Icons
+- **Mapping & Visuals**: Leaflet, React-Leaflet
+- **Internationalization**: React Context i18n (`messages/{en,si,ta}.json`)
+- **Data Layer**: Centralized `apiClient.ts` with SSE connection management
 
-## 📦 Project Structure
+---
 
-This project uses a monorepo structure:
-- `/apps/frontend`: The Next.js web application.
-- `/apps/backend`: The Spring Boot API server.
-
-## ⚙️ Setup Instructions
+## 🚀 Quickstart Guide
 
 ### Prerequisites
-- Node.js (v18+)
-- pnpm (v8+)
 - Java 21 JDK
-- Docker & Docker Compose
+- Node.js 20+ and pnpm 9+
+- Docker & Docker Compose (or local PostgreSQL 16)
 
-### 1. Start the Database
-You can spin up the required PostgreSQL database using the provided docker-compose file:
+### 1. Clone & Configure
 ```bash
-docker-compose up -d postgres
+git clone https://github.com/Dhanushkamg/Suwa-Sarana.git
+cd Suwa-Sarana
+cp .env.example .env
 ```
-*(The `cube` and `earthdistance` extensions are automatically enabled via Flyway migrations)*
 
-### 2. Backend Setup
-Navigate to the backend directory and run the Spring Boot application:
+### 2. Launch with Docker Compose
+```bash
+docker compose up -d --build
+```
+- **Web Application**: [http://localhost:3000](http://localhost:3000)
+- **REST API Server**: [http://localhost:8080/api](http://localhost:8080/api)
+- **Swagger Documentation**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
+### 3. Running Locally (Development Mode)
+
+#### Start Backend
 ```bash
 cd apps/backend
-.\run.cmd # On Windows
-# Or using Maven:
-# ./mvnw spring-boot:run
+./mvnw spring-boot:run
 ```
-The API will run on `http://localhost:8080`.
 
-### 3. Frontend Setup
-Navigate to the root directory or frontend directory to install dependencies and start the dev server:
+#### Start Frontend
 ```bash
+# From workspace root:
 pnpm install
 pnpm --filter frontend dev
 ```
-The application will be accessible at `http://localhost:3000`.
 
-## 📖 Usage
+---
 
-1. **Register/Login:** Create a new donor profile or login.
-2. **Dashboard:** View your donation statistics, upcoming appointments, and notifications.
-3. **Blood Requests:** Hospitals or individuals can create a blood request. The matching engine will instantly notify nearby eligible donors.
-4. **Notifications:** Donors receive real-time SSE alerts. They can accept or decline a request directly from their feed.
-5. **Language Settings:** Toggle between English, Sinhala, and Tamil from the top right corner.
+## 🧪 Test Verification
 
-## 👨‍💻 Development Journey
+### Backend JUnit Test Suite
+```bash
+cd apps/backend
+./mvnw test
+```
+*Executes all 63 unit, integration, rate-limiting, and security tests.*
 
-This project focusing on building a highly scalable and robust architecture from scratch, including complex domain logic like geo-matching and real-time streaming.
+### Frontend Production Build
+```bash
+cd apps/frontend
+pnpm build
+```
+*Validates static generation, TypeScript types, and server components across all 21+ routes.*
 
-## 📝 License
+---
 
-This project is licensed under the MIT License.
+## 📚 Documentation Links
+
+- [Production Deployment Guide](file:///d:/My%20new%20projects/Suwa%20sarana/docs/DEPLOYMENT.md) (`docs/DEPLOYMENT.md`)
+- [Master Implementation Plan](file:///d:/My%20new%20projects/Suwa%20sarana/docs/MASTER_PLAN.md) (`docs/MASTER_PLAN.md`)
+- [Repository Audit Notes](file:///d:/My%20new%20projects/Suwa%20sarana/docs/AUDIT_NOTES.md) (`docs/AUDIT_NOTES.md`)
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
