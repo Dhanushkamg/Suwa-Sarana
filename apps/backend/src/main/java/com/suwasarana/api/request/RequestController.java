@@ -1,5 +1,8 @@
 package com.suwasarana.api.request;
 
+import com.suwasarana.api.ai.RequestIntakeAiService;
+import com.suwasarana.api.ai.dto.AiDraftRequestDto;
+import com.suwasarana.api.ai.dto.AiDraftResponseDto;
 import com.suwasarana.api.common.ApiResponse;
 import com.suwasarana.api.request.dto.CreateRequestDto;
 import com.suwasarana.api.request.dto.RequestResponseDto;
@@ -21,6 +24,9 @@ public class RequestController {
     @Autowired
     private RequestService requestService;
 
+    @Autowired
+    private RequestIntakeAiService requestIntakeAiService;
+
     @PostMapping
     public ResponseEntity<ApiResponse<RequestResponseDto>> createRequest(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -28,6 +34,13 @@ public class RequestController {
             
         RequestResponseDto created = requestService.createRequest(userDetails.getId(), dto);
         return ResponseEntity.ok(ApiResponse.success(created, "Blood request created successfully"));
+    }
+
+    @PostMapping("/ai-draft")
+    public ResponseEntity<ApiResponse<AiDraftResponseDto>> extractAiDraft(
+            @Valid @RequestBody AiDraftRequestDto dto) {
+        AiDraftResponseDto draft = requestIntakeAiService.extractDraft(dto);
+        return ResponseEntity.ok(ApiResponse.success(draft, "AI draft extracted successfully"));
     }
 
     @GetMapping
