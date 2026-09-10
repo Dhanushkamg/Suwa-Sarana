@@ -14,6 +14,10 @@ public interface RequestRepository extends JpaRepository<BloodRequest, Long> {
     @Query("SELECT r FROM BloodRequest r WHERE r.status IN ('OPEN', 'ESCALATING')")
     List<BloodRequest> findActiveRequests();
 
+    List<BloodRequest> findAllByOrderByCreatedAtDesc();
+
+    List<BloodRequest> findByRequesterIdOrderByCreatedAtDesc(Long requesterId);
+
     @Modifying
     @Query("UPDATE BloodRequest r SET r.currentRadiusKm = :radius WHERE r.id = :id")
     void updateRadius(@Param("id") Long id, @Param("radius") short radius);

@@ -11,6 +11,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/requests")
 @PreAuthorize("hasAnyRole('REQUESTER', 'HOSPITAL_REQUESTER', 'ADMIN')")
@@ -26,6 +28,20 @@ public class RequestController {
             
         RequestResponseDto created = requestService.createRequest(userDetails.getId(), dto);
         return ResponseEntity.ok(ApiResponse.success(created, "Blood request created successfully"));
+    }
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<List<RequestResponseDto>>> getAllRequests() {
+        List<RequestResponseDto> requests = requestService.getAllRequests();
+        return ResponseEntity.ok(ApiResponse.success(requests));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<List<RequestResponseDto>>> getMyRequests(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        List<RequestResponseDto> requests = requestService.getUserRequests(userDetails.getId());
+        return ResponseEntity.ok(ApiResponse.success(requests));
     }
 
     @GetMapping("/{id}")

@@ -2,6 +2,7 @@ package com.suwasarana.api.request;
 
 import com.suwasarana.api.request.dto.CreateRequestDto;
 import com.suwasarana.api.request.dto.RequestResponseDto;
+import com.suwasarana.api.user.Role;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import com.suwasarana.api.matching.MatchingEngine;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class RequestService {
@@ -27,7 +29,7 @@ public class RequestService {
     public RequestResponseDto createRequest(Long userId, CreateRequestDto dto) {
         User requester = userRepository.findById(userId).orElseThrow();
 
-        if (!requester.isVerified() && dto.getUrgency() == Urgency.CRITICAL) {
+        if (!requester.isVerified() && requester.getRole() != Role.HOSPITAL_REQUESTER && requester.getRole() != Role.ADMIN && dto.getUrgency() == Urgency.CRITICAL) {
             throw new RuntimeException("Unverified users cannot create CRITICAL requests.");
         }
 
@@ -57,6 +59,20 @@ public class RequestService {
         BloodRequest request = requestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
         return mapToDto(request);
+    }
+
+    public List<RequestResponseDto> getAllRequests() {
+        return requestRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    public List<RequestResponseDto> getUserRequests(Long userId) {
+        return requestRepository.findByRequesterIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::mapToDto)
+                .toList();
     }
 
     private RequestResponseDto mapToDto(BloodRequest request) {
