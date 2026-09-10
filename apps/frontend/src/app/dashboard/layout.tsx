@@ -1,15 +1,16 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, LogOut, Home, Droplets, Bell } from 'lucide-react';
+import { Heart, LogOut, Home, Droplets, Bell, ShieldCheck, Plus, Building2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useI18n();
   const { isAuthenticated, user, logout } = useAuthStore();
 
@@ -25,6 +26,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     logout();
     router.push('/');
   };
+
+  const formatRole = (role?: string) => {
+    if (!role) return '';
+    if (role === 'HOSPITAL_REQUESTER') return 'hospital requester';
+    return role.toLowerCase().replace('_', ' ');
+  };
+
+  const getNavItems = () => {
+    switch (user?.role) {
+      case 'DONOR':
+        return [
+          { href: '/dashboard/donor', label: t('common.myProfile'), icon: Droplets },
+          { href: '/dashboard/donor/matches', label: 'My Matches', icon: Heart },
+          { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
+        ];
+      case 'HOSPITAL_REQUESTER':
+        return [
+          { href: '/dashboard/hospital', label: 'Hospital Portal', icon: Building2 },
+          { href: '/dashboard/requests/new', label: 'Broadcast Request', icon: Plus },
+          { href: '/dashboard/requests', label: 'Active Requisitions', icon: Droplets },
+          { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
+        ];
+      case 'ADMIN':
+        return [
+          { href: '/dashboard/admin', label: 'Admin Console', icon: ShieldCheck },
+          { href: '/dashboard/requests', label: 'All Blood Requests', icon: Droplets },
+          { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
+        ];
+      case 'REQUESTER':
+      default:
+        return [
+          { href: '/dashboard', label: t('common.overview'), icon: Home },
+          { href: '/dashboard/requests/new', label: 'New Blood Request', icon: Plus },
+          { href: '/dashboard/requests', label: t('common.bloodRequests'), icon: Droplets },
+          { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
+        ];
+    }
+  };
+
+  const navItems = getNavItems();
 
   return (
     <div className="min-h-screen bg-[#0d0d14] flex">
@@ -48,29 +89,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <div className="min-w-0">
               <div className="text-xs font-medium text-white truncate">{user?.email}</div>
-              <div className="text-xs text-gray-500 capitalize">{user?.role?.toLowerCase().replace('_', ' ')}</div>
+              <div className="text-xs text-gray-400 capitalize font-medium">{formatRole(user?.role)}</div>
             </div>
           </div>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {[
-            { href: '/dashboard', label: t('common.overview'), icon: Home },
-            ...(user?.role === 'DONOR'
-              ? [{ href: '/dashboard/donor', label: t('common.myProfile'), icon: Droplets }]
-              : [{ href: '/dashboard/requests', label: t('common.bloodRequests'), icon: Droplets }]),
-            { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/6 transition-all duration-200 group text-sm"
-            >
-              <item.icon className="w-4 h-4 group-hover:text-red-400 transition-colors" />
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-red-500/10 text-red-400 font-semibold border border-red-500/20'
+                    : 'text-gray-400 hover:text-white hover:bg-white/6'
+                }`}
+              >
+                <item.icon className={`w-4 h-4 transition-colors ${isActive ? 'text-red-400' : 'group-hover:text-red-400'}`} />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Language switch & Logout */}

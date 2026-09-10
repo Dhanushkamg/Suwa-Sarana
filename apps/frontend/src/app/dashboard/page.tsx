@@ -1,57 +1,26 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
-import { Heart, Droplets, Bell, ArrowRight, LucideIcon } from 'lucide-react';
+import { Heart, Droplets, Bell, ArrowRight, Plus, ListOrdered } from 'lucide-react';
 import Link from 'next/link';
 
-interface QuickAction {
-  icon: LucideIcon;
-  titleKey: string;
-  descKey: string;
-  href: string;
-  color: string;
-}
-
-const DONOR_ACTIONS: QuickAction[] = [
-  {
-    icon: Droplets,
-    titleKey: 'dashboard.updateAvailability',
-    descKey: 'dashboard.updateAvailabilityDesc',
-    href: '/dashboard/donor',
-    color: 'from-red-500 to-rose-600',
-  },
-  {
-    icon: Bell,
-    titleKey: 'dashboard.notifications',
-    descKey: 'dashboard.notificationsDesc',
-    href: '/dashboard/notifications',
-    color: 'from-orange-500 to-red-500',
-  },
-];
-
-const REQUESTER_ACTIONS: QuickAction[] = [
-  {
-    icon: Heart,
-    titleKey: 'dashboard.newBloodRequest',
-    descKey: 'dashboard.newBloodRequestDesc',
-    href: '/dashboard/requests/new',
-    color: 'from-red-500 to-rose-600',
-  },
-  {
-    icon: Droplets,
-    titleKey: 'dashboard.activeRequests',
-    descKey: 'dashboard.activeRequestsDesc',
-    href: '/dashboard/requests',
-    color: 'from-orange-500 to-red-500',
-  },
-];
-
 export default function DashboardPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const { t } = useI18n();
-  const isDonor = user?.role === 'DONOR';
-  const actions: QuickAction[] = isDonor ? DONOR_ACTIONS : REQUESTER_ACTIONS;
+
+  useEffect(() => {
+    if (user?.role === 'DONOR') {
+      router.replace('/dashboard/donor');
+    } else if (user?.role === 'ADMIN') {
+      router.replace('/dashboard/admin');
+    } else if (user?.role === 'HOSPITAL_REQUESTER') {
+      router.replace('/dashboard/hospital');
+    }
+  }, [user, router]);
 
   return (
     <div>
@@ -62,41 +31,50 @@ export default function DashboardPage() {
           <span className="gradient-text ml-2">👋</span>
         </h1>
         <p className="text-gray-400 mt-2">
-          {isDonor
-            ? t('dashboard.donorSubtitle')
-            : t('dashboard.requesterSubtitle')}
+          {t('dashboard.requesterSubtitle')}
         </p>
       </div>
 
-      {/* Quick actions */}
+      {/* Quick actions for Requester */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {actions.map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="glass-card rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:border-red-500/20 group"
-          >
-            <div
-              className={`w-11 h-11 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}
-            >
-              <action.icon className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-semibold text-white mb-1">{t(action.titleKey)}</div>
-              <div className="text-sm text-gray-500">{t(action.descKey)}</div>
-            </div>
-          </Link>
-        ))}
-
-        {/* Coming soon placeholder */}
-        <div className="glass-card rounded-2xl p-5 border-dashed border-white/8 flex flex-col items-center justify-center text-center gap-2 cursor-pointer hover:border-red-500/20 transition-all duration-300 group">
-          <div className="w-10 h-10 rounded-xl bg-white/4 group-hover:bg-red-500/10 flex items-center justify-center transition-colors">
-            <Bell className="w-4 h-4 text-gray-600 group-hover:text-red-400 transition-colors" />
+        <Link
+          href="/dashboard/requests/new"
+          className="glass-card rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:border-red-500/20 group"
+        >
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+            <Plus className="w-5 h-5 text-white" />
           </div>
-          <span className="text-sm text-gray-500 group-hover:text-gray-400 transition-colors">
-            {t('dashboard.comingSoon')}
-          </span>
-        </div>
+          <div>
+            <div className="font-semibold text-white mb-1">{t('dashboard.newBloodRequest')}</div>
+            <div className="text-sm text-gray-500">{t('dashboard.newBloodRequestDesc')}</div>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/requests"
+          className="glass-card rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:border-red-500/20 group"
+        >
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+            <ListOrdered className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="font-semibold text-white mb-1">{t('dashboard.activeRequests')}</div>
+            <div className="text-sm text-gray-500">{t('dashboard.activeRequestsDesc')}</div>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/notifications"
+          className="glass-card rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:border-red-500/20 group"
+        >
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+            <Bell className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="font-semibold text-white mb-1">{t('dashboard.notifications')}</div>
+            <div className="text-sm text-gray-500">{t('dashboard.notificationsDesc')}</div>
+          </div>
+        </Link>
       </div>
 
       {/* Info card */}
@@ -108,19 +86,17 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-white mb-1">
-              {isDonor ? t('dashboard.donorProfileActive') : t('dashboard.platformStatus')}
+              {t('dashboard.platformStatus')}
             </h3>
             <p className="text-sm text-gray-400 leading-relaxed">
-              {isDonor
-                ? t('dashboard.donorProfileDesc')
-                : t('dashboard.platformDesc')}
+              {t('dashboard.platformDesc')}
             </p>
           </div>
           <Link
-            href={isDonor ? '/dashboard/donor' : '/dashboard/requests/new'}
+            href="/dashboard/requests/new"
             className="flex-shrink-0 flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
           >
-            {isDonor ? t('dashboard.editProfile') : t('dashboard.newRequest')}
+            {t('dashboard.newRequest')}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

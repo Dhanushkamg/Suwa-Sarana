@@ -2,7 +2,7 @@ export interface User {
   id: number;
   email: string;
   phoneNumber: string;
-  role: 'DONOR' | 'REQUESTER' | 'HOSPITAL_STAFF' | 'ADMIN';
+  role: 'DONOR' | 'REQUESTER' | 'HOSPITAL_REQUESTER' | 'ADMIN';
 }
 
 export interface DonorProfile {
