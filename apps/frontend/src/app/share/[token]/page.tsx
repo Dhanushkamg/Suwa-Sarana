@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import CircleResponseClient from './CircleResponseClient';
+import ShareCardClient from './ShareCardClient';
 import { API_BASE_URL } from '@/lib/constants';
 
 interface PageProps {
@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!data) {
     return {
-      title: 'Emergency Blood Request | Suwa Sarana',
-      description: 'Urgent blood requisition in Sri Lanka. Click to view details and volunteer.',
+      title: 'Emergency Blood Card | Suwa Sarana',
+      description: 'Urgent blood requisition card in Sri Lanka. Click to view details and volunteer.',
     };
   }
 
   const title = `🚨 URGENT: ${data.patientBloodType} Blood Needed at ${data.hospitalName}`;
-  const description = `Emergency requisition: ${data.unitsNeeded} units of ${data.patientBloodType} blood needed in ${data.district} (${data.urgency} urgency). Please volunteer or share with your contacts.`;
+  const description = `Emergency requisition: ${data.unitsNeeded} units of ${data.patientBloodType} blood needed in ${data.district}. Click to volunteer or share with your network.`;
 
   return {
     title: `${title} | Suwa Sarana`,
@@ -51,9 +51,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function CirclePage({ params }: PageProps) {
+export default async function SharePage({ params }: PageProps) {
   const { token } = await params;
   const initialData = await getCircleData(token);
 
-  return <CircleResponseClient token={token} initialData={initialData} />;
+  return <ShareCardClient token={token} initialData={initialData} />;
 }

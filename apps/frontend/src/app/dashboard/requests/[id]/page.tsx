@@ -260,6 +260,14 @@ export default function RequestLiveStatusPage() {
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'Copied!' : 'Copy Link'}
                 </button>
+                <Link
+                  href={`/share/${circleInvite.inviteToken}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-medium transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  Preview Card
+                </Link>
                 <a
                   href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + fullInviteUrl)}`}
                   target="_blank"
