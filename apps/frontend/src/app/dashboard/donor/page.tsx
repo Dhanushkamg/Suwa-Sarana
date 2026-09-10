@@ -55,12 +55,13 @@ export default function DonorProfilePage() {
 
     async function loadProfile() {
       try {
-        const res = await apiClient.get<DonorProfile>('/donors/me');
-        if (res.data) {
-          setProfile(res.data);
-          setBloodType(res.data.bloodType || 'O+');
-          setDistrict(res.data.district || 'Colombo');
-          setIsAvailable(res.data.available !== false);
+        const res = await apiClient.get<any>('/donors/me');
+        const profileData = res.data?.data ?? res.data;
+        if (profileData) {
+          setProfile(profileData);
+          setBloodType(profileData.bloodType || 'O+');
+          setDistrict(profileData.district || 'Colombo');
+          setIsAvailable(profileData.available !== false);
         }
       } catch {
         // Fallback mock data for demonstration

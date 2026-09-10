@@ -17,8 +17,9 @@ export default function HospitalRequesterDashboardPage() {
   useEffect(() => {
     async function loadHospitalData() {
       try {
-        const res = await apiClient.get<BloodRequest[]>('/requests');
-        setRequests(res.data || []);
+        const res = await apiClient.get<any>('/requests');
+        const reqData = res.data?.data ?? res.data;
+        setRequests(reqData || []);
       } catch {
         // Fallback for demonstration
         setRequests([

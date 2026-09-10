@@ -26,11 +26,13 @@ export default function AdminDashboardPage() {
     async function load() {
       try {
         const [analyticsRes, reportsRes] = await Promise.all([
-          apiClient.get<AnalyticsData>('/admin/analytics'),
-          apiClient.get<Report[]>('/admin/reports'),
+          apiClient.get<any>('/admin/analytics'),
+          apiClient.get<any>('/admin/reports'),
         ]);
-        setAnalytics(analyticsRes.data || {});
-        setReports(reportsRes.data || []);
+        const analyticsData = analyticsRes.data?.data ?? analyticsRes.data;
+        const reportsData = reportsRes.data?.data ?? reportsRes.data;
+        setAnalytics(analyticsData || {});
+        setReports(reportsData || []);
       } catch {
         // Mock fallback
         setAnalytics({ Colombo: 150, Gampaha: 90, Kandy: 60, Jaffna: 15, Galle: 40 });

@@ -73,7 +73,7 @@ function RegisterForm() {
     setLoading(true);
 
     try {
-      const res = await apiClient.post<{ accessToken: string; userId: number; email: string; role: string; phoneNumber: string }>(
+      const res = await apiClient.post<any>(
         '/auth/register',
         {
           email: form.email,
@@ -83,14 +83,16 @@ function RegisterForm() {
         }
       );
 
+      const authData = res.data?.data ?? res.data;
+
       const user: User = {
-        id: res.data.userId,
-        email: res.data.email,
-        phoneNumber: res.data.phoneNumber,
-        role: res.data.role as User['role'],
+        id: authData.userId,
+        email: authData.email,
+        phoneNumber: authData.phoneNumber,
+        role: authData.role as User['role'],
       };
 
-      login(res.data.accessToken, user);
+      login(authData.accessToken, user);
 
       // Role-based redirection
       if (user.role === 'DONOR') {

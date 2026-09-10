@@ -15,8 +15,9 @@ export default function RequestsListPage() {
   useEffect(() => {
     async function loadRequests() {
       try {
-        const res = await apiClient.get<BloodRequest[]>('/requests');
-        setRequests(res.data || []);
+        const res = await apiClient.get<any>('/requests');
+        const reqData = res.data?.data ?? res.data;
+        setRequests(reqData || []);
       } catch {
         // Mock fallback for demonstration
         setRequests([
