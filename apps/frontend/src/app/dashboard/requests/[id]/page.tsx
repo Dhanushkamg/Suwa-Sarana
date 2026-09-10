@@ -11,6 +11,7 @@ import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { API_BASE_URL } from '@/lib/constants';
 import { BloodRequest } from '@/types';
+import RequestDistanceMap from '@/components/maps/RequestDistanceMap';
 
 interface CircleInviteData {
   requestId: number;
@@ -323,25 +324,39 @@ export default function RequestLiveStatusPage() {
       </div>
 
       {/* Live System Updates */}
-      <div className="glass-card p-6 rounded-2xl border border-white/10">
-        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-emerald-400" />
-          Live Matching Telemetry
-        </h2>
+      <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Activity className="w-5 h-5 text-emerald-400" />
+            Live Matching Telemetry & Search Radius
+          </h2>
+          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            Radius: {requestData.currentRadiusKm} km
+          </span>
+        </div>
+
+        {/* Dynamic Leaflet Search Perimeter Map */}
+        <RequestDistanceMap
+          hospitalName={requestData.hospitalName}
+          district={requestData.district}
+          radiusKm={requestData.currentRadiusKm}
+          latitude={requestData.latitude}
+          longitude={requestData.longitude}
+        />
         
         {updates.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 border border-dashed border-white/10 rounded-xl">
+          <div className="text-center py-6 text-gray-500 border border-dashed border-white/10 rounded-xl">
             <div className="animate-pulse flex flex-col items-center gap-2">
-              <Activity className="w-6 h-6 text-emerald-500/50" />
-              <p>Scanning radius for eligible donors...</p>
+              <Activity className="w-5 h-5 text-emerald-500/50" />
+              <p className="text-xs">Scanning radius for eligible donors...</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {updates.map((msg, idx) => (
-              <div key={idx} className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                <p className="text-emerald-200 text-sm">{msg}</p>
+              <div key={idx} className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                <p className="text-emerald-200 text-xs">{msg}</p>
               </div>
             ))}
           </div>

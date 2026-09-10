@@ -22,6 +22,8 @@ export interface BloodRequest {
   status: 'OPEN' | 'ESCALATING' | 'MATCHED' | 'FULFILLED' | 'CANCELLED' | 'EXPIRED';
   hospitalName: string;
   district: string;
+  latitude?: number;
+  longitude?: number;
   currentRadiusKm: number;
   expiresAt: string;
 }

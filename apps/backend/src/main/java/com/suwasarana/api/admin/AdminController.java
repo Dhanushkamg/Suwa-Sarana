@@ -1,5 +1,6 @@
 package com.suwasarana.api.admin;
 
+import com.suwasarana.api.admin.dto.DistrictSummaryDto;
 import com.suwasarana.api.common.ApiResponse;
 import com.suwasarana.api.request.RequestReport;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,5 +33,10 @@ public class AdminController {
     @GetMapping("/analytics")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAnalytics() {
         return ResponseEntity.ok(ApiResponse.success(adminService.getDistrictAnalytics()));
+    }
+
+    @GetMapping("/analytics/district-summary")
+    public ResponseEntity<ApiResponse<List<DistrictSummaryDto>>> getDistrictSummary() {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getDistrictSummaries()));
     }
 }

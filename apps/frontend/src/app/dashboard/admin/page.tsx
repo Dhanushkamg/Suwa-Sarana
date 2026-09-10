@@ -86,6 +86,13 @@ export default function AdminDashboardPage() {
             Refresh
           </button>
           <Link
+            href="/dashboard/admin/analytics"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-blue-600/25 transition-all"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Interactive Heatmap
+          </Link>
+          <Link
             href="/dashboard/admin/verifications"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-red-500/25 transition-all"
           >
@@ -102,12 +109,39 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* Interactive Map Banner */}
+      <div className="glass-card p-6 rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/30 via-neutral-900/40 to-neutral-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-cyan-400" />
+            Geographic Shortage Heatmap (Sri Lanka 25 Districts)
+          </h2>
+          <p className="text-sm text-gray-300 mt-1">
+            Explore live donor density, active requisition clusters, and critical shortage alarms on the interactive geospatial map.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/admin/analytics"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all flex-shrink-0 self-start sm:self-auto"
+        >
+          Open Interactive Map →
+        </Link>
+      </div>
+
       {/* Analytics Heatmap */}
       <section className="glass-card rounded-2xl p-6 border border-white/10">
-        <h2 className="text-xl font-bold text-white flex items-center gap-3 mb-6">
-          <BarChart3 className="w-6 h-6 text-blue-400" />
-          Blood Request Distribution by District
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 text-blue-400" />
+            Blood Request Distribution by District
+          </h2>
+          <Link
+            href="/dashboard/admin/analytics"
+            className="text-xs text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1"
+          >
+            View Geospatial Map →
+          </Link>
+        </div>
 
         {loading ? (
           <div className="text-center py-8 text-gray-500">
