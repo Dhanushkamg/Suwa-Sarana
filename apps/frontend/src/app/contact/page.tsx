@@ -1,12 +1,32 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { Heart, ArrowLeft, Mail, Phone, MapPin } from 'lucide-react';
-
-export const metadata = {
-  title: 'Contact Us — Suwa Sarana',
-  description: 'Get in touch with the Suwa Sarana team for support, partnerships, or general enquiries.',
-};
+import apiClient from '@/lib/apiClient';
 
 export default function ContactPage() {
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+  const [loading, setLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitMessage, setSubmitMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setSubmitStatus('idle');
+    try {
+      const res = await apiClient.post('/contact', formData);
+      setSubmitStatus('success');
+      setSubmitMessage(res.data.message || 'Message sent successfully.');
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (err: any) {
+      setSubmitStatus('error');
+      setSubmitMessage(err.response?.data?.message || 'Failed to send message.');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-[#0d0d14] text-white">
       {/* Nav */}
@@ -94,12 +114,26 @@ export default function ContactPage() {
           {/* Contact Form */}
           <div className="bg-white/4 border border-white/8 rounded-2xl p-8">
             <h2 className="text-xl font-semibold text-white mb-6">Send us a message</h2>
-            <form className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {submitStatus === 'success' && (
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                  {submitMessage}
+                </div>
+              )}
+              {submitStatus === 'error' && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {submitMessage}
+                </div>
+              )}
+              
               <div className="grid sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-gray-300">Full Name</label>
                   <input
                     type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Your name"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                   />
@@ -108,6 +142,9 @@ export default function ContactPage() {
                   <label className="text-sm font-medium text-gray-300">Email Address</label>
                   <input
                     type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="you@example.com"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                   />
@@ -117,6 +154,9 @@ export default function ContactPage() {
                 <label className="text-sm font-medium text-gray-300">Subject</label>
                 <input
                   type="text"
+                  required
+                  value={formData.subject}
+                  onChange={(e) => setFormData({...formData, subject: e.target.value})}
                   placeholder="How can we help?"
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                 />
@@ -125,15 +165,19 @@ export default function ContactPage() {
                 <label className="text-sm font-medium text-gray-300">Message</label>
                 <textarea
                   rows={5}
+                  required
+                  value={formData.message}
+                  onChange={(e) => setFormData({...formData, message: e.target.value})}
                   placeholder="Describe your question or issue in detail..."
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all resize-none"
                 />
               </div>
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-200"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
               >
-                Send Message
+                {loading ? 'Sending...' : 'Send Message'}
               </button>
             </form>
           </div>

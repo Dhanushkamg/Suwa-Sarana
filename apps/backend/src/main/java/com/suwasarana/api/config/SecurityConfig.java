@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/circle/**").permitAll()
                 .requestMatchers("/api/faq/**").permitAll()
                 .requestMatchers("/api/inventory/**").permitAll()
+                .requestMatchers("/api/contact/**").permitAll()
                 .requestMatchers("/api/ivr/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
