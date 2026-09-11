@@ -37,11 +37,14 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Schema guard check completed: {}", e.getMessage());
         }
 
-        initAccount("admin@test.com", "0777654321", "AdminPass1", Role.ADMIN, VerificationStatus.VERIFIED);
-        initAccount("hospital@test.com", "0771234567", "AdminPass1", Role.HOSPITAL_REQUESTER, VerificationStatus.VERIFIED);
-        initAccount("donor@test.com", "0712345678", "AdminPass1", Role.DONOR, VerificationStatus.VERIFIED);
-        initAccount("requester@test.com", "0781234567", "AdminPass1", Role.REQUESTER, VerificationStatus.VERIFIED);
-        initAccount("unverified@test.com", "0761234567", "AdminPass1", Role.REQUESTER, VerificationStatus.PENDING);
+        initAccount("admin@test.com", "0777654321", "password123", Role.ADMIN, VerificationStatus.VERIFIED);
+        initAccount("hospital@test.com", "0771234567", "password123", Role.HOSPITAL_REQUESTER, VerificationStatus.VERIFIED);
+        initAccount("donor@test.com", "0773334455", "password123", Role.DONOR, VerificationStatus.VERIFIED);
+        initAccount("donor2@test.com", "0774445566", "password123", Role.DONOR, VerificationStatus.VERIFIED);
+        initAccount("donor3@test.com", "0775556677", "password123", Role.DONOR, VerificationStatus.VERIFIED);
+        initAccount("requester@test.com", "0772223344", "password123", Role.REQUESTER, VerificationStatus.VERIFIED);
+        initAccount("pending_hospital@test.com", "0779998877", "password123", Role.HOSPITAL_REQUESTER, VerificationStatus.PENDING);
+        initAccount("unverified@test.com", "0761234567", "password123", Role.REQUESTER, VerificationStatus.PENDING);
     }
 
     private void initAccount(String email, String phone, String password, Role role, VerificationStatus status) {
