@@ -2,8 +2,9 @@
 
 import { useI18n } from '@/lib/i18n';
 import Link from 'next/link';
-import { Heart, Zap, Shield, Users, ArrowRight, MapPin, Clock, Star } from 'lucide-react';
+import { Heart, Zap, Shield, Users, ArrowRight, MapPin, Clock, Star, Calendar } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { StockTicker } from '@/components/ui/StockTicker';
 
 export default function Home() {
   const { t } = useI18n();
@@ -23,6 +24,7 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-400">
             <Link href="#how-it-works" className="hover:text-white transition-colors">{t('nav.howItWorks')}</Link>
             <Link href="#features" className="hover:text-white transition-colors">{t('nav.features')}</Link>
+            <Link href="/camps" className="hover:text-white transition-colors flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-red-400" /> Donation Camps</Link>
             <Link href="#stats" className="hover:text-white transition-colors">{t('nav.impact')}</Link>
           </div>
 
@@ -44,8 +46,13 @@ export default function Home() {
         </div>
       </nav>
 
+      {/* Stock Ticker Banner */}
+      <div className="pt-16">
+        <StockTicker />
+      </div>
+
       {/* Hero */}
-      <section className="relative pt-32 pb-24 px-6">
+      <section className="relative pt-16 pb-24 px-6">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full bg-red-600/10 blur-3xl animate-pulse" />
           <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-rose-500/8 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
