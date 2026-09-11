@@ -17,7 +17,7 @@ interface NotificationItem {
 
 export default function NotificationsPage() {
   const { t } = useI18n();
-  const { user } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const [connected, setConnected] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
@@ -37,7 +37,10 @@ export default function NotificationsPage() {
 
     let eventSource: EventSource | null = null;
     try {
-      eventSource = new EventSource(`${API_BASE_URL}/notifications/stream`);
+      const url = accessToken 
+        ? `${API_BASE_URL}/notifications/stream?token=${accessToken}`
+        : `${API_BASE_URL}/notifications/stream`;
+      eventSource = new EventSource(url);
 
       eventSource.onopen = () => {
         setConnected(true);
