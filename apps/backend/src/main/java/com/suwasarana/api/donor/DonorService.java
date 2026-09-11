@@ -70,8 +70,25 @@ public class DonorService {
         dto.setDateOfBirth(profile.getDateOfBirth());
         dto.setWeightKg(profile.getWeightKg());
         dto.setDistrict(profile.getDistrict());
-        dto.setLatitude(profile.getLatitude());
-        dto.setLongitude(profile.getLongitude());
+        
+        Double lat = profile.getLatitude();
+        Double lon = profile.getLongitude();
+        
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean isOwner = auth != null && profile.getUser() != null && auth.getName().equals(profile.getUser().getEmail());
+        boolean isAdmin = auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        
+        if (!isOwner && !isAdmin && lat != null && lon != null) {
+            // Apply jitter (approx 500m ~ 0.005 degrees)
+            java.util.Random rand = new java.util.Random();
+            double jitterLat = (rand.nextDouble() - 0.5) * 0.01;
+            double jitterLon = (rand.nextDouble() - 0.5) * 0.01;
+            lat += jitterLat;
+            lon += jitterLon;
+        }
+
+        dto.setLatitude(lat);
+        dto.setLongitude(lon);
         dto.setAvailable(profile.isAvailable());
         dto.setReliabilityScore(profile.getReliabilityScore());
         dto.setQuietHoursStart(profile.getQuietHoursStart());
