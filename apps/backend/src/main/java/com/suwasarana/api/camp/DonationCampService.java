@@ -48,7 +48,7 @@ public class DonationCampService {
     }
 
     public List<DonationCampDto> getUpcomingCamps() {
-        return campRepository.findByStatusAndScheduledDateGreaterThanEqualOrderByScheduledDateAsc("SCHEDULED", LocalDate.now())
+        return campRepository.findByStatusOrderByScheduledDateAsc("SCHEDULED")
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());

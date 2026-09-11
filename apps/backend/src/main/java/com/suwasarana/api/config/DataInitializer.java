@@ -49,6 +49,8 @@ public class DataInitializer implements CommandLineRunner {
         initDonorProfiles();
         initActiveRequests();
         initReports();
+        initCamps();
+        initInventory();
     }
 
     private void initDonorProfiles() {
@@ -139,6 +141,50 @@ public class DataInitializer implements CommandLineRunner {
             }
         } catch (Exception e) {
             log.warn("Could not init reports: {}", e.getMessage());
+        }
+    }
+
+    private void initCamps() {
+        try {
+            Integer campCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM donation_camps", Integer.class);
+            if (campCount == null || campCount == 0) {
+                User hospital = userRepository.findByEmail("hospital@test.com").orElse(null);
+                if (hospital != null) {
+                    jdbcTemplate.update(
+                        "INSERT INTO donation_camps (name, district, location, latitude, longitude, scheduled_date, start_time, end_time, organizer_id, status, created_at, updated_at) " +
+                        "VALUES ('Colombo Red Cross Blood Drive', 'Colombo', 'Town Hall Grounds, Colombo 07', 6.9147, 79.8640, CURRENT_DATE + INTERVAL '2 days', '09:00:00', '15:00:00', ?, 'SCHEDULED', now(), now())",
+                        hospital.getId()
+                    );
+                    jdbcTemplate.update(
+                        "INSERT INTO donation_camps (name, district, location, latitude, longitude, scheduled_date, start_time, end_time, organizer_id, status, created_at, updated_at) " +
+                        "VALUES ('Kandy Central Community Blood Camp', 'Kandy', 'Kandy City Centre Auditorium', 7.2936, 80.6366, CURRENT_DATE + INTERVAL '5 days', '08:30:00', '14:30:00', ?, 'SCHEDULED', now(), now())",
+                        hospital.getId()
+                    );
+                    jdbcTemplate.update(
+                        "INSERT INTO donation_camps (name, district, location, latitude, longitude, scheduled_date, start_time, end_time, organizer_id, status, created_at, updated_at) " +
+                        "VALUES ('Southern Life Blood Donation Drive', 'Galle', 'Galle Fort Community Center', 6.0329, 80.2168, CURRENT_DATE + INTERVAL '12 days', '09:00:00', '16:00:00', ?, 'SCHEDULED', now(), now())",
+                        hospital.getId()
+                    );
+                }
+                log.info("Donation camps initialized");
+            }
+        } catch (Exception e) {
+            log.warn("Could not init camps: {}", e.getMessage());
+        }
+    }
+
+    private void initInventory() {
+        try {
+            Integer invCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM blood_bank_inventory", Integer.class);
+            if (invCount == null || invCount == 0) {
+                jdbcTemplate.update("INSERT INTO blood_bank_inventory (hospital_name, district, blood_type, status, updated_at) VALUES ('Batticaloa General Hospital', 'Batticaloa', 'O+', 'LOW', now())");
+                jdbcTemplate.update("INSERT INTO blood_bank_inventory (hospital_name, district, blood_type, status, updated_at) VALUES ('Anuradhapura Teaching Hospital', 'Anuradhapura', 'A+', 'LOW', now())");
+                jdbcTemplate.update("INSERT INTO blood_bank_inventory (hospital_name, district, blood_type, status, updated_at) VALUES ('Kurunegala Teaching Hospital', 'Kurunegala', 'O-', 'CRITICAL', now())");
+                jdbcTemplate.update("INSERT INTO blood_bank_inventory (hospital_name, district, blood_type, status, updated_at) VALUES ('Badulla Provincial General Hospital', 'Badulla', 'B-', 'LOW', now())");
+                log.info("Blood bank inventory initialized");
+            }
+        } catch (Exception e) {
+            log.warn("Could not init inventory: {}", e.getMessage());
         }
     }
 

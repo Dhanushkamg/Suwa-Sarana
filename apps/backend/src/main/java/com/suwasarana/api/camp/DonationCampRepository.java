@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface DonationCampRepository extends JpaRepository<DonationCamp, Long> {
     List<DonationCamp> findByStatusAndScheduledDateGreaterThanEqualOrderByScheduledDateAsc(String status, LocalDate date);
+    List<DonationCamp> findByStatusOrderByScheduledDateAsc(String status);
     List<DonationCamp> findByOrganizerId(Long organizerId);
 }
