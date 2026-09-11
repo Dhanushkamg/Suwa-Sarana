@@ -71,10 +71,10 @@ export default function RequestDistanceMap({
           attributionControl: false,
         });
 
-        // CartoDB dark tiles
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        // OpenStreetMap tiles with dark CSS filter
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
-          subdomains: 'abcd',
+          className: 'dark-map-tiles',
         }).addTo(map);
 
         const circleLayer = L.layerGroup().addTo(map);

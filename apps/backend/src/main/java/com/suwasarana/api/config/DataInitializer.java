@@ -45,6 +45,101 @@ public class DataInitializer implements CommandLineRunner {
         initAccount("requester@test.com", "0772223344", "password123", Role.REQUESTER, VerificationStatus.VERIFIED);
         initAccount("pending_hospital@test.com", "0779998877", "password123", Role.HOSPITAL_REQUESTER, VerificationStatus.PENDING);
         initAccount("unverified@test.com", "0761234567", "password123", Role.REQUESTER, VerificationStatus.PENDING);
+
+        initDonorProfiles();
+        initActiveRequests();
+        initReports();
+    }
+
+    private void initDonorProfiles() {
+        try {
+            userRepository.findByEmail("donor@test.com").ifPresent(u -> {
+                jdbcTemplate.update(
+                    "INSERT INTO donor_profiles (user_id, blood_type, date_of_birth, weight_kg, district, latitude, longitude, is_available, reliability_score, total_donations, lives_helped_estimate) " +
+                    "SELECT ?, 'O+', '1995-04-12', 68.50, 'Colombo', 6.9271, 79.8612, TRUE, 85.00, 4, 12 " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM donor_profiles WHERE user_id = ?)",
+                    u.getId(), u.getId()
+                );
+            });
+            userRepository.findByEmail("donor2@test.com").ifPresent(u -> {
+                jdbcTemplate.update(
+                    "INSERT INTO donor_profiles (user_id, blood_type, date_of_birth, weight_kg, district, latitude, longitude, is_available, reliability_score, total_donations, lives_helped_estimate) " +
+                    "SELECT ?, 'A-', '1998-08-20', 74.00, 'Kandy', 7.2906, 80.6337, TRUE, 92.00, 6, 18 " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM donor_profiles WHERE user_id = ?)",
+                    u.getId(), u.getId()
+                );
+            });
+            userRepository.findByEmail("donor3@test.com").ifPresent(u -> {
+                jdbcTemplate.update(
+                    "INSERT INTO donor_profiles (user_id, blood_type, date_of_birth, weight_kg, district, latitude, longitude, is_available, reliability_score, total_donations, lives_helped_estimate) " +
+                    "SELECT ?, 'B+', '2000-01-15', 62.00, 'Galle', 6.0535, 80.2210, TRUE, 75.00, 2, 6 " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM donor_profiles WHERE user_id = ?)",
+                    u.getId(), u.getId()
+                );
+            });
+            log.info("Donor profiles initialized");
+        } catch (Exception e) {
+            log.warn("Could not init donor profiles: {}", e.getMessage());
+        }
+    }
+
+    private void initActiveRequests() {
+        try {
+            Integer activeCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM blood_requests WHERE status IN ('OPEN', 'ESCALATING', 'MATCHED') AND expires_at > now()",
+                Integer.class
+            );
+
+            if (activeCount == null || activeCount < 3) {
+                User hospital = userRepository.findByEmail("hospital@test.com").orElse(null);
+                User requester = userRepository.findByEmail("requester@test.com").orElse(null);
+
+                if (hospital != null) {
+                    jdbcTemplate.update(
+                        "INSERT INTO blood_requests (requester_id, patient_blood_type, units_needed, urgency, hospital_name, district, latitude, longitude, status, current_radius_km, created_at, expires_at, fraud_risk_score, ai_flag_reason) " +
+                        "VALUES (?, 'O+', 2, 'CRITICAL', 'National Hospital of Sri Lanka', 'Colombo', 6.9271, 79.8612, 'OPEN', 10, now(), now() + INTERVAL '3 days', 5, 'Urgent postpartum hemorrhage indicated')",
+                        hospital.getId()
+                    );
+                    jdbcTemplate.update(
+                        "INSERT INTO blood_requests (requester_id, patient_blood_type, units_needed, urgency, hospital_name, district, latitude, longitude, status, current_radius_km, created_at, expires_at, fraud_risk_score, ai_flag_reason) " +
+                        "VALUES (?, 'B+', 1, 'ROUTINE', 'Karapitiya Teaching Hospital', 'Galle', 6.0535, 80.2210, 'OPEN', 5, now(), now() + INTERVAL '5 days', 0, 'Routine orthopedic stabilization')",
+                        hospital.getId()
+                    );
+                }
+                if (requester != null) {
+                    jdbcTemplate.update(
+                        "INSERT INTO blood_requests (requester_id, patient_blood_type, units_needed, urgency, hospital_name, district, latitude, longitude, status, current_radius_km, created_at, expires_at, fraud_risk_score, ai_flag_reason) " +
+                        "VALUES (?, 'A-', 3, 'URGENT', 'Teaching Hospital Kandy', 'Kandy', 7.2906, 80.6337, 'OPEN', 5, now(), now() + INTERVAL '2 days', 10, 'Cardiovascular bypass surgery scheduled')",
+                        requester.getId()
+                    );
+                    jdbcTemplate.update(
+                        "INSERT INTO blood_requests (requester_id, patient_blood_type, units_needed, urgency, hospital_name, district, latitude, longitude, status, current_radius_km, created_at, expires_at, fraud_risk_score, ai_flag_reason) " +
+                        "VALUES (?, 'AB-', 8, 'CRITICAL', 'Teaching Hospital Jaffna', 'Jaffna', 9.6615, 80.0255, 'OPEN', 25, now(), now() + INTERVAL '1 day', 85, 'Unusually high unit count requested by unverified user')",
+                        requester.getId()
+                    );
+                }
+                log.info("Active blood requests initialized");
+            }
+        } catch (Exception e) {
+            log.warn("Could not init active requests: {}", e.getMessage());
+        }
+    }
+
+    private void initReports() {
+        try {
+            Integer reportCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM request_reports", Integer.class);
+            if (reportCount == null || reportCount == 0) {
+                jdbcTemplate.update(
+                    "INSERT INTO request_reports (request_id, reported_by, reason) " +
+                    "SELECT r.id, u.id, 'Suspected commercial blood sale solicitation or unverified high unit count' " +
+                    "FROM blood_requests r, users u " +
+                    "WHERE r.patient_blood_type = 'AB-' AND u.email = 'donor@test.com' LIMIT 1"
+                );
+                log.info("Abuse reports initialized");
+            }
+        } catch (Exception e) {
+            log.warn("Could not init reports: {}", e.getMessage());
+        }
     }
 
     private void initAccount(String email, String phone, String password, Role role, VerificationStatus status) {
