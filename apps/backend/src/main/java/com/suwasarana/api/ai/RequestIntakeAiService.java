@@ -102,7 +102,8 @@ public class RequestIntakeAiService {
                 "CRITICAL INSTRUCTIONS:\n" +
                 "1. If a field is not explicitly or clearly mentioned in the text, leave it null. NEVER hallucinate or guess a blood type.\n" +
                 "2. Standardize district and hospital names to English even if input was in Sinhala or Tamil.\n" +
-                "3. Return raw JSON without markdown code blocks.";
+                "3. AUTONOMOUS URGENCY CLASSIFICATION: If the urgency is not explicitly named, analyze the patient's condition described. Classify as 'CRITICAL' for life-threatening situations (e.g. accident, postpartum hemorrhage, emergency surgery), 'URGENT' for conditions needing attention within 24-48h (e.g. dengue hemorrhagic fever, upcoming major surgery), and 'ROUTINE' for elective surgeries or chronic conditions (e.g. thalassemia regular transfusions).\n" +
+                "4. Return raw JSON without markdown code blocks.";
 
         Map<String, Object> body = new HashMap<>();
         body.put("model", GROQ_MODEL);
