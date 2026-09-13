@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, LogOut, Home, Droplets, Bell, ShieldCheck, Plus, Building2 } from 'lucide-react';
+import { Heart, LogOut, Home, Droplets, Bell, ShieldCheck, Plus, Building2, Map } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
@@ -39,6 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return [
           { href: '/dashboard/donor', label: t('common.myProfile'), icon: Droplets },
           { href: '/dashboard/donor/matches', label: 'My Matches', icon: Heart },
+          { href: '/dashboard/donor/heatmap', label: 'Supply Heatmap', icon: Map },
           { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
         ];
       case 'HOSPITAL_REQUESTER':
@@ -52,6 +53,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return [
           { href: '/dashboard/admin', label: 'Admin Console', icon: ShieldCheck },
           { href: '/dashboard/requests', label: 'All Blood Requests', icon: Droplets },
+          { href: '/dashboard/donor/heatmap', label: 'Supply Heatmap', icon: Map },
           { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
         ];
       case 'REQUESTER':
