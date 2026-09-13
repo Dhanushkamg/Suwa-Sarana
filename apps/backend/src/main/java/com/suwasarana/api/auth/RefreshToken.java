@@ -12,8 +12,11 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    // ManyToOne: a user can have multiple valid refresh tokens for multi-device support.
+    // OneToOne was a security/UX problem: logging in from a second device would silently
+    // invalidate the first device's session.
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(nullable = false, unique = true)
