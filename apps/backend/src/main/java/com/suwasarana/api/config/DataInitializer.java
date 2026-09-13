@@ -8,10 +8,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * DataInitializer seeds development/demo test accounts and sample data.
+ *
+ * THIS COMPONENT IS DISABLED BY DEFAULT AND MUST NEVER RUN IN PRODUCTION.
+ * Enable only for local development by setting:
+ *   app.seed-data.enabled=true
+ * (or environment variable SEED_DATA_ENABLED=true)
+ *
+ * The seeded accounts use well-known passwords and are strictly for development use.
+ */
 @Component
+@ConditionalOnProperty(name = "app.seed-data.enabled", havingValue = "true", matchIfMissing = false)
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
@@ -27,6 +39,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        log.warn("=== DataInitializer ACTIVE: Seeding development test data. MUST NOT RUN IN PRODUCTION. ===");
         try {
             jdbcTemplate.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_status VARCHAR(20) DEFAULT 'PENDING'");
             jdbcTemplate.execute("UPDATE users SET verification_status = 'VERIFIED' WHERE is_verified = TRUE AND (verification_status IS NULL OR verification_status = 'PENDING')");

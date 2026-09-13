@@ -27,8 +27,18 @@ public class CorsConfig {
                 registry.addMapping("/api/**")
                         .allowedOrigins(origins)
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                        .allowedHeaders("*")
-                        .allowCredentials(true);
+                        // Explicitly enumerate only required request headers instead of wildcard "*"
+                        .allowedHeaders(
+                                "Authorization",
+                                "Content-Type",
+                                "Accept",
+                                "Origin",
+                                "X-Requested-With",
+                                "Cache-Control"
+                        )
+                        .exposedHeaders("Authorization")
+                        .allowCredentials(true)
+                        .maxAge(3600); // Cache preflight response for 1 hour
             }
         };
     }

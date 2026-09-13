@@ -72,11 +72,16 @@ public class RateLimitingFilter implements Filter {
         chain.doFilter(request, response);
     }
 
+    /**
+     * Extracts the client IP from the request.
+     *
+     * With server.forward-headers-strategy=framework configured in application.yml,
+     * Spring's ForwardedHeaderFilter populates HttpServletRequest.getRemoteAddr() with
+     * the real originating IP from X-Forwarded-For after validating the proxy chain.
+     * Directly parsing X-Forwarded-For in application code is avoided because it can
+     * be trivially spoofed if the application is not behind a trusted proxy.
+     */
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
         return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
     }
 

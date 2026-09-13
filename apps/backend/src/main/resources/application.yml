@@ -5,7 +5,10 @@ spring:
     password: ${DB_PASSWORD:postgres123}
   jpa:
     hibernate:
-      ddl-auto: update
+      # 'validate' ensures Hibernate checks the schema against entities but never
+      # auto-modifies it. Flyway owns all schema changes.
+      # Never use 'update' or 'create' in production.
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
@@ -15,8 +18,16 @@ spring:
     baseline-on-migrate: true
     out-of-order: true
     locations: classpath:db/migration
-    clean-disabled: false
-    clean-on-validation-error: true
+    # CRITICAL: Never allow Flyway to DROP the schema in any environment.
+    # A migration validation error should be investigated, not auto-resolved by destroying data.
+    clean-disabled: true
+    clean-on-validation-error: false
+
+# Trust forwarded headers from the reverse proxy so that request.getRemoteAddr()
+# returns the real client IP (used for rate limiting and audit logging).
+# Only enable this when the application is behind a trusted proxy (nginx, AWS ALB, etc.)
+server:
+  forward-headers-strategy: framework
 
 jwt:
   secret: ${JWT_SECRET:dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LXRvLW1lZXQtam1hYy1yZXF1aXJlbWVudHM=}
@@ -30,3 +41,8 @@ app:
   sms:
     provider-api-key: ${SMS_PROVIDER_API_KEY:mock_key}
     cascade-timeout-seconds: ${SMS_CASCADE_TIMEOUT_SECONDS:180}
+  # Set to true ONLY in local development to seed demo test accounts.
+  # MUST be false (or unset) in production — seeded accounts use well-known passwords.
+  seed-data:
+    enabled: ${SEED_DATA_ENABLED:false}
+
