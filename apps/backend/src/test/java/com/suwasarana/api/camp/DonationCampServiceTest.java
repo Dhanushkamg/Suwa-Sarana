@@ -81,7 +81,7 @@ public class DonationCampServiceTest {
         camp.setScheduledDate(LocalDate.now().plusDays(2));
         camp.setOrganizer(organizer);
 
-        when(campRepository.findByStatusAndScheduledDateGreaterThanEqualOrderByScheduledDateAsc(eq("SCHEDULED"), any(LocalDate.class)))
+        when(campRepository.findByStatusOrderByScheduledDateAsc("SCHEDULED"))
                 .thenReturn(List.of(camp));
 
         List<DonationCampDto> camps = campService.getUpcomingCamps();
