@@ -130,9 +130,10 @@ export default function RequestsListPage() {
       ) : (
         <div className="space-y-4">
           {requests.map((req) => (
-            <div
+            <Link
               key={req.id}
-              className="glass-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-white/5 hover:border-red-500/20 transition-all duration-200"
+              href={`/dashboard/requests/${req.id}`}
+              className="block glass-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-white/5 hover:border-red-500/30 hover:bg-white/[0.02] transition-all duration-200 cursor-pointer group"
             >
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500/20 to-rose-600/20 border border-red-500/30 flex items-center justify-center text-lg font-black text-red-400 flex-shrink-0">
@@ -158,8 +159,11 @@ export default function RequestsListPage() {
 
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 <span className="text-xs text-gray-500 font-mono">#{req.id}</span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold transition-colors">
+                  Manage Circle →
+                </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

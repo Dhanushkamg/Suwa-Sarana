@@ -12,6 +12,8 @@ import apiClient from '@/lib/apiClient';
 import { API_BASE_URL } from '@/lib/constants';
 import { BloodRequest } from '@/types';
 import RequestDistanceMap from '@/components/maps/RequestDistanceMap';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
+import { useAuthStore } from '@/store/authStore';
 
 interface CircleInviteData {
   requestId: number;
@@ -34,6 +36,7 @@ export default function RequestLiveStatusPage() {
   const params = useParams();
   const router = useRouter();
   const requestId = params.id as string;
+  const { accessToken } = useAuthStore();
 
   const [requestData, setRequestData] = useState<BloodRequest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,37 +80,46 @@ export default function RequestLiveStatusPage() {
   }, [loadRequest, loadCircleResponses]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
+    if (!accessToken) return;
 
-    let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource(`${API_BASE_URL}/notifications/stream`);
+    const abortController = new AbortController();
 
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.requestId === Number(requestId) || data.type === 'NEW_MATCH') {
-            setUpdates((prev) => [data.body || data.message || 'New match activity', ...prev].slice(0, 5));
-            loadRequest();
-            loadCircleResponses();
-          }
-        } catch {
-          // Plain message
-        }
-      };
+    const connectSSE = async () => {
+      try {
+        await fetchEventSource(`${API_BASE_URL}/notifications/stream`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'text/event-stream',
+          },
+          signal: abortController.signal,
+          onmessage: (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.requestId === Number(requestId) || data.type === 'NEW_MATCH') {
+                setUpdates((prev) => [data.body || data.message || 'New match activity', ...prev].slice(0, 5));
+                loadRequest();
+                loadCircleResponses();
+              }
+            } catch {
+              // Plain message
+            }
+          },
+          onerror: (err) => {
+            throw err; // trigger auto-reconnect
+          },
+        });
+      } catch {
+        // Offline or aborted
+      }
+    };
 
-      eventSource.onerror = () => {
-        eventSource?.close();
-      };
-    } catch {
-      // Offline
-    }
+    connectSSE();
 
     return () => {
-      eventSource?.close();
+      abortController.abort();
     };
-  }, [requestId, loadRequest, loadCircleResponses]);
+  }, [requestId, accessToken, loadRequest, loadCircleResponses]);
 
   const handleGenerateCircle = async () => {
     setCircleLoading(true);

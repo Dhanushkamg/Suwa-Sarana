@@ -214,10 +214,10 @@ export default function HospitalRequesterDashboardPage() {
 
                 <div className="flex items-center gap-3 self-end sm:self-auto">
                   <Link
-                    href="/dashboard/requests/new"
-                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-colors"
+                    href={`/dashboard/requests/${req.id}`}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 text-xs font-semibold transition-colors"
                   >
-                    Post Request
+                    Manage & Share Circle →
                   </Link>
                 </div>
               </div>
