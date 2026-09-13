@@ -12,6 +12,8 @@ import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { User } from '@/types';
 
+import { GoogleLogin } from '@react-oauth/google';
+
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,7 +25,6 @@ function RegisterForm() {
     { value: 'REQUESTER', label: t('auth.roleRequester') },
   ];
 
-  // Read ?role= from URL and default to DONOR if not provided
   const initialRole = searchParams.get('role') === 'REQUESTER' ? 'REQUESTER' : 'DONOR';
 
   const [form, setForm] = useState({
@@ -38,11 +39,20 @@ function RegisterForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState('');
 
-  // Sync role if the URL param changes after mount (e.g. back/forward navigation)
+  // Google OAuth registration state
+  const [needsGoogleReg, setNeedsGoogleReg] = useState(false);
+  const [googleToken, setGoogleToken] = useState('');
+  const [googleRegData, setGoogleRegData] = useState({
+    phoneNumber: '',
+    nicNumber: '',
+    role: initialRole,
+  });
+
   useEffect(() => {
     const roleParam = searchParams.get('role');
     if (roleParam === 'REQUESTER' || roleParam === 'DONOR') {
       setForm((prev) => ({ ...prev, role: roleParam }));
+      setGoogleRegData((prev) => ({ ...prev, role: roleParam }));
     }
   }, [searchParams]);
 
@@ -51,7 +61,6 @@ function RegisterForm() {
     if (!form.email) newErrors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Enter a valid email';
     if (!form.phoneNumber) newErrors.phoneNumber = 'Phone number is required';
-    // Accept local format (07XXXXXXXX) or international Sri Lanka format (+94XXXXXXXXX)
     else if (!/^(\+94|0)\d{9}$/.test(form.phoneNumber)) newErrors.phoneNumber = 'Enter a valid number: 07XXXXXXXX or +94XXXXXXXXX';
     if (!form.password) newErrors.password = 'Password is required';
     else if (form.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
@@ -65,6 +74,27 @@ function RegisterForm() {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
+  const handleAuthSuccess = (authData: any) => {
+    const user: User = {
+      id: authData.userId,
+      email: authData.email,
+      phoneNumber: authData.phoneNumber,
+      role: authData.role as User['role'],
+    };
+
+    login(authData.accessToken, user);
+
+    if (user.role === 'DONOR') {
+      router.push('/dashboard/donor');
+    } else if (user.role === 'ADMIN') {
+      router.push('/dashboard/admin');
+    } else if (user.role === 'HOSPITAL_REQUESTER') {
+      router.push('/dashboard/hospital');
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -73,37 +103,15 @@ function RegisterForm() {
     setLoading(true);
 
     try {
-      const res = await apiClient.post<any>(
-        '/auth/register',
-        {
-          email: form.email,
-          password: form.password,
-          phoneNumber: form.phoneNumber,
-          role: form.role,
-        }
-      );
+      const res = await apiClient.post<any>('/auth/register', {
+        email: form.email,
+        password: form.password,
+        phoneNumber: form.phoneNumber,
+        role: form.role,
+      });
 
       const authData = res.data?.data ?? res.data;
-
-      const user: User = {
-        id: authData.userId,
-        email: authData.email,
-        phoneNumber: authData.phoneNumber,
-        role: authData.role as User['role'],
-      };
-
-      login(authData.accessToken, user);
-
-      // Role-based redirection
-      if (user.role === 'DONOR') {
-        router.push('/dashboard/donor');
-      } else if (user.role === 'ADMIN') {
-        router.push('/dashboard/admin');
-      } else if (user.role === 'HOSPITAL_REQUESTER') {
-        router.push('/dashboard/hospital');
-      } else {
-        router.push('/dashboard');
-      }
+      handleAuthSuccess(authData);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -127,108 +135,194 @@ function RegisterForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <Select
-          id="role"
-          label={t('auth.roleLabel')}
-          options={roleOptions}
-          value={form.role}
-          onChange={handleChange('role')}
-        />
-
-        <Input
-          id="reg-email"
-          type="email"
-          label={t('auth.email')}
-          placeholder="you@example.com"
-          value={form.email}
-          onChange={handleChange('email')}
-          error={errors.email}
-          icon={<Mail className="w-4 h-4" />}
-          autoComplete="email"
-        />
-
-        <Input
-          id="reg-phone"
-          type="tel"
-          label={t('auth.phone')}
-          placeholder="07XXXXXXXX or +94XXXXXXXXX"
-          value={form.phoneNumber}
-          onChange={handleChange('phoneNumber')}
-          error={errors.phoneNumber}
-          icon={<Phone className="w-4 h-4" />}
-          autoComplete="tel"
-        />
-
-        {/* Password */}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="reg-password" className="text-sm font-medium text-gray-300">
-            {t('auth.password')}
-          </label>
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
-              <Lock className="w-4 h-4" />
-            </div>
-            <input
-              id="reg-password"
-              type={showPassword ? 'text' : 'password'}
-              value={form.password}
-              onChange={handleChange('password')}
-              placeholder="••••••••"
-              autoComplete="new-password"
-              className={`w-full rounded-xl border bg-white/5 pl-10 pr-11 py-3 text-sm text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 ${errors.password ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/30' : 'border-white/10 focus:border-red-500/60 focus:ring-red-500/20'}`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-500 hover:text-gray-300 transition-colors"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
-        </div>
-
-        <Input
-          id="reg-confirm-password"
-          type="password"
-          label={t('auth.confirmPassword')}
-          placeholder="••••••••"
-          value={form.confirmPassword}
-          onChange={handleChange('confirmPassword')}
-          error={errors.confirmPassword}
-          icon={<Lock className="w-4 h-4" />}
-          autoComplete="new-password"
-        />
-
-        <div className="pt-2">
-          <Button type="submit" size="lg" className="w-full" loading={loading}>
-            {t('auth.createAccount')}
+      {needsGoogleReg ? (
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          setServerError('');
+          setLoading(true);
+          try {
+            const res = await apiClient.post<any>('/auth/google/register', {
+              idToken: googleToken,
+              phoneNumber: googleRegData.phoneNumber,
+              nicNumber: googleRegData.nicNumber,
+              role: googleRegData.role,
+            });
+            const authData = res.data?.data ?? res.data;
+            handleAuthSuccess(authData);
+          } catch (err: any) {
+            setServerError(err.response?.data?.message || 'Registration failed');
+            setLoading(false);
+          }
+        }} className="space-y-4">
+          <p className="text-gray-300 text-sm mb-4">Please complete your profile to finish registration.</p>
+          <Select
+            id="googleRole"
+            label={t('auth.roleLabel')}
+            options={roleOptions}
+            value={googleRegData.role}
+            onChange={(e) => setGoogleRegData({ ...googleRegData, role: e.target.value })}
+          />
+          <Input
+            id="googlePhoneNumber"
+            label="Phone Number"
+            placeholder="+94XXXXXXXXX"
+            value={googleRegData.phoneNumber}
+            onChange={(e) => setGoogleRegData({ ...googleRegData, phoneNumber: e.target.value })}
+            required
+          />
+          <Input
+            id="googleNicNumber"
+            label="NIC Number (Optional)"
+            placeholder=""
+            value={googleRegData.nicNumber}
+            onChange={(e) => setGoogleRegData({ ...googleRegData, nicNumber: e.target.value })}
+          />
+          <Button type="submit" size="lg" className="w-full mt-4" loading={loading}>
+            Complete Registration
           </Button>
-        </div>
+        </form>
+      ) : (
+        <>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <Select
+              id="role"
+              label={t('auth.roleLabel')}
+              options={roleOptions}
+              value={form.role}
+              onChange={handleChange('role')}
+            />
 
-        <p className="text-center text-xs text-gray-600 leading-relaxed">
-          {t('auth.termsNote')}{' '}
-          <Link href="/terms" className="text-gray-400 hover:text-white transition-colors underline underline-offset-2">
-            {t('auth.termsLink')}
-          </Link>{' '}
-          {t('auth.andText')}{' '}
-          <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors underline underline-offset-2">
-            {t('auth.privacyLink')}
-          </Link>
-          .
-        </p>
-      </form>
+            <Input
+              id="reg-email"
+              type="email"
+              label={t('auth.email')}
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={handleChange('email')}
+              error={errors.email}
+              icon={<Mail className="w-4 h-4" />}
+              autoComplete="email"
+            />
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500">
-          {t('auth.haveAccount')}{' '}
-          <Link href="/login" className="font-medium text-red-400 hover:text-red-300 transition-colors">
-            {t('auth.signInLink')}
-          </Link>
-        </p>
-      </div>
+            <Input
+              id="reg-phone"
+              type="tel"
+              label={t('auth.phone')}
+              placeholder="07XXXXXXXX or +94XXXXXXXXX"
+              value={form.phoneNumber}
+              onChange={handleChange('phoneNumber')}
+              error={errors.phoneNumber}
+              icon={<Phone className="w-4 h-4" />}
+              autoComplete="tel"
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="reg-password" className="text-sm font-medium text-gray-300">
+                {t('auth.password')}
+              </label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  id="reg-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={handleChange('password')}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  className={`w-full rounded-xl border bg-white/5 pl-10 pr-11 py-3 text-sm text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 ${errors.password ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/30' : 'border-white/10 focus:border-red-500/60 focus:ring-red-500/20'}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-500 hover:text-gray-300 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
+            </div>
+
+            <Input
+              id="reg-confirm-password"
+              type="password"
+              label={t('auth.confirmPassword')}
+              placeholder="••••••••"
+              value={form.confirmPassword}
+              onChange={handleChange('confirmPassword')}
+              error={errors.confirmPassword}
+              icon={<Lock className="w-4 h-4" />}
+              autoComplete="new-password"
+            />
+
+            <div className="pt-2">
+              <Button type="submit" size="lg" className="w-full" loading={loading}>
+                {t('auth.createAccount')}
+              </Button>
+            </div>
+
+            <p className="text-center text-xs text-gray-600 leading-relaxed">
+              {t('auth.termsNote')}{' '}
+              <Link href="/terms" className="text-gray-400 hover:text-white transition-colors underline underline-offset-2">
+                {t('auth.termsLink')}
+              </Link>{' '}
+              {t('auth.andText')}{' '}
+              <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors underline underline-offset-2">
+                {t('auth.privacyLink')}
+              </Link>
+              .
+            </p>
+          </form>
+
+          <div className="mt-6 flex items-center justify-center">
+            <div className="h-px w-full bg-white/10"></div>
+            <span className="px-4 text-sm text-gray-500">or</span>
+            <div className="h-px w-full bg-white/10"></div>
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                if (credentialResponse.credential) {
+                  try {
+                    setServerError('');
+                    setLoading(true);
+                    const res = await apiClient.post<any>('/auth/google/verify', {
+                      idToken: credentialResponse.credential,
+                    });
+                    
+                    const verifyData = res.data?.data ?? res.data;
+                    if (verifyData.requiresRegistration) {
+                      setGoogleToken(credentialResponse.credential);
+                      setNeedsGoogleReg(true);
+                    } else if (verifyData.authResponse) {
+                      handleAuthSuccess(verifyData.authResponse);
+                    }
+                  } catch (err: any) {
+                    setServerError(err.response?.data?.message || 'Google registration failed');
+                  } finally {
+                    setLoading(false);
+                  }
+                }
+              }}
+              onError={() => {
+                setServerError('Google registration failed');
+              }}
+            />
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              {t('auth.haveAccount')}{' '}
+              <Link href="/login" className="font-medium text-red-400 hover:text-red-300 transition-colors">
+                {t('auth.signInLink')}
+              </Link>
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
