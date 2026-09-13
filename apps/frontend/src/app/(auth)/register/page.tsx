@@ -14,6 +14,19 @@ import { User } from '@/types';
 
 import { GoogleLogin } from '@react-oauth/google';
 
+interface AuthData {
+  userId: number;
+  email: string;
+  phoneNumber?: string;
+  role: string;
+  accessToken: string;
+}
+
+interface GoogleVerifyResponse {
+  requiresRegistration?: boolean;
+  authResponse?: AuthData;
+}
+
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,7 +38,8 @@ function RegisterForm() {
     { value: 'REQUESTER', label: t('auth.roleRequester') },
   ];
 
-  const initialRole = searchParams.get('role') === 'REQUESTER' ? 'REQUESTER' : 'DONOR';
+  const roleParam = searchParams.get('role');
+  const initialRole = roleParam === 'REQUESTER' ? 'REQUESTER' : 'DONOR';
 
   const [form, setForm] = useState({
     email: '',
@@ -48,13 +62,6 @@ function RegisterForm() {
     role: initialRole,
   });
 
-  useEffect(() => {
-    const roleParam = searchParams.get('role');
-    if (roleParam === 'REQUESTER' || roleParam === 'DONOR') {
-      setForm((prev) => ({ ...prev, role: roleParam }));
-      setGoogleRegData((prev) => ({ ...prev, role: roleParam }));
-    }
-  }, [searchParams]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -74,7 +81,7 @@ function RegisterForm() {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
-  const handleAuthSuccess = (authData: any) => {
+  const handleAuthSuccess = (authData: AuthData) => {
     const user: User = {
       id: authData.userId,
       email: authData.email,
@@ -103,14 +110,14 @@ function RegisterForm() {
     setLoading(true);
 
     try {
-      const res = await apiClient.post<any>('/auth/register', {
+      const res = await apiClient.post<AuthData>('/auth/register', {
         email: form.email,
         password: form.password,
         phoneNumber: form.phoneNumber,
         role: form.role,
       });
 
-      const authData = res.data?.data ?? res.data;
+      const authData = (res.data as unknown as { data?: AuthData }).data ?? res.data;
       handleAuthSuccess(authData);
     } catch (err: unknown) {
       const message =
@@ -136,21 +143,24 @@ function RegisterForm() {
       )}
 
       {needsGoogleReg ? (
-        <form onSubmit={async (e) => {
+        <form onSubmit={async (e: React.FormEvent) => {
           e.preventDefault();
           setServerError('');
           setLoading(true);
           try {
-            const res = await apiClient.post<any>('/auth/google/register', {
+            const res = await apiClient.post<AuthData>('/auth/google/register', {
               idToken: googleToken,
               phoneNumber: googleRegData.phoneNumber,
               nicNumber: googleRegData.nicNumber,
               role: googleRegData.role,
             });
-            const authData = res.data?.data ?? res.data;
+            const authData = (res.data as unknown as { data?: AuthData }).data ?? res.data;
             handleAuthSuccess(authData);
-          } catch (err: any) {
-            setServerError(err.response?.data?.message || 'Registration failed');
+          } catch (err: unknown) {
+            const message =
+              (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+              'Registration failed';
+            setServerError(message);
             setLoading(false);
           }
         }} className="space-y-4">
@@ -289,19 +299,22 @@ function RegisterForm() {
                   try {
                     setServerError('');
                     setLoading(true);
-                    const res = await apiClient.post<any>('/auth/google/verify', {
+                    const res = await apiClient.post<GoogleVerifyResponse>('/auth/google/verify', {
                       idToken: credentialResponse.credential,
                     });
                     
-                    const verifyData = res.data?.data ?? res.data;
+                    const verifyData = (res.data as unknown as { data?: GoogleVerifyResponse }).data ?? res.data;
                     if (verifyData.requiresRegistration) {
                       setGoogleToken(credentialResponse.credential);
                       setNeedsGoogleReg(true);
                     } else if (verifyData.authResponse) {
                       handleAuthSuccess(verifyData.authResponse);
                     }
-                  } catch (err: any) {
-                    setServerError(err.response?.data?.message || 'Google registration failed');
+                  } catch (err: unknown) {
+                    const message =
+                      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                      'Google registration failed';
+                    setServerError(message);
                   } finally {
                     setLoading(false);
                   }

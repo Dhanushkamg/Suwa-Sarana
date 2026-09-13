@@ -10,7 +10,20 @@ import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { User } from '@/types';
-import { useGoogleLogin, GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
+
+interface AuthData {
+  userId: number;
+  email: string;
+  phoneNumber?: string;
+  role: string;
+  accessToken: string;
+}
+
+interface GoogleVerifyResponse {
+  requiresRegistration?: boolean;
+  authResponse?: AuthData;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,7 +45,7 @@ export default function LoginPage() {
     role: 'DONOR',
   });
 
-  const handleAuthSuccess = (authData: any) => {
+  const handleAuthSuccess = (authData: AuthData) => {
     const user: User = {
       id: authData.userId,
       email: authData.email,
@@ -59,13 +72,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await apiClient.post<any>('/auth/login', {
+      const res = await apiClient.post<AuthData>('/auth/login', {
         username: email,
         email,
         password,
       });
 
-      const authData = res.data?.data ?? res.data;
+      const authData = (res.data as unknown as { data?: AuthData }).data ?? res.data;
       handleAuthSuccess(authData);
     } catch (err: unknown) {
       const message =
@@ -76,21 +89,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setError('');
-        setLoading(true);
-        // We need to fetch the ID token or use the access token.
-        // Wait, useGoogleLogin returns access token, not ID token by default unless flow: 'auth-code' is used.
-        // Let's use it to fetch user info or use the credential response.
-        // Actually, @react-oauth/google provides <GoogleLogin> which returns a credential (JWT).
-      } catch (err) {
-        // ... handled below
-      }
-    },
-  });
 
   return (
     <div>
@@ -106,21 +104,24 @@ export default function LoginPage() {
       )}
 
       {needsGoogleReg ? (
-        <form onSubmit={async (e) => {
+        <form onSubmit={async (e: React.FormEvent) => {
           e.preventDefault();
           setError('');
           setLoading(true);
           try {
-            const res = await apiClient.post<any>('/auth/google/register', {
+            const res = await apiClient.post<AuthData>('/auth/google/register', {
               idToken: googleToken,
               phoneNumber: googleRegData.phoneNumber,
               nicNumber: googleRegData.nicNumber,
               role: googleRegData.role,
             });
-            const authData = res.data?.data ?? res.data;
+            const authData = (res.data as unknown as { data?: AuthData }).data ?? res.data;
             handleAuthSuccess(authData);
-          } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed');
+          } catch (err: unknown) {
+            const message =
+              (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+              'Registration failed';
+            setError(message);
             setLoading(false);
           }
         }} className="space-y-4">
@@ -224,19 +225,22 @@ export default function LoginPage() {
                   try {
                     setError('');
                     setLoading(true);
-                    const res = await apiClient.post<any>('/auth/google/verify', {
+                    const res = await apiClient.post<GoogleVerifyResponse>('/auth/google/verify', {
                       idToken: credentialResponse.credential,
                     });
                     
-                    const verifyData = res.data?.data ?? res.data;
+                    const verifyData = (res.data as unknown as { data?: GoogleVerifyResponse }).data ?? res.data;
                     if (verifyData.requiresRegistration) {
                       setGoogleToken(credentialResponse.credential);
                       setNeedsGoogleReg(true);
                     } else if (verifyData.authResponse) {
                       handleAuthSuccess(verifyData.authResponse);
                     }
-                  } catch (err: any) {
-                    setError(err.response?.data?.message || 'Google authentication failed');
+                  } catch (err: unknown) {
+                    const message =
+                      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                      'Google authentication failed';
+                    setError(message);
                   } finally {
                     setLoading(false);
                   }
@@ -245,7 +249,6 @@ export default function LoginPage() {
               onError={() => {
                 setError('Google authentication failed');
               }}
-              useOneTap
             />
           </div>
 

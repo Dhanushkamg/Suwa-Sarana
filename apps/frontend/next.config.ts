@@ -67,27 +67,21 @@ const nextConfig: NextConfig = {
           //   - Leaflet tile servers for the map view
           //   - Backend API for data fetching
           //   - Next.js inline scripts (required by the framework)
-          //
-          // 'unsafe-inline' for style-src is required by Tailwind/CSS-in-JS.
-          // 'unsafe-eval' is NOT included.
+          //   - Google Identity Services (OAuth)
+          //   - 'unsafe-eval' enabled in development for React Fast Refresh/source maps
           // ---------------------------------------------------------------
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              // Next.js requires 'unsafe-inline' for its hydration scripts.
-              // nonce-based CSP would be the next hardening step.
-              "script-src 'self' 'unsafe-inline'",
-              // Tailwind and CSS-in-JS require unsafe-inline for styles.
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              // Google Fonts CDN for the Inter typeface
+              process.env.NODE_ENV === 'production'
+                ? "script-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/client"
+                : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/client",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
               "font-src 'self' https://fonts.gstatic.com",
-              // Backend API + WebSocket for SSE notifications
-              `connect-src 'self' ${apiOrigin}`,
-              // App images + OpenStreetMap/Leaflet tile servers
-              "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org",
-              // Leaflet renders maps in iframes on some versions
-              "frame-src 'none'",
+              `connect-src 'self' ${apiOrigin} https://accounts.google.com/gsi/`,
+              "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org https://lh3.googleusercontent.com https://*.googleusercontent.com",
+              "frame-src 'self' https://accounts.google.com/gsi/",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
