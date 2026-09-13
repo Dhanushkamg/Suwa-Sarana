@@ -47,19 +47,27 @@ public class SecurityConfig {
             .cors(cors -> cors.configure(http)) // delegates to CorsConfig
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Public auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
+                // Public read-only data endpoints
                 .requestMatchers("/api/circle/**").permitAll()
                 .requestMatchers("/api/faq/**").permitAll()
                 .requestMatchers("/api/inventory/**").permitAll()
                 .requestMatchers("/api/contact/**").permitAll()
                 .requestMatchers("/api/ivr/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+                // Actuator: only /health is publicly accessible; all other actuator
+                // endpoints (env, metrics, beans, loggers, etc.) require ADMIN role
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
+                // Swagger UI: restricted to ADMIN to prevent API schema leakage in production.
+                // For local development, log in as admin@test.com first, then visit /swagger-ui/index.html
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").hasRole("ADMIN")
+                // Every other request requires a valid JWT
                 .anyRequest().authenticated()
             );
 
-        // Enforce rate limiting before JWT authentication and security processing
+        // Rate limiting runs before JWT filter to block abusive IPs before token validation
         http.addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
