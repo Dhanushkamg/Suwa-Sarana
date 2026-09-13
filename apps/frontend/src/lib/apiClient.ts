@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from './constants';
+import { useAuthStore } from '@/store/authStore';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -13,8 +14,6 @@ const apiClient = axios.create({
 // The token is read from the Zustand store (in-memory only, not localStorage).
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    // Import lazily to avoid circular dependency issues during module initialisation
-    const { useAuthStore } = require('@/store/authStore');
     const token = useAuthStore.getState().accessToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -70,7 +69,6 @@ apiClient.interceptors.response.use(
 
         // Store the new token in the Zustand store (memory only — not localStorage)
         if (typeof window !== 'undefined') {
-          const { useAuthStore } = require('@/store/authStore');
           useAuthStore.getState().setAccessToken(newAccessToken);
         }
 
@@ -83,9 +81,9 @@ apiClient.interceptors.response.use(
         processQueue(err, null);
         if (typeof window !== 'undefined') {
           // Silent refresh failed — clear auth state and redirect to login
-          const { useAuthStore } = require('@/store/authStore');
+          useAuthStore.getState().setAccessToken('');
           useAuthStore.setState({ accessToken: null, user: null, isAuthenticated: false });
-          window.location.href = '/login';
+          window.location.href = window.location.origin + '/login';
         }
         return Promise.reject(err);
       } finally {

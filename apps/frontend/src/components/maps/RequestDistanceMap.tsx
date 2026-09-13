@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 
 // District fallback coordinates in Sri Lanka
@@ -48,13 +48,16 @@ export default function RequestDistanceMap({
   longitude,
 }: Props) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const circleLayerRef = useRef<any>(null);
 
-  const coords =
-    latitude && longitude
+  const coords = useMemo(() => {
+    return latitude && longitude
       ? [latitude, longitude] as [number, number]
       : DISTRICT_COORDS[district] || [6.9271, 79.8612];
+  }, [latitude, longitude, district]);
 
   useEffect(() => {
     let isMounted = true;

@@ -51,7 +51,7 @@ export default function DonorFaqChatbot() {
     if (!q || loading) return;
 
     const userMsg: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       sender: 'user',
       text: q,
       timestamp: new Date(),
@@ -62,14 +62,14 @@ export default function DonorFaqChatbot() {
     setLoading(true);
 
     try {
-      const res = await apiClient.post<any>('/faq/ask', {
+      const res = await apiClient.post<unknown>('/faq/ask', {
         question: q,
         locale: locale || 'en',
       });
-      const data = res.data?.data ?? res.data;
+      const data = (res.data as { data?: { answer?: string; disclaimer?: string } })?.data ?? (res.data as { answer?: string; disclaimer?: string });
 
       const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: crypto.randomUUID(),
         sender: 'bot',
         text: data?.answer || 'I could not process your query. Please consult clinical staff at the blood bank.',
         timestamp: new Date(),
@@ -79,7 +79,7 @@ export default function DonorFaqChatbot() {
       setMessages((prev) => [...prev, botMsg]);
     } catch {
       const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: crypto.randomUUID(),
         sender: 'bot',
         text: 'Sorry, I am currently unable to reach the eligibility engine. Please check with clinical staff at your nearest blood bank.',
         timestamp: new Date(),

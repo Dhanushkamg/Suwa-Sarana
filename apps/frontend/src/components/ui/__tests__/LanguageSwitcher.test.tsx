@@ -11,9 +11,10 @@ vi.mock('@/lib/i18n', () => ({
 
 describe('LanguageSwitcher Component', () => {
   it('renders correctly with default language', () => {
-    (useI18n as any).mockReturnValue({
+    vi.mocked(useI18n).mockReturnValue({
       locale: 'en',
       setLocale: vi.fn(),
+      t: vi.fn((key: string) => key),
     });
 
     render(<LanguageSwitcher />);
@@ -27,9 +28,10 @@ describe('LanguageSwitcher Component', () => {
 
   it('calls setLocale when a different language is clicked', () => {
     const setLocaleMock = vi.fn();
-    (useI18n as any).mockReturnValue({
+    vi.mocked(useI18n).mockReturnValue({
       locale: 'en',
       setLocale: setLocaleMock,
+      t: vi.fn((key: string) => key),
     });
 
     render(<LanguageSwitcher />);
@@ -43,9 +45,10 @@ describe('LanguageSwitcher Component', () => {
   });
 
   it('highlights the currently selected language', () => {
-    (useI18n as any).mockReturnValue({
+    vi.mocked(useI18n).mockReturnValue({
       locale: 'ta',
       setLocale: vi.fn(),
+      t: vi.fn((key: string) => key),
     });
 
     render(<LanguageSwitcher />);

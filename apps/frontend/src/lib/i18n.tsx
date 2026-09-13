@@ -48,6 +48,7 @@ export function I18nProvider({
     try {
       const saved = localStorage.getItem('suwa_locale') as Locale;
       if (saved && (saved === 'en' || saved === 'si' || saved === 'ta')) {
+        // eslint-disable-next-line
         setLocaleState(saved);
         document.documentElement.lang = saved;
       }
