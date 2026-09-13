@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/lib/constants';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 
 interface NotificationItem {
   id: string;
@@ -35,94 +36,101 @@ export default function NotificationsPage() {
 
     if (typeof window === 'undefined') return;
 
-    let eventSource: EventSource | null = null;
-    try {
-      const url = accessToken 
-        ? `${API_BASE_URL}/notifications/stream?token=${accessToken}`
-        : `${API_BASE_URL}/notifications/stream`;
-      eventSource = new EventSource(url);
+    const abortController = new AbortController();
 
-      eventSource.onopen = () => {
-        setConnected(true);
-      };
-
-      eventSource.addEventListener('NEW_MATCH', (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          setNotifications((prev) => [
-            {
-              id: String(Date.now()) + Math.random(),
-              type: 'MATCH',
-              title: data.title || 'New Blood Match Dispatch',
-              message: data.body || data.message || 'A new urgent blood request match has been dispatched to your account.',
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            },
-            ...prev,
-          ]);
-        } catch {
-          // Plain message
-        }
-      });
-
-      eventSource.addEventListener('ESCALATION', (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          setNotifications((prev) => [
-            {
-              id: String(Date.now()) + Math.random(),
-              type: 'ESCALATION',
-              title: data.title || 'Search Radius Escalation',
-              message: data.body || data.message || 'Geospatial search radius expanded for pending request.',
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            },
-            ...prev,
-          ]);
-        } catch {
-          // Plain message
-        }
-      });
-
-      eventSource.onmessage = (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          setNotifications((prev) => [
-            {
-              id: String(Date.now()) + Math.random(),
-              type: data.type || 'SYSTEM',
-              title: data.title || 'Platform Notification',
-              message: data.body || data.message || JSON.stringify(data),
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            },
-            ...prev,
-          ]);
-        } catch {
-          // Handle text message
-          if (event.data) {
-            setNotifications((prev) => [
-              {
-                id: String(Date.now()) + Math.random(),
-                type: 'SYSTEM',
-                title: 'Platform Alert',
-                message: event.data,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-              },
-              ...prev,
-            ]);
+    const connectSSE = async () => {
+      try {
+        await fetchEventSource(`${API_BASE_URL}/notifications/stream`, {
+          method: 'GET',
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'text/event-stream',
+          } : { Accept: 'text/event-stream' },
+          signal: abortController.signal,
+          onopen: async (res) => {
+            if (res.ok) {
+              setConnected(true);
+            } else {
+              setConnected(false);
+            }
+          },
+          onmessage: (event) => {
+            if (event.event === 'NEW_MATCH') {
+              try {
+                const data = JSON.parse(event.data);
+                setNotifications((prev) => [
+                  {
+                    id: String(Date.now()) + Math.random(),
+                    type: 'MATCH',
+                    title: data.title || 'New Blood Match Dispatch',
+                    message: data.body || data.message || 'A new urgent blood request match has been dispatched to your account.',
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                  },
+                  ...prev,
+                ]);
+              } catch {}
+            } else if (event.event === 'ESCALATION') {
+              try {
+                const data = JSON.parse(event.data);
+                setNotifications((prev) => [
+                  {
+                    id: String(Date.now()) + Math.random(),
+                    type: 'ESCALATION',
+                    title: data.title || 'Search Radius Escalation',
+                    message: data.body || data.message || 'Geospatial search radius expanded for pending request.',
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                  },
+                  ...prev,
+                ]);
+              } catch {}
+            } else {
+              try {
+                const data = JSON.parse(event.data);
+                setNotifications((prev) => [
+                  {
+                    id: String(Date.now()) + Math.random(),
+                    type: data.type || 'SYSTEM',
+                    title: data.title || 'Platform Notification',
+                    message: data.body || data.message || JSON.stringify(data),
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                  },
+                  ...prev,
+                ]);
+              } catch {
+                if (event.data) {
+                  setNotifications((prev) => [
+                    {
+                      id: String(Date.now()) + Math.random(),
+                      type: 'SYSTEM',
+                      title: 'Platform Alert',
+                      message: event.data,
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    },
+                    ...prev,
+                  ]);
+                }
+              }
+            }
+          },
+          onerror: (err) => {
+            setConnected(false);
+            throw err; // Throw to trigger auto-reconnect
+          },
+          onclose: () => {
+            setConnected(false);
           }
-        }
-      };
-
-      eventSource.onerror = () => {
+        });
+      } catch (err) {
         setConnected(false);
-      };
-    } catch {
-      setConnected(false);
-    }
+      }
+    };
+
+    connectSSE();
 
     return () => {
-      eventSource?.close();
+      abortController.abort();
     };
-  }, [t, user?.id]);
+  }, [t, accessToken]);
 
   return (
     <div className="max-w-3xl mx-auto">
