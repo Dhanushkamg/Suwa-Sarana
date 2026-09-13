@@ -60,7 +60,7 @@ public class EndToEndIntegrationTest {
         requesterDto.setPhoneNumber("0710000001");
         requesterDto.setPassword("securePassword123");
         requesterDto.setRole(Role.REQUESTER);
-        AuthResponse requesterAuth = authService.register(requesterDto);
+        AuthResponse requesterAuth = authService.register(requesterDto, "127.0.0.1");
         assertNotNull(requesterAuth.getAccessToken());
 
         User requester = userRepository.findById(requesterAuth.getUserId()).orElseThrow();
@@ -72,7 +72,7 @@ public class EndToEndIntegrationTest {
         donorDto.setPhoneNumber("0710000002");
         donorDto.setPassword("securePassword123");
         donorDto.setRole(Role.DONOR);
-        AuthResponse donorAuth = authService.register(donorDto);
+        AuthResponse donorAuth = authService.register(donorDto, "127.0.0.1");
 
         User donorUser = userRepository.findById(donorAuth.getUserId()).orElseThrow();
         DonorProfile profile = new DonorProfile();
@@ -94,7 +94,7 @@ public class EndToEndIntegrationTest {
         distantDonorDto.setPhoneNumber("0710000003");
         distantDonorDto.setPassword("securePassword123");
         distantDonorDto.setRole(Role.DONOR);
-        AuthResponse distDonorAuth = authService.register(distantDonorDto);
+        AuthResponse distDonorAuth = authService.register(distantDonorDto, "127.0.0.1");
 
         User distDonorUser = userRepository.findById(distDonorAuth.getUserId()).orElseThrow();
         DonorProfile distProfile = new DonorProfile();

@@ -114,7 +114,7 @@ public class AuthService {
      * Hashes a raw token string with SHA-256, returning a lowercase hex string.
      * MD5 is cryptographically broken and must NOT be used for security tokens.
      */
-    static String sha256Hex(String input) {
+    public static String sha256Hex(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));

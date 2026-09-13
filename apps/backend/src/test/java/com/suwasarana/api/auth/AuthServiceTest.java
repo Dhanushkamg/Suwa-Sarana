@@ -1,5 +1,6 @@
 package com.suwasarana.api.auth;
 
+import com.suwasarana.api.audit.AuditLogService;
 import com.suwasarana.api.auth.dto.AuthResponse;
 import com.suwasarana.api.auth.dto.LoginDto;
 import com.suwasarana.api.auth.dto.RegisterDto;
@@ -43,6 +44,9 @@ class AuthServiceTest {
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -75,7 +79,7 @@ class AuthServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        AuthResponse response = authService.login(loginDto);
+        AuthResponse response = authService.login(loginDto, "127.0.0.1");
 
         assertNotNull(response);
         assertEquals("mock-jwt-token", response.getAccessToken());
@@ -93,7 +97,7 @@ class AuthServiceTest {
 
         when(userRepository.existsByEmail("existing@test.com")).thenReturn(true);
 
-        assertThrows(RuntimeException.class, () -> authService.register(registerDto));
+        assertThrows(RuntimeException.class, () -> authService.register(registerDto, "127.0.0.1"));
         verify(userRepository, never()).save(any());
     }
 
@@ -111,7 +115,7 @@ class AuthServiceTest {
         when(tokenProvider.generateTokenFromUsername("donor@test.com")).thenReturn("new-jwt-token");
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        AuthResponse response = authService.refreshToken(rawToken);
+        AuthResponse response = authService.refreshToken(rawToken, "127.0.0.1");
 
         assertNotNull(response);
         assertEquals("new-jwt-token", response.getAccessToken());

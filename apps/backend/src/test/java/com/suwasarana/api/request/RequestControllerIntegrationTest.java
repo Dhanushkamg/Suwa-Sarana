@@ -67,18 +67,18 @@ public class RequestControllerIntegrationTest {
         RegisterDto unverifiedDto = new RegisterDto();
         unverifiedDto.setEmail("unverified_" + UUID.randomUUID() + "@test.com");
         unverifiedDto.setPhoneNumber("0771000001");
-        unverifiedDto.setPassword("password");
+        unverifiedDto.setPassword("password12");
         unverifiedDto.setRole(Role.REQUESTER);
-        AuthResponse unverifiedAuth = authService.register(unverifiedDto);
+        AuthResponse unverifiedAuth = authService.register(unverifiedDto, "127.0.0.1");
         unverifiedToken = unverifiedAuth.getAccessToken();
 
         // 2. Verified Requester
         RegisterDto verifiedDto = new RegisterDto();
         verifiedDto.setEmail("verified_" + UUID.randomUUID() + "@test.com");
         verifiedDto.setPhoneNumber("0771000002");
-        verifiedDto.setPassword("password");
+        verifiedDto.setPassword("password12");
         verifiedDto.setRole(Role.REQUESTER);
-        AuthResponse verifiedAuth = authService.register(verifiedDto);
+        AuthResponse verifiedAuth = authService.register(verifiedDto, "127.0.0.1");
         verifiedToken = verifiedAuth.getAccessToken();
         verifiedUserId = verifiedAuth.getUserId();
         
@@ -91,9 +91,9 @@ public class RequestControllerIntegrationTest {
         RegisterDto otherDto = new RegisterDto();
         otherDto.setEmail("other_" + UUID.randomUUID() + "@test.com");
         otherDto.setPhoneNumber("0771000003");
-        otherDto.setPassword("password");
+        otherDto.setPassword("password12");
         otherDto.setRole(Role.REQUESTER);
-        AuthResponse otherAuth = authService.register(otherDto);
+        AuthResponse otherAuth = authService.register(otherDto, "127.0.0.1");
         otherVerifiedToken = otherAuth.getAccessToken();
         
         User oUser = userRepository.findById(otherAuth.getUserId()).orElseThrow();
