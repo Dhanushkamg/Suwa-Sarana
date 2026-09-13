@@ -49,7 +49,7 @@ export default function LoginPage() {
     const user: User = {
       id: authData.userId,
       email: authData.email,
-      phoneNumber: authData.phoneNumber,
+      phoneNumber: authData.phoneNumber || '',
       role: authData.role as User['role'],
     };
 
