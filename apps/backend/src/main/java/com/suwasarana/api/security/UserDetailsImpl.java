@@ -21,6 +21,15 @@ public class UserDetailsImpl implements UserDetails {
         this.authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
+    public static UserDetailsImpl build(com.suwasarana.api.user.User user) {
+        return new UserDetailsImpl(
+            user.getId(),
+            user.getEmail(),
+            user.getPasswordHash() != null ? user.getPasswordHash() : "",
+            user.getRole().name()
+        );
+    }
+
     public Long getId() {
         return id;
     }
