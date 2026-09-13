@@ -269,7 +269,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
                  <button
                     onClick={async () => {
                       try {
-                        const res = await fetch(`/share/${token}/opengraph-image`);
+                        const res = await fetch(`/share/${token}/opengraph-image?t=${Date.now()}`, { cache: 'no-store' });
                         if (!res.ok) throw new Error('Failed to fetch image');
                         const blob = await res.blob();
                         const url = window.URL.createObjectURL(blob);

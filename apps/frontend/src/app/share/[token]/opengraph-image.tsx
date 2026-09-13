@@ -129,7 +129,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
               🩸
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '36px', fontWeight: '900', letterSpacing: '-1px', color: '#fff' }}>
+              <div style={{ display: 'flex', fontSize: '36px', fontWeight: '900', letterSpacing: '-1px', color: '#fff' }}>
                 Suwa Sarana
               </div>
               <div style={{ fontSize: '18px', color: '#9ca3af', fontWeight: '500' }}>
@@ -199,7 +199,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
 
           {/* Text content */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            <div style={{ fontSize: '30px', color: '#fca5a5', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', fontSize: '30px', color: '#fca5a5', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase' }}>
               Urgent Donation Needed
             </div>
             <div style={{ fontSize: '80px', fontWeight: '900', color: '#ffffff', lineHeight: 1, letterSpacing: '-2px' }}>
@@ -217,6 +217,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
             >
               <div
                 style={{
+                  display: 'flex',
                   fontSize: '60px',
                   fontWeight: '900',
                   color: '#fff',
@@ -297,7 +298,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <div style={{ fontSize: '40px' }}>👥</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '26px', color: '#e5e7eb' }}>
+              <div style={{ display: 'flex', fontSize: '26px', color: '#e5e7eb' }}>
                 Your donation can save a life today.
               </div>
               <div style={{ fontSize: '30px', fontWeight: '900', color: '#ef4444' }}>
@@ -310,6 +311,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
               <div
                 style={{
+                  display: 'flex',
                   padding: '10px',
                   borderRadius: '16px',
                   backgroundColor: '#1a0505',
