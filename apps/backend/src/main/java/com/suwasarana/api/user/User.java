@@ -16,8 +16,15 @@ public class User {
     @Column(nullable = false, unique = true, length = 20)
     private String phoneNumber;
 
-    @Column(nullable = false)
+    @Column
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    @Column(length = 255)
+    private String providerId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -50,6 +57,10 @@ public class User {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public AuthProvider getAuthProvider() { return authProvider; }
+    public void setAuthProvider(AuthProvider authProvider) { this.authProvider = authProvider; }
+    public String getProviderId() { return providerId; }
+    public void setProviderId(String providerId) { this.providerId = providerId; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
     public String getNicNumber() { return nicNumber; }

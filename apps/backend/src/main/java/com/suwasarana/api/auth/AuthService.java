@@ -159,4 +159,100 @@ public class AuthService {
         refreshTokenRepository.deleteByUser(user);
         auditLog.logLogout(userId, ipAddress);
     }
+
+    @org.springframework.beans.factory.annotation.Value("${app.google.client-id}")
+    private String googleClientId;
+
+    public com.suwasarana.api.auth.dto.GoogleVerifyResponse verifyGoogleUser(com.suwasarana.api.auth.dto.GoogleVerifyRequest request, String ipAddress) {
+        try {
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier verifier = 
+                new com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier.Builder(
+                    new com.google.api.client.http.javanet.NetHttpTransport(), 
+                    new com.google.api.client.json.gson.GsonFactory())
+                .setAudience(java.util.Collections.singletonList(googleClientId))
+                .build();
+
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdToken idToken = verifier.verify(request.getIdToken());
+            if (idToken != null) {
+                com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+
+                java.util.Optional<User> userOptional = userRepository.findByEmail(email);
+
+                if (userOptional.isPresent()) {
+                    User user = userOptional.get();
+                    
+                    // Auto login
+                    org.springframework.security.core.userdetails.UserDetails userDetails = com.suwasarana.api.security.UserDetailsImpl.build(user);
+                    Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    
+                    String jwt = tokenProvider.generateToken(authentication);
+                    String refreshToken = createRefreshToken(user);
+                    
+                    auditLog.logLoginSuccess(user.getId(), user.getEmail(), ipAddress);
+                    
+                    AuthResponse authResponse = new AuthResponse(jwt, user.getId(), user.getRole(), user.getEmail(), user.getPhoneNumber(), refreshToken, user.getVerificationStatus());
+                    return new com.suwasarana.api.auth.dto.GoogleVerifyResponse(false, email, authResponse);
+                } else {
+                    // Needs registration
+                    return new com.suwasarana.api.auth.dto.GoogleVerifyResponse(true, email, null);
+                }
+            } else {
+                throw new RuntimeException("Invalid Google ID token.");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error verifying Google ID token: " + e.getMessage(), e);
+        }
+    }
+
+    public AuthResponse registerGoogleUser(com.suwasarana.api.auth.dto.GoogleRegisterRequest request, String ipAddress) {
+        try {
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier verifier = 
+                new com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier.Builder(
+                    new com.google.api.client.http.javanet.NetHttpTransport(), 
+                    new com.google.api.client.json.gson.GsonFactory())
+                .setAudience(java.util.Collections.singletonList(googleClientId))
+                .build();
+
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdToken idToken = verifier.verify(request.getIdToken());
+            if (idToken != null) {
+                com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+                String subject = payload.getSubject(); // Google User ID
+
+                if (userRepository.existsByEmail(email)) {
+                    throw new RuntimeException("Email is already in use!");
+                }
+                if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+                    throw new RuntimeException("Phone number is already in use!");
+                }
+
+                User user = new User();
+                user.setEmail(email);
+                user.setPhoneNumber(request.getPhoneNumber());
+                user.setRole(request.getRole());
+                user.setNicNumber(request.getNicNumber());
+                user.setAuthProvider(com.suwasarana.api.user.AuthProvider.GOOGLE);
+                user.setProviderId(subject);
+                
+                User savedUser = userRepository.save(user);
+
+                org.springframework.security.core.userdetails.UserDetails userDetails = com.suwasarana.api.security.UserDetailsImpl.build(savedUser);
+                Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                String jwt = tokenProvider.generateToken(authentication);
+                String refreshToken = createRefreshToken(savedUser);
+
+                auditLog.logRegistration(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name(), ipAddress);
+
+                return new AuthResponse(jwt, savedUser.getId(), savedUser.getRole(), savedUser.getEmail(), savedUser.getPhoneNumber(), refreshToken, savedUser.getVerificationStatus());
+            } else {
+                throw new RuntimeException("Invalid Google ID token.");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error registering Google user: " + e.getMessage(), e);
+        }
+    }
 }

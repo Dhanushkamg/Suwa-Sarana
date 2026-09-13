@@ -95,4 +95,30 @@ public class AuthController {
     private String getClientIp(HttpServletRequest request) {
         return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
     }
+
+    @Operation(summary = "Verify Google User", description = "Verifies a Google ID token and returns an auth token if the user exists, otherwise prompts for registration.")
+    @PostMapping("/google/verify")
+    public ResponseEntity<ApiResponse<com.suwasarana.api.auth.dto.GoogleVerifyResponse>> verifyGoogleUser(
+            @Valid @RequestBody com.suwasarana.api.auth.dto.GoogleVerifyRequest requestDto,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        com.suwasarana.api.auth.dto.GoogleVerifyResponse verifyResponse = authService.verifyGoogleUser(requestDto, getClientIp(request));
+        
+        if (!verifyResponse.isRequiresRegistration() && verifyResponse.getAuthResponse() != null) {
+            setRefreshTokenCookie(response, verifyResponse.getAuthResponse().getRefreshToken());
+        }
+        
+        return ResponseEntity.ok(ApiResponse.success(verifyResponse));
+    }
+
+    @Operation(summary = "Register Google User", description = "Registers a new user who signed in via Google, requiring their phone number and role.")
+    @PostMapping("/google/register")
+    public ResponseEntity<ApiResponse<AuthResponse>> registerGoogleUser(
+            @Valid @RequestBody com.suwasarana.api.auth.dto.GoogleRegisterRequest requestDto,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.registerGoogleUser(requestDto, getClientIp(request));
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
+        return ResponseEntity.ok(ApiResponse.success(authResponse));
+    }
 }

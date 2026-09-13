@@ -45,4 +45,6 @@ app:
   # MUST be false (or unset) in production — seeded accounts use well-known passwords.
   seed-data:
     enabled: ${SEED_DATA_ENABLED:false}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:166772425992-0dlhn1jn9iutvti95en8sbb8bgng8t7c.apps.googleusercontent.com}
 
