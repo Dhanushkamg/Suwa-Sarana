@@ -100,7 +100,7 @@ class AuthServiceTest {
     @Test
     void refreshToken_validToken_shouldReturnNewTokens() {
         String rawToken = "valid-refresh-token";
-        String tokenHash = org.springframework.util.DigestUtils.md5DigestAsHex(rawToken.getBytes());
+        String tokenHash = AuthService.sha256Hex(rawToken);
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(sampleUser);

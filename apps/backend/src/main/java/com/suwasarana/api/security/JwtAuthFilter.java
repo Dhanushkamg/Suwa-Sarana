@@ -51,12 +51,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
-        
-        String tokenParam = request.getParameter("token");
-        if (StringUtils.hasText(tokenParam)) {
-            return tokenParam;
-        }
-        
+        // NOTE: Accepting JWT as a URL query parameter is intentionally NOT supported.
+        // Doing so would expose tokens in server access logs, browser history, and
+        // Referer headers. Tokens must only be sent in the Authorization header.
         return null;
     }
 }
