@@ -69,8 +69,12 @@ export default function RequestLiveStatusPage() {
       if (Array.isArray(data)) {
         setCircleVolunteers(data);
       }
-    } catch {
-      // Circle might not be generated yet, which is normal
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      if (msg === 'Only the request creator can generate or manage private circles' || msg === 'Access denied' || msg?.toLowerCase().includes('access denied')) {
+        setCircleError('Access denied');
+      }
+      // Otherwise, circle might not be generated yet, which is normal
     }
   }, [requestId]);
 
@@ -213,6 +217,7 @@ export default function RequestLiveStatusPage() {
       </div>
 
       {/* Replacement-Donor Private Circle Panel */}
+      {circleError !== 'Access denied' && circleError !== 'Only the request creator can generate or manage private circles' && (
       <div className="glass-card p-6 md:p-8 rounded-2xl border border-purple-500/20 relative overflow-hidden bg-gradient-to-r from-purple-950/30 via-neutral-900/40 to-neutral-900/60">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
           <div className="flex items-start gap-4">
@@ -334,6 +339,7 @@ export default function RequestLiveStatusPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Live System Updates */}
       <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-4">
