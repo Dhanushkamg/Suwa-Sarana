@@ -266,14 +266,30 @@ export default function ShareCardClient({ token, initialData }: Props) {
               </div>
               
               <div className="pt-2 space-y-3">
-                 <a
-                    href={`/share/${token}/opengraph-image`}
-                    download="suwa-sarana-emergency-card.png"
+                 <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/share/${token}/opengraph-image`);
+                        if (!res.ok) throw new Error('Failed to fetch image');
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `suwa-sarana-emergency.png`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      } catch (err) {
+                        console.error('Download failed:', err);
+                        alert('Could not download the image. Please try again or take a screenshot.');
+                      }
+                    }}
                     className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-500 shadow-lg shadow-red-500/20 text-white transition-colors text-sm font-medium"
                  >
                     <Download className="w-4 h-4" />
                     Download Image for Status/Post
-                 </a>
+                 </button>
                  <button
                     onClick={copyLink}
                     className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors text-sm font-medium"
