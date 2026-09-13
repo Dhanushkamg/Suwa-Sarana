@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Heart, MapPin, Activity, Droplets, Share2, Copy, Check,
-  MessageSquare, Send, AlertCircle, Clock, Smartphone
+  MessageSquare, Send, AlertCircle, Clock, Smartphone, Download
 } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
@@ -265,7 +265,15 @@ export default function ShareCardClient({ token, initialData }: Props) {
                 </a>
               </div>
               
-              <div className="pt-2">
+              <div className="pt-2 space-y-3">
+                 <a
+                    href={`/share/${token}/opengraph-image`}
+                    download="suwa-sarana-emergency-card.png"
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-500 shadow-lg shadow-red-500/20 text-white transition-colors text-sm font-medium"
+                 >
+                    <Download className="w-4 h-4" />
+                    Download Image for Status/Post
+                 </a>
                  <button
                     onClick={copyLink}
                     className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors text-sm font-medium"
