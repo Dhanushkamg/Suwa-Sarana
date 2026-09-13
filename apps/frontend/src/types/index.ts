@@ -33,5 +33,6 @@ export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   login: (token: string, user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+  setAccessToken: (token: string) => void;
 }

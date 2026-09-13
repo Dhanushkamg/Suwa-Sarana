@@ -9,10 +9,13 @@ const apiClient = axios.create({
   withCredentials: true, // IMPORTANT: Allows cookies (Refresh Token) to be sent automatically
 });
 
-// Attach JWT token to every request if it exists
+// Attach JWT access token to every request.
+// The token is read from the Zustand store (in-memory only, not localStorage).
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken');
+    // Import lazily to avoid circular dependency issues during module initialisation
+    const { useAuthStore } = require('@/store/authStore');
+    const token = useAuthStore.getState().accessToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -21,9 +24,9 @@ apiClient.interceptors.request.use((config) => {
 });
 
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let failedQueue: { resolve: (value: string | null) => void; reject: (reason?: unknown) => void }[] = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -64,7 +67,12 @@ apiClient.interceptors.response.use(
         );
 
         const newAccessToken = data.data.accessToken;
-        localStorage.setItem('accessToken', newAccessToken);
+
+        // Store the new token in the Zustand store (memory only — not localStorage)
+        if (typeof window !== 'undefined') {
+          const { useAuthStore } = require('@/store/authStore');
+          useAuthStore.getState().setAccessToken(newAccessToken);
+        }
 
         apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -74,7 +82,9 @@ apiClient.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('accessToken');
+          // Silent refresh failed — clear auth state and redirect to login
+          const { useAuthStore } = require('@/store/authStore');
+          useAuthStore.setState({ accessToken: null, user: null, isAuthenticated: false });
           window.location.href = '/login';
         }
         return Promise.reject(err);
@@ -87,3 +97,4 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
