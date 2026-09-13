@@ -17,7 +17,8 @@
 - **📍 Geo-Spatial Proximity Matching**: Sub-millisecond spherical distance calculations (PostgreSQL `earthdistance`) locating the closest eligible donors within progressive search radii (5km → 15km → 25km).
 - **⚡ Two-Tier Notification Cascade**: Real-time Server-Sent Events (SSE) notification stream backed by an automated SMS fallback cascade when donors are offline.
 - **🛡️ Requester & Hospital Trust Verification**: Multi-factor identity and hospital verification portal with critical requisition access control.
-- **🔒 Security Hardening & Rate Limiting**: Token-bucket rate limiting via Bucket4j, strict CORS protection, and secure JWT authentication with refresh token rotation.
+- **🔐 Google OAuth Authentication**: Seamless, secure sign-in using Google Identity Services (FedCM optimized), integrated alongside robust custom JWT session management.
+- **🔒 Security Hardening & Rate Limiting**: Token-bucket rate limiting via Bucket4j, strict CORS protection, secure JWT authentication with refresh token rotation, and robust Content-Security-Policy (CSP) enforcement.
 - **👥 Private Replacement-Donor Circles**: Secure, tokenized share links allowing families to rally private volunteer circles before/alongside public dispatch.
 - **🖼️ Shareable Open Graph Cards**: Dynamic 1200×630 emergency requisition summary cards generated for seamless Facebook, WhatsApp, and Viber community sharing without exposing private patient identity.
 - **🗺️ Interactive Sri Lanka District Heatmap**: Leaflet choropleth visualization monitoring live blood inventory, donor density, and shortage indicators across all 25 districts.
@@ -54,6 +55,7 @@ suwa-sarana/
 
 ### Frontend
 - **Framework**: Next.js 14 (App Router)
+- **Authentication**: Google OAuth2 (Google Identity Services) + Custom JWT
 - **Styling**: Tailwind CSS, Radix UI Primitives, Lucide Icons
 - **Mapping & Visuals**: Leaflet, React-Leaflet
 - **Internationalization**: React Context i18n (`messages/{en,si,ta}.json`)
