@@ -203,10 +203,10 @@ export default async function Image({ params }: { params: Promise<{ token: strin
               Urgent Donation Needed
             </div>
             <div style={{ fontSize: '80px', fontWeight: '900', color: '#ffffff', lineHeight: 1, letterSpacing: '-2px' }}>
-              {unitsNeeded} UNIT{unitsNeeded > 1 ? 'S' : ''} OF
+              {`${unitsNeeded} UNIT${unitsNeeded > 1 ? 'S' : ''} OF`}
             </div>
             <div style={{ fontSize: '80px', fontWeight: '900', color: '#ef4444', lineHeight: 1, letterSpacing: '-2px' }}>
-              {bloodType} BLOOD
+              {`${bloodType} BLOOD`}
             </div>
             {/* Red brush stroke "URGENTLY" */}
             <div
@@ -245,7 +245,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           <div style={{ fontSize: '32px' }}>🏥</div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: '32px', fontWeight: '800', color: '#fff' }}>{hospitalName}</div>
-            <div style={{ fontSize: '20px', color: '#9ca3af' }}>{district} District</div>
+            <div style={{ fontSize: '20px', color: '#9ca3af' }}>{`${district} District`}</div>
           </div>
         </div>
 
