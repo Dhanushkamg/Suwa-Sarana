@@ -36,6 +36,33 @@ public class NotificationCascadeService implements NotificationService {
         sendNotification(donor, request);
     }
 
+    /**
+     * Generic overload for pre-built notifications (slot confirmations, reminders, etc.).
+     * Reuses the same quiet-hours check and SSE → SMS cascade as the BloodRequest path.
+     */
+    @Override
+    @Transactional
+    public void notify(DonorProfile donor, NotificationMessage message) {
+        if (isInQuietHours(donor)) {
+            log.info("Skipping generic notification for donor {} due to quiet hours.", donor.getId());
+            return;
+        }
+
+        Long userId = donor.getUser() != null ? donor.getUser().getId() : null;
+        boolean sseSent = false;
+
+        if (userId != null) {
+            sseSent = sseNotificationService.sendNotificationIfConnected(userId, message);
+        }
+
+        if (sseSent) {
+            log.info("Generic notification sent via SSE to user {}", userId);
+        } else {
+            log.info("User {} not on SSE for generic notification; falling back to SMS.", userId);
+            smsNotificationService.sendSmsNotification(donor, message);
+        }
+    }
+
     @Transactional
     public void sendNotification(DonorProfile donor, BloodRequest request) {
         if (isInQuietHours(donor) && request.getUrgency() != Urgency.CRITICAL) {
