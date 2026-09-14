@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Droplets, Shield, MapPin, CheckCircle, ArrowLeft, Award, Users, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { Droplets, Shield, MapPin, CheckCircle, ArrowLeft, Award, Users, Wifi, WifiOff, AlertCircle, CalendarCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
+import MyBookings from '@/components/slots/MyBookings';
 
 const DISTRICTS = [
   'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
@@ -265,7 +266,15 @@ export default function DonorProfilePage() {
             </div>
           </form>
 
-          <div className="mt-4 text-center">
+          <div className="mt-8 pt-8 border-t border-white/10">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2 mb-6">
+              <CalendarCheck className="w-6 h-6 text-emerald-500" />
+              {t('slot.myBookings') || 'My Bookings'}
+            </h2>
+            <MyBookings />
+          </div>
+
+          <div className="mt-8 text-center">
             <Link href="/dashboard/donor/matches" className="text-sm text-red-400 hover:text-red-300 transition-colors font-medium">
               View My Matches →
             </Link>

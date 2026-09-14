@@ -154,5 +154,26 @@
     "pushMatch": "Compatible blood request for {bloodType} at {hospitalName} ({distanceKm} km away).",
     "escalationNotice": "Request #{requestId} escalated: Search radius expanded to {radiusKm} km.",
     "donationConfirmed": "Thank you! Your donation for request #{requestId} has been confirmed. +5 reliability points earned."
+  },
+  "slot": {
+    "viewSlots": "View & book a time slot",
+    "hideSlots": "Hide time slots",
+    "book": "Book",
+    "full": "Fully Booked",
+    "spotsLeft": "{count} spot(s) left",
+    "cancelConfirm": "Are you sure you want to cancel this booking?",
+    "cancelSuccess": "Booking cancelled successfully.",
+    "bookSuccess": "Slot booked! Check My Bookings for your confirmation.",
+    "ineligible": "You are currently not eligible to donate. Reason: {reasons}",
+    "myBookings": "My Bookings",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "checkedIn": "Checked In",
+    "noShow": "No Show",
+    "noSlots": "No time slots have been scheduled yet.",
+    "noBookings": "No bookings yet",
+    "noBookingsDesc": "Browse donation camps to book a time slot.",
+    "slotReminder": "Donation Reminder",
+    "slotConfirmed": "Slot Booked!"
   }
 }

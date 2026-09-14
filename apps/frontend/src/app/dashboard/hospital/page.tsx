@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { BloodRequest } from '@/types';
+import SlotManager from '@/components/slots/SlotManager';
 
 export default function HospitalRequesterDashboardPage() {
   const { user } = useAuthStore();
@@ -224,6 +225,23 @@ export default function HospitalRequesterDashboardPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Walk-in Slot Management */}
+      <div className="space-y-4 pt-8 border-t border-white/10 mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Clock className="w-5 h-5 text-amber-400" />
+            Walk-in Appointment Slots
+          </h2>
+        </div>
+        <div className="glass-card rounded-2xl p-6 border border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent">
+          {user ? (
+            <SlotManager hostType="hospital" hostId={user.id} />
+          ) : (
+            <div className="text-sm text-gray-500 text-center py-6">User session required to manage slots.</div>
+          )}
+        </div>
       </div>
     </div>
   );
