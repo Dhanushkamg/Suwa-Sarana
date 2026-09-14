@@ -2,7 +2,7 @@ export interface User {
   id: number;
   email: string;
   phoneNumber: string;
-  role: 'DONOR' | 'REQUESTER' | 'HOSPITAL_REQUESTER' | 'ADMIN';
+  role: 'DONOR' | 'REQUESTER' | 'HOSPITAL_REQUESTER' | 'BLOOD_BANK_REQUESTER' | 'ADMIN';
   verificationStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
 }
 
