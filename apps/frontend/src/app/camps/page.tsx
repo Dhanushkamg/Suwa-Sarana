@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
+import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/apiClient';
-import { Calendar, MapPin, Clock, Heart, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Clock, Heart, ArrowLeft, Droplets } from 'lucide-react';
 import SlotPicker from '@/components/slots/SlotPicker';
 
 interface Camp {
@@ -16,10 +17,12 @@ interface Camp {
   startTime: string;
   endTime: string;
   organizerName: string;
+  requiredBloodGroups: string;
 }
 
 export default function CampsPage() {
   const { t } = useI18n();
+  const { user } = useAuthStore();
   const [camps, setCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCampId, setExpandedCampId] = useState<number | null>(null);
@@ -27,7 +30,8 @@ export default function CampsPage() {
   useEffect(() => {
     const fetchCamps = async () => {
       try {
-        const response = await apiClient.get('/camps');
+        const endpoint = user?.role === 'DONOR' ? '/camps/recommended' : '/camps';
+        const response = await apiClient.get(endpoint);
         setCamps(response.data);
       } catch (error) {
         console.error('Failed to load camps', error);
@@ -36,7 +40,7 @@ export default function CampsPage() {
       }
     };
     fetchCamps();
-  }, []);
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-[#0d0d14] text-white">
@@ -68,10 +72,12 @@ export default function CampsPage() {
             Community Blood Drives
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
-            Upcoming Donation Camps
+            {user?.role === 'DONOR' ? 'Recommended Camps For You' : 'Upcoming Donation Camps'}
           </h1>
           <p className="text-gray-400 text-sm md:text-base">
-            Find and pre-register for upcoming blood donation camps organized across Sri Lanka in partnership with the National Blood Transfusion Service.
+            {user?.role === 'DONOR' 
+              ? 'These donation camps specifically need your blood group. Book a slot to help save lives.' 
+              : 'Find and pre-register for upcoming blood donation camps organized across Sri Lanka in partnership with the National Blood Transfusion Service.'}
           </p>
         </div>
 
@@ -119,6 +125,12 @@ export default function CampsPage() {
                       <MapPin className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                       <span>{camp.location}</span>
                     </div>
+                    {camp.requiredBloodGroups && (
+                      <div className="flex items-center gap-3">
+                        <Droplets className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                        <span className="font-semibold text-rose-300">Requires: {camp.requiredBloodGroups}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

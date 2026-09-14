@@ -21,7 +21,11 @@
 - **🔒 Security Hardening & Rate Limiting**: Token-bucket rate limiting via Bucket4j, strict CORS protection, secure JWT authentication with refresh token rotation, and robust Content-Security-Policy (CSP) enforcement.
 - **👥 Private Replacement-Donor Circles**: Secure, tokenized share links allowing families to rally private volunteer circles before/alongside public dispatch.
 - **🖼️ Shareable Open Graph Cards**: Dynamic 1200×630 emergency requisition summary cards generated for seamless Facebook, WhatsApp, and Viber community sharing without exposing private patient identity.
-- **🗺️ Interactive Sri Lanka District Heatmap**: Leaflet choropleth visualization monitoring live blood inventory, donor density, and shortage indicators across all 25 districts.
+- **🏥 Comprehensive Donation Camp & Blood Bank Management**: Dedicated dashboards for Hospitals and Blood Banks to securely organize, reschedule, and manage national donation camps.
+- **🖼️ Automated High-Res Poster Generator**: Instant, visually stunning, and highly professional JPG campaign posters automatically generated for organizers to share on social media to attract donors.
+- **📅 Walk-in & Appointment Slot Booking**: Sophisticated appointment booking system with QR code check-ins for smooth donor flow and traffic management at camps.
+- **🩸 Intelligent Donor-Camp Filtering**: Donors are algorithmically recommended donation drives that precisely match their verified blood type to minimize wastage and prioritize urgent needs.
+- **🗺️ Interactive Admin Geospatial Map**: Leaflet choropleth visualization monitoring live blood inventory, donor density, shortage indicators, and a real-time geographical view of all active donation camps across the 25 districts.
 - **🤖 Multilingual AI Request Intake (Groq LLM)**: Natural language conversational request intake extracting blood type, urgency, hospital, and units needed from unstructured text in EN, SI, or TA.
 - **💬 Grounded AI Donor FAQ Chatbot**: Trilingual eligibility assistant grounded strictly in National Blood Transfusion Service (NBTS) deferral rules.
 - **⚖️ AI Fraud & Duplicate Triage Console**: Advisory AI scoring engine that prioritizes the moderation queue for human administrators with explainable diagnostic flags.
