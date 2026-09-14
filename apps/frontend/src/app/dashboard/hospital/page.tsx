@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { BloodRequest } from '@/types';
 import SlotManager from '@/components/slots/SlotManager';
+import CampManagerDashboard from '@/components/camps/CampManagerDashboard';
 
 export default function HospitalRequesterDashboardPage() {
   const { user } = useAuthStore();
@@ -225,6 +226,11 @@ export default function HospitalRequesterDashboardPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Donation Camp Management */}
+      <div className="space-y-4 pt-8 border-t border-white/10 mt-8">
+        <CampManagerDashboard />
       </div>
 
       {/* Walk-in Slot Management */}

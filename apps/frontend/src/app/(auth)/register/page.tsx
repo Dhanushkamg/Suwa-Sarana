@@ -36,6 +36,7 @@ function RegisterForm() {
   const roleOptions = [
     { value: 'DONOR', label: t('auth.roleDonor') },
     { value: 'REQUESTER', label: t('auth.roleRequester') },
+    { value: 'BLOOD_BANK_REQUESTER', label: 'Blood Bank' },
   ];
 
   const roleParam = searchParams.get('role');
@@ -97,6 +98,8 @@ function RegisterForm() {
       router.push('/dashboard/admin');
     } else if (user.role === 'HOSPITAL_REQUESTER') {
       router.push('/dashboard/hospital');
+    } else if (user.role === 'BLOOD_BANK_REQUESTER') {
+      router.push('/dashboard/blood-bank');
     } else {
       router.push('/dashboard');
     }
