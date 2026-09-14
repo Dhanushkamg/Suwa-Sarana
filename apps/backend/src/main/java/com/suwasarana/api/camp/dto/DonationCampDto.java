@@ -15,6 +15,7 @@ public class DonationCampDto {
     private LocalTime endTime;
     private String status;
     private String organizerName;
+    private String requiredBloodGroups;
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -39,4 +40,6 @@ public class DonationCampDto {
     public void setStatus(String status) { this.status = status; }
     public String getOrganizerName() { return organizerName; }
     public void setOrganizerName(String organizerName) { this.organizerName = organizerName; }
+    public String getRequiredBloodGroups() { return requiredBloodGroups; }
+    public void setRequiredBloodGroups(String requiredBloodGroups) { this.requiredBloodGroups = requiredBloodGroups; }
 }

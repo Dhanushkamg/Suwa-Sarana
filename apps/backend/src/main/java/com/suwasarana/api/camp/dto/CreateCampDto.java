@@ -24,8 +24,10 @@ public class CreateCampDto {
     @NotNull
     private LocalTime startTime;
     
-    @NotNull
+    @NotNull(message = "End time is required")
     private LocalTime endTime;
+
+    private String requiredBloodGroups;
 
     // Getters and Setters
     public String getName() { return name; }
@@ -44,4 +46,6 @@ public class CreateCampDto {
     public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
     public LocalTime getEndTime() { return endTime; }
     public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+    public String getRequiredBloodGroups() { return requiredBloodGroups; }
+    public void setRequiredBloodGroups(String requiredBloodGroups) { this.requiredBloodGroups = requiredBloodGroups; }
 }
