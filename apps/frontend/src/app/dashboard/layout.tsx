@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, LogOut, Home, Droplets, Bell, ShieldCheck, Plus, Building2, Map } from 'lucide-react';
+import { Heart, LogOut, Home, Droplets, Bell, ShieldCheck, Plus, Building2, Map, MapPin, Calendar } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
@@ -40,6 +40,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { href: '/dashboard/donor', label: t('common.myProfile'), icon: Droplets },
           { href: '/dashboard/donor/matches', label: 'My Matches', icon: Heart },
           { href: '/dashboard/donor/heatmap', label: 'Supply Heatmap', icon: Map },
+          { href: '/camps', label: 'Donation Camps', icon: Calendar },
           { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
         ];
       case 'HOSPITAL_REQUESTER':
@@ -47,6 +48,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { href: '/dashboard/hospital', label: 'Hospital Portal', icon: Building2 },
           { href: '/dashboard/requests/new', label: 'Broadcast Request', icon: Plus },
           { href: '/dashboard/requests', label: 'Active Requisitions', icon: Droplets },
+          { href: '/camps', label: 'All Donation Camps', icon: Calendar },
+          { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
+        ];
+      case 'BLOOD_BANK_REQUESTER':
+        return [
+          { href: '/dashboard/blood-bank', label: 'Blood Bank Portal', icon: Building2 },
+          { href: '/camps', label: 'All Donation Camps', icon: Calendar },
           { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
         ];
       case 'ADMIN':
@@ -54,6 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { href: '/dashboard/admin', label: 'Admin Console', icon: ShieldCheck },
           { href: '/dashboard/requests', label: 'All Blood Requests', icon: Droplets },
           { href: '/dashboard/donor/heatmap', label: 'Supply Heatmap', icon: Map },
+          { href: '/dashboard/admin/camps', label: 'Camps Map View', icon: MapPin },
           { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell },
         ];
       case 'REQUESTER':

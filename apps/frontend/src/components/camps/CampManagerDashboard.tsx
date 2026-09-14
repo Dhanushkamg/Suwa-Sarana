@@ -7,6 +7,7 @@ import apiClient from '@/lib/apiClient';
 import { Button } from '@/components/ui/Button';
 import SlotManager from '@/components/slots/SlotManager';
 import CampPostGenerator from './CampPostGenerator';
+import CreateCampModal from './CreateCampModal';
 
 interface DonationCampDto {
   id: number;
@@ -31,6 +32,7 @@ export default function CampManagerDashboard() {
 
   const [activeCampForSlots, setActiveCampForSlots] = useState<number | null>(null);
   const [campToGeneratePost, setCampToGeneratePost] = useState<DonationCampDto | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const loadCamps = useCallback(async () => {
     setLoading(true);
@@ -69,7 +71,7 @@ export default function CampManagerDashboard() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          <Button size="sm" className="bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-900/20">
+          <Button size="sm" className="bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-900/20" onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="w-4 h-4 mr-1" /> Create Camp
           </Button>
         </div>
@@ -167,6 +169,15 @@ export default function CampManagerDashboard() {
           onClose={() => setCampToGeneratePost(null)} 
         />
       )}
+
+      <CreateCampModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          setIsCreateModalOpen(false);
+          loadCamps();
+        }}
+      />
     </div>
   );
 }

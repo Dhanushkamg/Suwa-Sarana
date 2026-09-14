@@ -7,15 +7,13 @@ import L from 'leaflet';
 import apiClient from '@/lib/apiClient';
 import { Calendar, MapPin, Users, Heart } from 'lucide-react';
 
-// Fix Leaflet's default icon issue with Webpack
-const icon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+// Fix Leaflet's default icon issue with Webpack by using a custom HTML div icon
+const customMarkerIcon = L.divIcon({
+  className: 'custom-map-marker',
+  html: `<div style="background-color: #ef4444; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(239,68,68,0.8);"></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+  popupAnchor: [0, -10],
 });
 
 interface Camp {
@@ -61,7 +59,7 @@ export default function AdminMap() {
             <Marker 
               key={camp.id} 
               position={[camp.latitude, camp.longitude]}
-              icon={icon}
+              icon={customMarkerIcon}
             >
               <Popup className="custom-popup">
                 <div className="p-1 space-y-2">
