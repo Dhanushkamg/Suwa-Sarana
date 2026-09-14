@@ -24,10 +24,44 @@ public class DonationCampController {
         return ResponseEntity.ok(campService.getUpcomingCamps());
     }
 
+    @GetMapping("/recommended")
+    @PreAuthorize("hasRole('DONOR')")
+    public ResponseEntity<List<DonationCampDto>> getRecommendedCamps(Authentication auth) {
+        return ResponseEntity.ok(campService.getRecommendedCamps(auth.getName()));
+    }
+
+    @GetMapping("/my-camps")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER')")
+    public ResponseEntity<List<DonationCampDto>> getMyCamps(Authentication auth) {
+        return ResponseEntity.ok(campService.getMyCamps(auth.getName()));
+    }
+
     @PostMapping
-    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER')")
     public ResponseEntity<DonationCampDto> createCamp(@Valid @RequestBody CreateCampDto dto, Authentication auth) {
         return ResponseEntity.ok(campService.createCamp(dto, auth.getName()));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER')")
+    public ResponseEntity<DonationCampDto> updateCamp(
+            @PathVariable Long id, 
+            @Valid @RequestBody CreateCampDto dto, 
+            Authentication auth) {
+        return ResponseEntity.ok(campService.updateCamp(id, dto, auth.getName()));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER')")
+    public ResponseEntity<DonationCampDto> updateCampStatus(
+            @PathVariable Long id, 
+            @RequestBody Map<String, String> body, 
+            Authentication auth) {
+        String status = body.get("status");
+        if (status == null || status.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(campService.updateCampStatus(id, status, auth.getName()));
     }
 
     @PostMapping("/{id}/register")
