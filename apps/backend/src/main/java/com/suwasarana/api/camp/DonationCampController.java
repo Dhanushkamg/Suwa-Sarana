@@ -32,8 +32,15 @@ public class DonationCampController {
 
     @PostMapping("/{id}/register")
     @PreAuthorize("hasRole('DONOR')")
+    @Deprecated
     public ResponseEntity<?> registerForCamp(@PathVariable Long id, Authentication auth) {
-        campService.registerForCamp(id, auth.getName());
-        return ResponseEntity.ok(Map.of("message", "Registered successfully"));
+        // Superseded by the slot booking system. Slot booking is now the only way to register
+        // for a camp. Use GET /api/camps/{id}/slots to view available windows and
+        // POST /api/slots/{slotId}/book to reserve a specific time slot.
+        return ResponseEntity.status(org.springframework.http.HttpStatus.GONE)
+                .body(Map.of("message",
+                        "Camp pre-registration has been replaced by slot booking. "
+                        + "Use GET /api/camps/" + id + "/slots to view available time windows "
+                        + "and POST /api/slots/{slotId}/book to reserve your spot."));
     }
 }

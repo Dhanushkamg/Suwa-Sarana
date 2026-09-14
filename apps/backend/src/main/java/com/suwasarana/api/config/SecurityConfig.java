@@ -56,6 +56,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/contact/**").permitAll()
                 .requestMatchers("/api/ivr/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/*/slots").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/hospitals/*/slots").permitAll()
                 // Actuator: only /health is publicly accessible; all other actuator
                 // endpoints (env, metrics, beans, loggers, etc.) require ADMIN role
                 .requestMatchers("/actuator/health").permitAll()
