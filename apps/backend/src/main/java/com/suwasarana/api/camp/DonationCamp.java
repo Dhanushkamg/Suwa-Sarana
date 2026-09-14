@@ -42,6 +42,9 @@ public class DonationCamp {
     @Column(nullable = false)
     private String status = "SCHEDULED";
 
+    @Column(name = "required_blood_groups", length = 100)
+    private String requiredBloodGroups;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
@@ -75,6 +78,8 @@ public class DonationCamp {
     public void setOrganizer(User organizer) { this.organizer = organizer; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getRequiredBloodGroups() { return requiredBloodGroups; }
+    public void setRequiredBloodGroups(String requiredBloodGroups) { this.requiredBloodGroups = requiredBloodGroups; }
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
     public ZonedDateTime getUpdatedAt() { return updatedAt; }
