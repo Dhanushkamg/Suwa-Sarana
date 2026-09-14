@@ -2,7 +2,11 @@ package com.suwasarana.api.common;
 
 import com.suwasarana.api.exception.CircleExpiredException;
 import com.suwasarana.api.exception.CircleNotFoundException;
+import com.suwasarana.api.exception.DonorIneligibleException;
+import com.suwasarana.api.exception.DuplicateBookingException;
 import com.suwasarana.api.exception.RequesterNotVerifiedException;
+import com.suwasarana.api.exception.SlotFullException;
+import com.suwasarana.api.exception.SlotNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -59,6 +63,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CircleExpiredException.class)
     public ResponseEntity<ApiResponse<Void>> handleCircleExpiredException(CircleExpiredException ex) {
         return ResponseEntity.status(HttpStatus.GONE).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(SlotNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSlotNotFoundException(SlotNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(SlotFullException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSlotFullException(SlotFullException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(DuplicateBookingException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateBookingException(DuplicateBookingException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(DonorIneligibleException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDonorIneligibleException(DonorIneligibleException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ApiResponse.error(ex.getMessage()));
     }
 
     /**
