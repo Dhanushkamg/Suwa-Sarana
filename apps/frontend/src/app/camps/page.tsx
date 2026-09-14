@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
-import { Calendar, MapPin, Clock, Heart, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { useAuthStore } from '@/store/authStore';
+import { Calendar, MapPin, Clock, Heart, ArrowLeft } from 'lucide-react';
+import SlotPicker from '@/components/slots/SlotPicker';
 
 interface Camp {
   id: number;
@@ -21,11 +20,9 @@ interface Camp {
 
 export default function CampsPage() {
   const { t } = useI18n();
-  const { user } = useAuthStore();
   const [camps, setCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string; campId?: number } | null>(null);
-  const [registeringId, setRegisteringId] = useState<number | null>(null);
+  const [expandedCampId, setExpandedCampId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchCamps = async () => {
@@ -40,35 +37,6 @@ export default function CampsPage() {
     };
     fetchCamps();
   }, []);
-
-  const handleRegister = async (campId: number) => {
-    setFeedback(null);
-    setRegisteringId(campId);
-    try {
-      await apiClient.post(`/camps/${campId}/register`);
-      setFeedback({
-        type: 'success',
-        message: 'Successfully pre-registered for this donation camp! See you there.',
-        campId,
-      });
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        setFeedback({
-          type: 'error',
-          message: 'Please login with a Donor account to register for this camp.',
-          campId,
-        });
-      } else {
-        setFeedback({
-          type: 'error',
-          message: error.response?.data?.message || 'Failed to register for camp.',
-          campId,
-        });
-      }
-    } finally {
-      setRegisteringId(null);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#0d0d14] text-white">
@@ -107,20 +75,6 @@ export default function CampsPage() {
           </p>
         </div>
 
-        {feedback && (
-          <div className={`max-w-2xl mx-auto mb-8 p-4 rounded-xl flex items-center gap-3 border ${
-            feedback.type === 'success' 
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
-              : 'bg-red-500/10 border-red-500/20 text-red-300'
-          }`}>
-            {feedback.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-            ) : (
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            )}
-            <span className="text-sm font-medium">{feedback.message}</span>
-          </div>
-        )}
 
         {loading ? (
           <div className="flex justify-center items-center py-20 text-gray-400">
@@ -140,11 +94,11 @@ export default function CampsPage() {
             {camps.map((camp) => (
               <div
                 key={camp.id}
-                className="bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-red-500/30 rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between"
+                className="bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-red-500/30 rounded-2xl p-6 transition-all duration-300 flex flex-col"
               >
                 <div>
                   <div className="flex items-start justify-between gap-4 mb-4">
-                    <h3 className="text-xl font-bold text-white group-hover:text-red-400 transition-colors">
+                    <h3 className="text-xl font-bold text-white">
                       {camp.name}
                     </h3>
                     <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 shrink-0">
@@ -152,7 +106,7 @@ export default function CampsPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-3 mb-6 text-sm text-gray-300">
+                  <div className="space-y-3 mb-4 text-sm text-gray-300">
                     <div className="flex items-center gap-3">
                       <Calendar className="w-4 h-4 text-red-400 flex-shrink-0" />
                       <span>{camp.scheduledDate}</span>
@@ -168,14 +122,17 @@ export default function CampsPage() {
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => handleRegister(camp.id)}
-                  loading={registeringId === camp.id}
-                  variant="primary"
-                  className="w-full justify-center"
+                {/* Slot booking toggle */}
+                <button
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors text-left mb-2 font-medium"
+                  onClick={() => setExpandedCampId(expandedCampId === camp.id ? null : camp.id)}
                 >
-                  Pre-Register as Donor
-                </Button>
+                  {expandedCampId === camp.id ? '▲ Hide time slots' : '▼ View & book a time slot'}
+                </button>
+
+                {expandedCampId === camp.id && (
+                  <SlotPicker hostType="camp" hostId={camp.id} />
+                )}
               </div>
             ))}
           </div>
