@@ -23,6 +23,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private JwtTokenProvider tokenProvider;
 
     @Autowired
+    @org.springframework.context.annotation.Lazy
     private UserDetailsService customUserDetailsService; // Interface provided by Spring Security
 
     @Override

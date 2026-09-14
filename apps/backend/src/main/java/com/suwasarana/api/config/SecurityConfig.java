@@ -55,6 +55,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/inventory/**").permitAll()
                 .requestMatchers("/api/contact/**").permitAll()
                 .requestMatchers("/api/ivr/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/recommended").hasRole("DONOR")
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/my-camps").hasAnyRole("HOSPITAL_REQUESTER", "BLOOD_BANK_REQUESTER")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/*/slots").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/hospitals/*/slots").permitAll()

@@ -4,5 +4,6 @@ public enum Role {
     DONOR,
     REQUESTER,
     HOSPITAL_REQUESTER,
+    BLOOD_BANK_REQUESTER,
     ADMIN
 }
