@@ -1,20 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 import apiClient from '@/lib/apiClient';
-import { Calendar, MapPin, Users, Heart } from 'lucide-react';
-
-// Fix Leaflet's default icon issue with Webpack by using a custom HTML div icon
-const customMarkerIcon = L.divIcon({
-  className: 'custom-map-marker',
-  html: `<div style="background-color: #ef4444; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(239,68,68,0.8);"></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-  popupAnchor: [0, -10],
-});
 
 interface Camp {
   id: number;
@@ -32,56 +20,142 @@ interface Camp {
 }
 
 export default function AdminMap() {
-  const [camps, setCamps] = useState<Camp[]>([]);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInstanceRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markersLayerRef = useRef<any>(null);
 
   useEffect(() => {
-    // Admin can fetch all upcoming camps
-    apiClient.get('/camps')
-      .then(res => setCamps(res.data))
-      .catch(err => console.error(err));
+    let isMounted = true;
+
+    async function initMap() {
+      if (!mapContainerRef.current) return;
+
+      const L = (await import('leaflet')).default;
+
+      if (!isMounted) return;
+
+      if (!mapInstanceRef.current) {
+        const map = L.map(mapContainerRef.current, {
+          center: [7.8731, 80.7718],
+          zoom: 7.5,
+          minZoom: 6,
+          maxZoom: 14,
+          zoomControl: true,
+          attributionControl: false,
+        });
+
+        // Same tile source as SriLankaHeatmap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          className: 'dark-map-tiles',
+        }).addTo(map);
+
+        const markersLayer = L.layerGroup().addTo(map);
+        mapInstanceRef.current = map;
+        markersLayerRef.current = markersLayer;
+      }
+
+      // Fetch camps and plot markers
+      try {
+        const res = await apiClient.get<Camp[]>('/camps');
+        const camps: Camp[] = res.data;
+
+        if (!isMounted || !markersLayerRef.current) return;
+        markersLayerRef.current.clearLayers();
+
+        camps.forEach((camp) => {
+          if (!camp.latitude || !camp.longitude) return;
+
+          const isScheduled = camp.status === 'SCHEDULED';
+          const color = isScheduled ? '#ef4444' : '#6b7280';
+          const pulse = isScheduled ? 'marker-pulse-critical' : '';
+
+          const customIcon = L.divIcon({
+            className: 'custom-district-marker',
+            html: `
+              <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                ${pulse ? `<div class="${pulse}" style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: ${color}; opacity: 0.4;"></div>` : ''}
+                <div style="
+                  width: 26px; height: 26px; border-radius: 50%;
+                  background: #0f0f1a;
+                  border: 2px solid ${color};
+                  box-shadow: 0 0 12px ${color}80;
+                  display: flex; align-items: center; justify-content: center;
+                  font-size: 11px; font-weight: 800; color: #ffffff; z-index: 10;
+                ">🩸</div>
+              </div>
+            `,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+            popupAnchor: [0, -20],
+          });
+
+          const marker = L.marker([camp.latitude, camp.longitude], { icon: customIcon });
+
+          const popupContent = `
+            <div style="padding: 14px; min-width: 240px; font-family: inherit; background: #0f0f1a; border-radius: 12px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <h4 style="font-weight: 800; font-size: 14px; color: #ffffff; margin: 0;">${camp.name}</h4>
+                <span style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 6px; background: ${color}20; color: ${color}; border: 1px solid ${color}40;">
+                  ${camp.status}
+                </span>
+              </div>
+              <div style="font-size: 12px; color: #9ca3af; margin-bottom: 10px;">📍 ${camp.location}, ${camp.district}</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px;">
+                <div style="background: rgba(255,255,255,0.05); padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                  <div style="color: #6b7280; margin-bottom: 2px;">Date</div>
+                  <div style="color: #e5e7eb; font-weight: 700;">${camp.scheduledDate}</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                  <div style="color: #6b7280; margin-bottom: 2px;">Time</div>
+                  <div style="color: #e5e7eb; font-weight: 700;">${camp.startTime} – ${camp.endTime}</div>
+                </div>
+              </div>
+              <div style="margin-top: 8px; background: rgba(255,255,255,0.03); padding: 6px 8px; border-radius: 8px; font-size: 11px; color: #d1d5db; border: 1px solid rgba(255,255,255,0.06);">
+                🩸 Required: <strong style="color: #f87171;">${camp.requiredBloodGroups || 'All Types'}</strong>
+              </div>
+              <div style="margin-top: 6px; font-size: 10px; color: #6b7280;">Organized by: ${camp.organizerName}</div>
+            </div>
+          `;
+
+          marker.bindPopup(popupContent, {
+            className: 'dark-popup',
+            maxWidth: 280,
+          });
+          marker.addTo(markersLayerRef.current);
+        });
+      } catch (err) {
+        console.error('Failed to load camps for map:', err);
+      }
+    }
+
+    initMap();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
-    <div className="w-full h-[600px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
-      <MapContainer 
-        center={[7.8731, 80.7718]} 
-        zoom={7} 
-        style={{ height: '100%', width: '100%', background: '#0f172a' }}
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        />
-        
-        {camps.map(camp => (
-          camp.latitude && camp.longitude ? (
-            <Marker 
-              key={camp.id} 
-              position={[camp.latitude, camp.longitude]}
-              icon={customMarkerIcon}
-            >
-              <Popup className="custom-popup">
-                <div className="p-1 space-y-2">
-                  <h3 className="font-bold text-gray-900 text-lg border-b pb-2">{camp.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4 text-rose-500" /> {camp.location}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4 text-amber-500" /> {camp.scheduledDate} ({camp.startTime})
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Heart className="w-4 h-4 text-red-500" /> Required: {camp.requiredBloodGroups || 'All Types'}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 border-t pt-2 mt-2">
-                    <Users className="w-4 h-4 text-blue-500" /> Org: {camp.organizerName}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ) : null
-        ))}
-      </MapContainer>
+    <div className="relative w-full h-[600px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-[#09090e]">
+      <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Legend Overlay */}
+      <div className="absolute bottom-4 left-4 z-[400] glass-card p-3 rounded-xl border border-white/10 text-xs space-y-1.5 shadow-xl">
+        <div className="font-bold text-gray-200 text-[11px] uppercase tracking-wider mb-1">
+          Camp Status
+        </div>
+        <div className="flex items-center gap-2 text-gray-300">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+          <span>Scheduled (Active)</span>
+        </div>
+        <div className="flex items-center gap-2 text-gray-300">
+          <span className="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+          <span>Cancelled / Completed</span>
+        </div>
+      </div>
     </div>
   );
 }
