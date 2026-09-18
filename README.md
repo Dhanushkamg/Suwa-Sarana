@@ -11,30 +11,30 @@
 
 ---
 
-## 🌟 Key Platform Features
+## Key Platform Features
 
-- **🌐 Trilingual Localization**: Native support for **English**, **Sinhala (සිංහල)**, and **Tamil (தமிழ்)** across all public and authenticated interfaces.
-- **📍 Geo-Spatial Proximity Matching**: Sub-millisecond spherical distance calculations (PostgreSQL `earthdistance`) locating the closest eligible donors within progressive search radii (5km → 15km → 25km).
-- **⚡ Two-Tier Notification Cascade**: Real-time Server-Sent Events (SSE) notification stream backed by an automated SMS fallback cascade when donors are offline.
-- **🛡️ Requester & Hospital Trust Verification**: Multi-factor identity and hospital verification portal with critical requisition access control.
-- **🔐 Google OAuth Authentication**: Seamless, secure sign-in using Google Identity Services (FedCM optimized), integrated alongside robust custom JWT session management.
-- **🔒 Security Hardening & Rate Limiting**: Token-bucket rate limiting via Bucket4j, strict CORS protection, secure JWT authentication with refresh token rotation, and robust Content-Security-Policy (CSP) enforcement.
-- **👥 Private Replacement-Donor Circles**: Secure, tokenized share links allowing families to rally private volunteer circles before/alongside public dispatch.
-- **🖼️ Shareable Open Graph Cards**: Dynamic 1200×630 emergency requisition summary cards generated for seamless Facebook, WhatsApp, and Viber community sharing without exposing private patient identity.
-- **🏥 Comprehensive Donation Camp & Blood Bank Management**: Dedicated dashboards for Hospitals and Blood Banks to securely organize, reschedule, and manage national donation camps.
-- **🖼️ Automated High-Res Poster Generator**: Instant, visually stunning, and highly professional JPG campaign posters automatically generated for organizers to share on social media to attract donors.
-- **📅 Walk-in & Appointment Slot Booking**: Sophisticated appointment booking system with QR code check-ins for smooth donor flow and traffic management at camps.
-- **🩸 Intelligent Donor-Camp Filtering**: Donors are algorithmically recommended donation drives that precisely match their verified blood type to minimize wastage and prioritize urgent needs.
-- **🗺️ Interactive Admin Geospatial Map**: Leaflet choropleth visualization monitoring live blood inventory, donor density, shortage indicators, and a real-time geographical view of all active donation camps across the 25 districts.
-- **🤖 Multilingual AI Request Intake (Groq LLM)**: Natural language conversational request intake extracting blood type, urgency, hospital, and units needed from unstructured text in EN, SI, or TA.
-- **💬 Grounded AI Donor FAQ Chatbot**: Trilingual eligibility assistant grounded strictly in National Blood Transfusion Service (NBTS) deferral rules.
-- **⚖️ AI Fraud & Duplicate Triage Console**: Advisory AI scoring engine that prioritizes the moderation queue for human administrators with explainable diagnostic flags.
-- **📖 OpenAPI 3.0 & Swagger UI**: Full interactive API documentation available at `/swagger-ui.html`.
-- **🔄 Automated GitHub Actions CI/CD**: Matrix pipeline executing full backend JUnit test suites and frontend Next.js builds on every commit.
+- **Trilingual Localization**: Native support for **English**, **Sinhala (සිංහල)**, and **Tamil (தமிழ்)** across all public and authenticated interfaces.
+- **Geo-Spatial Proximity Matching**: Sub-millisecond spherical distance calculations (PostgreSQL `earthdistance`) locating the closest eligible donors within progressive search radii (5km → 15km → 25km).
+- **Two-Tier Notification Cascade**: Real-time Server-Sent Events (SSE) notification stream backed by an automated SMS fallback cascade when donors are offline.
+- **Requester & Hospital Trust Verification**: Multi-factor identity and hospital verification portal with critical requisition access control.
+- **Google OAuth Authentication**: Seamless, secure sign-in using Google Identity Services (FedCM optimized), integrated alongside robust custom JWT session management.
+- **Security Hardening & Rate Limiting**: Token-bucket rate limiting via Bucket4j, strict CORS protection, secure JWT authentication with refresh token rotation, and robust Content-Security-Policy (CSP) enforcement.
+- **Private Replacement-Donor Circles**: Secure, tokenized share links allowing families to rally private volunteer circles before/alongside public dispatch.
+- **Shareable Open Graph Cards**: Dynamic 1200×630 emergency requisition summary cards generated for seamless Facebook, WhatsApp, and Viber community sharing without exposing private patient identity.
+- **Comprehensive Donation Camp & Blood Bank Management**: Dedicated dashboards for Hospitals and Blood Banks to securely organize, reschedule, and manage national donation camps.
+- **Automated High-Res Poster Generator**: Instant, visually stunning, and highly professional JPG campaign posters automatically generated for organizers to share on social media to attract donors.
+- **Walk-in & Appointment Slot Booking**: Sophisticated appointment booking system with QR code check-ins for smooth donor flow and traffic management at camps.
+- **Intelligent Donor-Camp Filtering**: Donors are algorithmically recommended donation drives that precisely match their verified blood type to minimize wastage and prioritize urgent needs.
+- **Interactive Admin Geospatial Map**: Leaflet choropleth visualization monitoring live blood inventory, donor density, shortage indicators, and a real-time geographical view of all active donation camps across the 25 districts.
+- **Multilingual AI Request Intake (Groq LLM)**: Natural language conversational request intake extracting blood type, urgency, hospital, and units needed from unstructured text in EN, SI, or TA.
+- **Grounded AI Donor FAQ Chatbot**: Trilingual eligibility assistant grounded strictly in National Blood Transfusion Service (NBTS) deferral rules.
+- **AI Fraud & Duplicate Triage Console**: Advisory AI scoring engine that prioritizes the moderation queue for human administrators with explainable diagnostic flags.
+- **OpenAPI 3.0 & Swagger UI**: Full interactive API documentation available at `/swagger-ui.html`.
+- **Automated GitHub Actions CI/CD**: Matrix pipeline executing full backend JUnit test suites and frontend Next.js builds on every commit.
 
 ---
 
-## 🏗️ Architecture & Technology Stack
+## Architecture & Technology Stack
 
 ```
 suwa-sarana/
@@ -67,7 +67,7 @@ suwa-sarana/
 
 ---
 
-## 🚀 Quickstart Guide
+## Quickstart Guide
 
 ### Prerequisites
 - Java 21 JDK
@@ -106,7 +106,7 @@ pnpm --filter frontend dev
 
 ---
 
-## 🧪 Test Verification
+## Test Verification
 
 ### Backend JUnit Test Suite
 ```bash
@@ -124,7 +124,7 @@ pnpm build
 
 ---
 
-## 📚 Documentation Links
+## Documentation Links
 
 - [Production Deployment Guide](file:///d:/My%20new%20projects/Suwa%20sarana/docs/DEPLOYMENT.md) (`docs/DEPLOYMENT.md`)
 - [Master Implementation Plan](file:///d:/My%20new%20projects/Suwa%20sarana/docs/MASTER_PLAN.md) (`docs/MASTER_PLAN.md`)
@@ -132,6 +132,6 @@ pnpm build
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
