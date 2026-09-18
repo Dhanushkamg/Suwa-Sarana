@@ -134,6 +134,14 @@ export default function DonorFaqChatbot() {
             </button>
           </div>
 
+          {/* Persistent Banner */}
+          <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2.5 flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+            <p className="text-[11px] text-emerald-200/90 leading-tight">
+              Information provided by this assistant is based solely on verified and trusted sources from the National Blood Transfusion Service (NBTS) Sri Lanka.
+            </p>
+          </div>
+
           {/* Messages Area */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
             {messages.map((m) => (
