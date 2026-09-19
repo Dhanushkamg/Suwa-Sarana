@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import apiClient from '@/lib/apiClient';
+import { useI18n } from '@/lib/i18n';
 import { BloodRequest } from '@/types';
 
 interface TriagedRequest extends BloodRequest {
@@ -16,6 +17,7 @@ interface TriagedRequest extends BloodRequest {
 }
 
 export default function AdminTriageQueuePage() {
+  const { t } = useI18n();
   const [requests, setRequests] = useState<TriagedRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,16 +83,16 @@ export default function AdminTriageQueuePage() {
             className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Admin Overview
+            {t('common.back')}
           </Link>
           <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <ShieldAlert className="w-6 h-6" />
             </div>
-            AI Fraud & Duplicate Triage Queue
+            {t('adminDashboard.triageTitle')}
           </h1>
           <p className="text-gray-400 mt-1">
-            Machine learning heuristic scoring and explainable anomaly hints for rapid admin prioritization.
+            {t('adminDashboard.triageDesc')}
           </p>
         </div>
 
@@ -101,7 +103,7 @@ export default function AdminTriageQueuePage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-semibold transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh Queue
+            {t('adminDashboard.refreshQueue')}
           </button>
         </div>
       </div>
@@ -110,9 +112,9 @@ export default function AdminTriageQueuePage() {
       <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4 flex items-start gap-3 text-blue-300 text-xs">
         <Bot className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
         <div>
-          <strong className="text-white block mb-0.5">AI-suggested Prioritization Only — Review Required</strong>
+          <strong className="text-white block mb-0.5">{t('adminDashboard.aiPrioritization')}</strong>
           <span>
-            These risk scores rank suspicious and high-frequency requisitions for human review. The AI assistant never automatically cancels or rejects requests.
+            {t('adminDashboard.aiPrioritizationDesc')}
           </span>
         </div>
       </div>
@@ -134,7 +136,7 @@ export default function AdminTriageQueuePage() {
               : 'glass-card border-white/5 hover:bg-white/5'
           }`}
         >
-          <span className="text-xs text-gray-400">Total Triaged</span>
+          <span className="text-xs text-gray-400">{t('adminDashboard.totalTriaged')}</span>
           <p className="text-2xl font-bold text-white mt-1">{requests.length}</p>
         </button>
 
@@ -148,7 +150,7 @@ export default function AdminTriageQueuePage() {
         >
           <span className="text-xs text-red-400 font-semibold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-            High Risk (≥ 70)
+            {t('adminDashboard.highRisk')}
           </span>
           <p className="text-2xl font-bold text-red-400 mt-1">{highRiskCount}</p>
         </button>
@@ -163,7 +165,7 @@ export default function AdminTriageQueuePage() {
         >
           <span className="text-xs text-amber-400 font-semibold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            Moderate (40–69)
+            {t('adminDashboard.moderateRisk')}
           </span>
           <p className="text-2xl font-bold text-amber-400 mt-1">{moderateRiskCount}</p>
         </button>
@@ -178,7 +180,7 @@ export default function AdminTriageQueuePage() {
         >
           <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            Low Risk (&lt; 40)
+            {t('adminDashboard.lowRisk')}
           </span>
           <p className="text-2xl font-bold text-emerald-400 mt-1">{lowRiskCount}</p>
         </button>
@@ -189,13 +191,13 @@ export default function AdminTriageQueuePage() {
         {loading ? (
           <div className="glass-card rounded-2xl p-12 text-center text-gray-500">
             <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p>Evaluating and ranking triage queue...</p>
+            <p>{t('adminDashboard.evaluatingQueue')}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="glass-card rounded-2xl p-12 text-center text-gray-500">
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-60" />
-            <h3 className="text-lg font-bold text-white mb-1">Queue is Clear</h3>
-            <p className="text-xs text-gray-400">No requisitions matching this risk threshold.</p>
+            <h3 className="text-lg font-bold text-white mb-1">{t('adminDashboard.queueClear')}</h3>
+            <p className="text-xs text-gray-400">{t('adminDashboard.noThreshold')}</p>
           </div>
         ) : (
           filtered.map((req) => {
@@ -238,7 +240,7 @@ export default function AdminTriageQueuePage() {
 
                   <div className="flex items-center gap-3 self-start lg:self-auto">
                     <div className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 ${badgeBg}`}>
-                      <span>Risk Score:</span>
+                      <span>{t('adminDashboard.riskScore')}:</span>
                       <span className="font-mono text-sm">{score}/100</span>
                     </div>
 
@@ -247,7 +249,7 @@ export default function AdminTriageQueuePage() {
                       className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white text-xs font-medium inline-flex items-center gap-1.5 transition-colors"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      View
+                      {t('common.view')}
                     </Link>
 
                     {score > 0 && (
@@ -257,7 +259,7 @@ export default function AdminTriageQueuePage() {
                         className="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-medium inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        {resolvingId === req.id ? 'Resolving...' : 'Dismiss Flag'}
+                        {resolvingId === req.id ? t('common.loading') : t('adminDashboard.dismissFlag')}
                       </button>
                     )}
                   </div>
@@ -268,7 +270,7 @@ export default function AdminTriageQueuePage() {
                   <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 flex items-start gap-2.5 text-xs">
                     <Bot className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-semibold text-purple-300">AI Diagnostic Hint:</span>
+                      <span className="font-semibold text-purple-300">{t('adminDashboard.aiDiagnosticHint')}</span>
                       <p className="text-gray-300 mt-0.5">{req.aiFlagReason}</p>
                     </div>
                   </div>

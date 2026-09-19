@@ -6,6 +6,7 @@ import { ArrowLeft, ShieldCheck, ShieldX, UserCheck, AlertCircle, CheckCircle2, 
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/apiClient';
+import { useI18n } from '@/lib/i18n';
 
 interface PendingUser {
   id: number;
@@ -16,6 +17,7 @@ interface PendingUser {
 }
 
 export default function AdminVerificationsPage() {
+  const { t } = useI18n();
   const { user } = useAuthStore();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,13 +83,13 @@ export default function AdminVerificationsPage() {
       <div className="max-w-2xl mx-auto py-16 text-center">
         <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-8 text-red-400">
           <ShieldX className="w-12 h-12 mx-auto mb-4 text-red-400" />
-          <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
+          <h2 className="text-xl font-bold text-white mb-2">{t('adminDashboard.accessDenied')}</h2>
           <p className="text-sm text-gray-300">
-            This management interface is restricted strictly to platform administrators.
+            {t('adminDashboard.accessDeniedDesc')}
           </p>
           <Link href="/dashboard" className="mt-6 inline-block">
             <Button variant="secondary" size="sm">
-              Return to Dashboard
+              {t('common.back')}
             </Button>
           </Link>
         </div>
@@ -103,20 +105,20 @@ export default function AdminVerificationsPage() {
           className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
+          {t('common.back')}
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <UserCheck className="w-8 h-8 text-red-500" />
-              Requester Verifications
+              {t('adminDashboard.verificationsTitle')}
             </h1>
             <p className="text-gray-400 mt-1">
-              Review and approve hospital and requester accounts to grant emergency blood request authorization.
+              {t('adminDashboard.verificationsDesc')}
             </p>
           </div>
           <Button variant="secondary" size="sm" onClick={fetchPendingUsers} loading={loading}>
-            Refresh Queue
+            {t('common.refresh')}
           </Button>
         </div>
       </div>
@@ -138,16 +140,16 @@ export default function AdminVerificationsPage() {
       {loading ? (
         <div className="glass-card rounded-2xl p-12 text-center">
           <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-gray-400">Loading pending verification requests...</p>
+          <p className="text-gray-400">{t('adminDashboard.loadingPending')}</p>
         </div>
       ) : pendingUsers.length === 0 ? (
         <div className="glass-card rounded-2xl p-12 text-center">
           <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center mb-4">
             <ShieldCheck className="w-8 h-8 text-emerald-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-1">Queue is clear!</h3>
+          <h3 className="text-lg font-semibold text-white mb-1">{t('adminDashboard.verificationsClear')}</h3>
           <p className="text-sm text-gray-400 max-w-md mx-auto">
-            There are no pending accounts awaiting verification at this time. All requester accounts are up to date.
+            {t('adminDashboard.noPendingAccounts')}
           </p>
         </div>
       ) : (
@@ -156,11 +158,11 @@ export default function AdminVerificationsPage() {
             <table className="w-full text-left text-sm text-gray-300">
               <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-400">
                 <tr>
-                  <th className="px-6 py-4">Account Details</th>
-                  <th className="px-6 py-4">Contact</th>
-                  <th className="px-6 py-4">Role / Scope</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">{t('adminDashboard.accountDetails')}</th>
+                  <th className="px-6 py-4">{t('publicPages.contact')}</th>
+                  <th className="px-6 py-4">{t('adminDashboard.roleScope')}</th>
+                  <th className="px-6 py-4">{t('bloodRequests.status')}</th>
+                  <th className="px-6 py-4 text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -219,7 +221,7 @@ export default function AdminVerificationsPage() {
                           onClick={() => handleApprove(u.id, u.email)}
                         >
                           <ShieldCheck className="w-4 h-4 mr-1.5" />
-                          Approve
+                          {t('common.approve')}
                         </Button>
                         <Button
                           size="sm"
@@ -229,7 +231,7 @@ export default function AdminVerificationsPage() {
                           onClick={() => handleReject(u.id, u.email)}
                         >
                           <ShieldX className="w-4 h-4 mr-1.5" />
-                          Reject
+                          {t('common.reject')}
                         </Button>
                       </td>
                     </tr>

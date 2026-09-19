@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, ShieldCheck, ShieldAlert, BarChart3, Users, AlertTriangle, CheckCircle2, Flag, UserCheck, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import apiClient from '@/lib/apiClient';
+import { useI18n } from '@/lib/i18n';
 
 type AnalyticsData = Record<string, number>;
 type Report = {
@@ -14,6 +15,7 @@ type Report = {
 };
 
 export default function AdminDashboardPage() {
+  const { t } = useI18n();
   const [analytics, setAnalytics] = useState<AnalyticsData>({});
   const [reports, setReports] = useState<Report[]>([]);
   const [verifyUserId, setVerifyUserId] = useState('');
@@ -67,13 +69,13 @@ export default function AdminDashboardPage() {
         <div>
           <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4">
             <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
+            {t('common.back')}
           </Link>
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <ShieldCheck className="w-8 h-8 text-purple-500" />
-            Admin Overview & Telemetry
+            {t('adminDashboard.overview')}
           </h1>
-          <p className="text-gray-400 mt-1">Platform oversight, live geographic load metrics, and moderation queue.</p>
+          <p className="text-gray-400 mt-1">{t('adminDashboard.overviewDesc')}</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -83,28 +85,28 @@ export default function AdminDashboardPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-medium transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('common.refresh')}
           </button>
           <Link
             href="/dashboard/admin/triage"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-purple-600/25 transition-all"
           >
             <ShieldAlert className="w-4 h-4" />
-            AI Triage Queue
+            {t('adminDashboard.triage')}
           </Link>
           <Link
             href="/dashboard/admin/analytics"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-blue-600/25 transition-all"
           >
             <BarChart3 className="w-4 h-4" />
-            Interactive Heatmap
+            {t('adminDashboard.analytics')}
           </Link>
           <Link
             href="/dashboard/admin/verifications"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-red-500/25 transition-all"
           >
             <UserCheck className="w-4 h-4" />
-            Verification Portal
+            {t('adminDashboard.verifications')}
           </Link>
         </div>
       </div>
@@ -121,17 +123,17 @@ export default function AdminDashboardPage() {
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-cyan-400" />
-            Geographic Shortage Heatmap (Sri Lanka 25 Districts)
+            {t('adminDashboard.mapTitle')}
           </h2>
           <p className="text-sm text-gray-300 mt-1">
-            Explore live donor density, active requisition clusters, and critical shortage alarms on the interactive geospatial map.
+            {t('adminDashboard.mapDesc')}
           </p>
         </div>
         <Link
           href="/dashboard/admin/analytics"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all flex-shrink-0 self-start sm:self-auto"
         >
-          Open Interactive Map →
+          {t('adminDashboard.openMap')}
         </Link>
       </div>
 
@@ -140,23 +142,23 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-3">
             <BarChart3 className="w-6 h-6 text-blue-400" />
-            Blood Request Distribution by District
+            {t('adminDashboard.distributionTitle')}
           </h2>
           <Link
             href="/dashboard/admin/analytics"
             className="text-xs text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1"
           >
-            View Geospatial Map →
+            {t('adminDashboard.viewMap')}
           </Link>
         </div>
 
         {loading ? (
           <div className="text-center py-8 text-gray-500">
             <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p>Loading analytics...</p>
+            <p>{t('common.loading')}</p>
           </div>
         ) : Object.keys(analytics).length === 0 ? (
-          <p className="text-gray-500 text-center py-6">No district analytics data available.</p>
+          <p className="text-gray-500 text-center py-6">{t('adminDashboard.noData')}</p>
         ) : (
           <div className="space-y-3">
             {Object.entries(analytics)
@@ -175,7 +177,7 @@ export default function AdminDashboardPage() {
                         style={{ width: `${Math.max(pct, 5)}%` }}
                       />
                       <span className="absolute inset-0 flex items-center pl-3 text-xs font-semibold text-white">
-                        {numCount} requests
+                        {numCount} {t('common.requests')}
                       </span>
                     </div>
                   </div>
@@ -190,22 +192,22 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-3">
             <Users className="w-6 h-6 text-emerald-400" />
-            Quick Requester Verification
+            {t('adminDashboard.quickVerification')}
           </h2>
           <Link
             href="/dashboard/admin/verifications"
             className="text-xs text-red-400 hover:text-red-300 font-medium inline-flex items-center gap-1"
           >
-            Open full queue →
+            {t('adminDashboard.openQueue')}
           </Link>
         </div>
         <p className="text-xs text-gray-400 mb-4">
-          Quickly approve an individual hospital or requester account ID directly, or use the full verification queue.
+          {t('adminDashboard.quickVerifyDesc')}
         </p>
         <div className="flex gap-3">
           <input
             type="number"
-            placeholder="Enter User ID to verify..."
+            placeholder={t('adminDashboard.enterUserId')}
             value={verifyUserId}
             onChange={(e) => setVerifyUserId(e.target.value)}
             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
@@ -216,17 +218,17 @@ export default function AdminDashboardPage() {
             className="px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors font-medium text-sm disabled:opacity-50 flex items-center gap-2"
           >
             {verifyStatus === 'loading' ? (
-              <span>Verifying...</span>
+              <span>{t('adminDashboard.verifying')}</span>
             ) : verifyStatus === 'success' ? (
-              <><CheckCircle2 className="w-4 h-4" /> Verified!</>
+              <><CheckCircle2 className="w-4 h-4" /> {t('adminDashboard.verified')}</>
             ) : (
-              <><ShieldCheck className="w-4 h-4" /> Verify User</>
+              <><ShieldCheck className="w-4 h-4" /> {t('adminDashboard.verifyUser')}</>
             )}
           </button>
         </div>
         {verifyStatus === 'error' && (
           <p className="text-red-400 text-sm mt-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" /> Failed. Check that the User ID exists and is pending.
+            <AlertTriangle className="w-4 h-4" /> {t('adminDashboard.verifyFailed')}
           </p>
         )}
       </section>
@@ -235,17 +237,17 @@ export default function AdminDashboardPage() {
       <section className="glass-card rounded-2xl p-6 border border-white/10">
         <h2 className="text-xl font-bold text-white flex items-center gap-3 mb-6">
           <Flag className="w-6 h-6 text-red-400" />
-          Flagged Reports ({reports.length})
+          {t('adminDashboard.flaggedReports')} ({reports.length})
         </h2>
         {reports.length === 0 ? (
-          <p className="text-gray-500 text-center py-6">No flagged reports at this time. Platform is healthy.</p>
+          <p className="text-gray-500 text-center py-6">{t('adminDashboard.noReports')}</p>
         ) : (
           <div className="space-y-3">
             {reports.map((report) => (
               <div key={report.id} className="flex items-start gap-4 p-4 rounded-xl bg-red-500/5 border border-red-500/10">
                 <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-white font-medium">Request #{report.requestId}</p>
+                  <p className="text-sm text-white font-medium">{t('common.request')} #{report.requestId}</p>
                   <p className="text-sm text-gray-400 mt-0.5">{report.reason}</p>
                   <p className="text-xs text-gray-600 mt-1">{new Date(report.createdAt).toLocaleString()}</p>
                 </div>

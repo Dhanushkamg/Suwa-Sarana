@@ -8,8 +8,10 @@ import {
 import Link from 'next/link';
 import apiClient from '@/lib/apiClient';
 import SriLankaHeatmap, { DistrictSummary } from '@/components/maps/SriLankaHeatmap';
+import { useI18n } from '@/lib/i18n';
 
 export default function AdminAnalyticsHeatmapPage() {
+  const { t } = useI18n();
   const [districts, setDistricts] = useState<DistrictSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,16 +66,16 @@ export default function AdminAnalyticsHeatmapPage() {
             className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Admin Overview
+            {t('common.back')}
           </Link>
           <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500/30 to-amber-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
               <MapPin className="w-6 h-6" />
             </div>
-            Sri Lanka District Shortage Heatmap
+            {t('adminDashboard.heatmapTitle')}
           </h1>
           <p className="text-gray-400 mt-1">
-            Real-time geospatial analytics covering donor density, active requisition load, and critical shortages across all 25 districts.
+            {t('adminDashboard.heatmapDesc')}
           </p>
         </div>
 
@@ -84,7 +86,7 @@ export default function AdminAnalyticsHeatmapPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-semibold transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh Telemetry
+            {t('adminDashboard.refreshTelemetry')}
           </button>
         </div>
       </div>
@@ -100,40 +102,40 @@ export default function AdminAnalyticsHeatmapPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card p-5 rounded-2xl border border-white/10 relative overflow-hidden">
           <div className="flex items-center justify-between text-gray-400 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Registered Donors</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">{t('adminDashboard.registeredDonors')}</span>
             <Users className="w-4 h-4 text-emerald-400" />
           </div>
           <p className="text-2xl font-black text-white">{totalDonors}</p>
           <p className="text-xs text-emerald-400/80 mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> 25 districts active
+            <CheckCircle2 className="w-3.5 h-3.5" /> {t('adminDashboard.districtsActive')}
           </p>
         </div>
 
         <div className="glass-card p-5 rounded-2xl border border-white/10 relative overflow-hidden">
           <div className="flex items-center justify-between text-gray-400 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Active Requests</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">{t('adminDashboard.activeRequests')}</span>
             <Droplets className="w-4 h-4 text-red-400" />
           </div>
           <p className="text-2xl font-black text-white">{totalActiveRequests}</p>
-          <p className="text-xs text-gray-400 mt-1">Open & escalating emergencies</p>
+          <p className="text-xs text-gray-400 mt-1">{t('adminDashboard.openEmergencies')}</p>
         </div>
 
         <div className="glass-card p-5 rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-950/20 to-neutral-900/60 relative overflow-hidden">
           <div className="flex items-center justify-between text-gray-400 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-red-300">Critical Shortages</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-red-300">{t('adminDashboard.criticalShortages')}</span>
             <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
           </div>
           <p className="text-2xl font-black text-red-400">{criticalDistricts}</p>
-          <p className="text-xs text-red-300/80 mt-1">Districts requiring urgent mobilization</p>
+          <p className="text-xs text-red-300/80 mt-1">{t('adminDashboard.urgentMobilization')}</p>
         </div>
 
         <div className="glass-card p-5 rounded-2xl border border-white/10 relative overflow-hidden">
           <div className="flex items-center justify-between text-gray-400 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">National Fulfillment</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">{t('adminDashboard.nationalFulfillment')}</span>
             <TrendingUp className="w-4 h-4 text-blue-400" />
           </div>
           <p className="text-2xl font-black text-white">{avgFulfillment}%</p>
-          <p className="text-xs text-gray-400 mt-1">Average requisition resolution</p>
+          <p className="text-xs text-gray-400 mt-1">{t('adminDashboard.avgResolution')}</p>
         </div>
       </div>
 
@@ -144,7 +146,7 @@ export default function AdminAnalyticsHeatmapPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/5 p-3.5 rounded-2xl border border-white/10">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-300">
               <Filter className="w-4 h-4 text-red-400" />
-              Filter Map View:
+              {t('adminDashboard.filterMap')}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {(['ALL', 'CRITICAL', 'WARNING', 'BALANCED', 'SURPLUS'] as const).map((lvl) => (
@@ -157,7 +159,7 @@ export default function AdminAnalyticsHeatmapPage() {
                       : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  {lvl === 'ALL' ? 'All Districts' : lvl}
+                  {lvl === 'ALL' ? t('adminDashboard.allDistricts') : lvl}
                 </button>
               ))}
             </div>
@@ -175,10 +177,10 @@ export default function AdminAnalyticsHeatmapPage() {
           <div>
             <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
               <Activity className="w-5 h-5 text-red-400" />
-              District Focus
+              {t('adminDashboard.districtFocus')}
             </h3>
             <p className="text-xs text-gray-400 mb-6">
-              Click on any district marker on the map to inspect live metrics.
+              {t('adminDashboard.inspectMetrics')}
             </p>
 
             {selectedDistrict ? (
@@ -202,26 +204,26 @@ export default function AdminAnalyticsHeatmapPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
-                    <p className="text-[11px] text-gray-400">Available Donors</p>
+                    <p className="text-[11px] text-gray-400">{t('adminDashboard.availableDonors')}</p>
                     <p className="text-lg font-bold text-emerald-400">{selectedDistrict.donorCount}</p>
                   </div>
                   <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
-                    <p className="text-[11px] text-gray-400">Active Requests</p>
+                    <p className="text-[11px] text-gray-400">{t('adminDashboard.activeRequests')}</p>
                     <p className="text-lg font-bold text-red-400">{selectedDistrict.activeRequests}</p>
                   </div>
                   <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
-                    <p className="text-[11px] text-gray-400">Fulfilled Requests</p>
+                    <p className="text-[11px] text-gray-400">{t('adminDashboard.fulfilledRequests')}</p>
                     <p className="text-lg font-bold text-blue-400">{selectedDistrict.fulfilledRequests}</p>
                   </div>
                   <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
-                    <p className="text-[11px] text-gray-400">Total Requests</p>
+                    <p className="text-[11px] text-gray-400">{t('adminDashboard.totalRequests')}</p>
                     <p className="text-lg font-bold text-white">{selectedDistrict.totalRequests}</p>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
                   <div className="flex justify-between text-xs text-gray-300">
-                    <span>Fulfillment Rate:</span>
+                    <span>{t('adminDashboard.fulfillmentRate')}</span>
                     <span className="font-bold text-emerald-400">{selectedDistrict.fulfillmentRate}%</span>
                   </div>
                   <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
@@ -234,14 +236,14 @@ export default function AdminAnalyticsHeatmapPage() {
               </div>
             ) : (
               <div className="text-center py-12 rounded-xl bg-white/2 border border-dashed border-white/10 text-gray-500 text-xs">
-                No district selected. Click on a marker to inspect details.
+                {t('adminDashboard.noDistrictSelected')}
               </div>
             )}
           </div>
 
           <div className="pt-6 border-t border-white/10">
             <p className="text-[11px] text-gray-500">
-              Telemetry refreshed automatically from verified donor registrations and active emergency requisitions.
+              {t('adminDashboard.telemetryRefreshed')}
             </p>
           </div>
         </div>
@@ -253,10 +255,10 @@ export default function AdminAnalyticsHeatmapPage() {
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-blue-400" />
-              Comprehensive District Telemetry Table
+              {t('adminDashboard.telemetryTable')}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              Live breakdown across all 25 administrative districts of Sri Lanka.
+              {t('adminDashboard.telemetryTableDesc')}
             </p>
           </div>
 
@@ -264,7 +266,7 @@ export default function AdminAnalyticsHeatmapPage() {
             <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search district..."
+              placeholder={t('common.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 transition-colors"
@@ -276,19 +278,19 @@ export default function AdminAnalyticsHeatmapPage() {
           <table className="w-full text-left text-xs text-gray-300">
             <thead className="bg-white/5 uppercase font-bold text-gray-400 border-b border-white/10">
               <tr>
-                <th className="py-3 px-4">District</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Available Donors</th>
-                <th className="py-3 px-4 text-right">Active Requests</th>
-                <th className="py-3 px-4 text-right">Fulfilled</th>
-                <th className="py-3 px-4">Fulfillment Rate</th>
+                <th className="py-3 px-4">{t('publicPages.district')}</th>
+                <th className="py-3 px-4">{t('bloodRequests.status')}</th>
+                <th className="py-3 px-4 text-right">{t('adminDashboard.availableDonors')}</th>
+                <th className="py-3 px-4 text-right">{t('adminDashboard.activeRequests')}</th>
+                <th className="py-3 px-4 text-right">{t('adminDashboard.fulfilled')}</th>
+                <th className="py-3 px-4">{t('adminDashboard.fulfillmentRate').replace(':', '')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredDistricts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-gray-500">
-                    No districts matching your filter.
+                    {t('adminDashboard.noDistrictsFilter')}
                   </td>
                 </tr>
               ) : (

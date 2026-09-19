@@ -2,10 +2,12 @@
 
 import dynamic from 'next/dynamic';
 import { Map, MapPin, Calendar, Heart } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 const AdminMap = dynamic(() => import('@/components/camps/AdminMap'), { ssr: false });
 
 export default function AdminCampsPage() {
+  const { t } = useI18n();
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
@@ -20,12 +22,12 @@ export default function AdminCampsPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase tracking-wider">
-                  Admin Map View
+                  {t('adminDashboard.adminMapView')}
                 </span>
               </div>
-              <h1 className="text-3xl font-bold text-white">Geospatial Camp Tracking</h1>
+              <h1 className="text-3xl font-bold text-white">{t('adminDashboard.geospatialTracking')}</h1>
               <p className="text-gray-400 text-sm mt-1 max-w-xl">
-                Monitor all national blood donation drives in real-time across the country.
+                {t('adminDashboard.geospatialTrackingDesc')}
               </p>
             </div>
           </div>
@@ -36,10 +38,10 @@ export default function AdminCampsPage() {
       <div className="glass-card rounded-3xl p-6 border border-white/5">
         <div className="flex items-center gap-6 mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-            <span className="w-3 h-3 rounded-full bg-blue-500" /> Active Camps
+            <span className="w-3 h-3 rounded-full bg-blue-500" /> {t('adminDashboard.activeCamps')}
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-            <span className="w-3 h-3 rounded-full bg-red-500" /> Critical Shortages
+            <span className="w-3 h-3 rounded-full bg-red-500" /> {t('adminDashboard.criticalShortages')}
           </div>
         </div>
         
