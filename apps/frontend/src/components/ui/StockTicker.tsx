@@ -32,16 +32,19 @@ export function StockTicker() {
 
   if (signals.length === 0) return null;
 
+  // Duplicate signals to create a seamless loop
+  const loopSignals = [...signals, ...signals];
+
   return (
-    <div className="bg-red-950/30 border-y border-red-900/50 py-3 overflow-hidden flex whitespace-nowrap">
-      <div className="flex animate-marquee gap-8 items-center px-4">
-        {signals.map((sig, idx) => (
-          <div key={idx} className="flex items-center gap-2 text-sm">
-            <Activity className="w-4 h-4 text-red-500 animate-pulse" />
+    <div className="bg-red-950/30 border-y border-red-900/50 py-3 overflow-hidden flex whitespace-nowrap group">
+      <div className="flex w-max animate-marquee-horizontal gap-8 items-center px-4 group-hover:hover-pause shrink-0">
+        {loopSignals.map((sig, idx) => (
+          <div key={idx} className="flex items-center gap-2 text-sm shrink-0">
+            <Activity className="w-4 h-4 text-red-500 animate-pulse shrink-0" />
             <span className="font-semibold text-white">{sig.hospitalName} ({sig.district})</span>
             <span className="text-gray-400">needs</span>
             <span className="font-bold text-red-400">{sig.bloodType}</span>
-            <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">
+            <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
               {sig.status}
             </span>
           </div>

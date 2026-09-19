@@ -70,6 +70,28 @@ body {
   animation: float 4s ease-in-out infinite;
 }
 
+@keyframes marquee-horizontal {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes marquee-vertical {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+.animate-marquee-horizontal {
+  animation: marquee-horizontal 30s linear infinite;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical 20s linear infinite;
+}
+
+.hover-pause:hover {
+  animation-play-state: paused;
+}
+
 .gradient-text {
   background: linear-gradient(135deg, #ef4444, #f97316, #ef4444);
   background-size: 200% auto;

@@ -1,13 +1,16 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useI18n } from '@/lib/i18n';
 import Link from 'next/link';
-import { Heart, Zap, Shield, Users, ArrowRight, MapPin, Clock, Star, Calendar } from 'lucide-react';
+import { Heart, Zap, Shield, Users, ArrowRight, MapPin, Clock, Star, Calendar, Menu, X } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { StockTicker } from '@/components/ui/StockTicker';
 
 export default function Home() {
   const { t } = useI18n();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#0d0d14] text-white overflow-x-hidden">
@@ -28,7 +31,7 @@ export default function Home() {
             <Link href="#stats" className="hover:text-white transition-colors">{t('nav.impact')}</Link>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <LanguageSwitcher />
             <Link
               href="/login"
@@ -43,7 +46,44 @@ export default function Home() {
               {t('nav.donateBlood')}
             </Link>
           </div>
+
+          {/* Mobile Menu Toggle */}
+          <button
+            className="md:hidden p-2 -mr-2 text-gray-400 hover:text-white transition-colors"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-16 left-0 w-full bg-[#0d0d14]/95 backdrop-blur-xl border-b border-white/5 py-4 px-6 flex flex-col gap-4 shadow-2xl">
+            <Link href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-white py-2">{t('nav.howItWorks')}</Link>
+            <Link href="#features" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-white py-2">{t('nav.features')}</Link>
+            <Link href="/camps" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-white py-2 flex items-center gap-2"><Calendar className="w-4 h-4 text-red-400" /> Donation Camps</Link>
+            <Link href="#stats" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-white py-2">{t('nav.impact')}</Link>
+            <div className="h-px w-full bg-white/10 my-2" />
+            <div className="flex flex-col gap-3">
+              <LanguageSwitcher />
+              <Link
+                href="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-center text-gray-300 hover:text-white py-2 bg-white/5 rounded-xl border border-white/10"
+              >
+                {t('nav.signIn')}
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-center font-semibold bg-gradient-to-r from-red-500 to-rose-600 text-white py-2.5 rounded-xl shadow-lg shadow-red-500/25"
+              >
+                {t('nav.donateBlood')}
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Stock Ticker Banner */}
