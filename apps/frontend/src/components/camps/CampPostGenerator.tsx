@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import * as htmlToImage from 'html-to-image';
 import { Download, Loader2, Droplets, Heart, Calendar, MapPin, Clock, Share2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/lib/i18n';
 
 interface CampPostProps {
   camp: {
@@ -20,6 +21,7 @@ interface CampPostProps {
 }
 
 export default function CampPostGenerator({ camp, onClose }: CampPostProps) {
+  const { t } = useI18n();
   const postRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -203,14 +205,14 @@ export default function CampPostGenerator({ camp, onClose }: CampPostProps) {
         {/* Right Column: Controls */}
         <div className="w-full md:w-96 flex flex-col gap-6 shrink-0">
           <div>
-            <h3 className="text-2xl font-bold text-white mb-2">Camp Campaign Poster</h3>
+            <h3 className="text-2xl font-bold text-white mb-2">{t('modals.posterTitle')}</h3>
             <p className="text-gray-400 text-sm leading-relaxed">
-              This high-resolution image is automatically generated using your camp's details. You can download and share it on Facebook, Instagram, or WhatsApp to attract donors.
+              {t('modals.posterDesc')}
             </p>
           </div>
 
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
-            <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-2">Campaign Details</h4>
+            <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-2">{t('modals.campaignDetails')}</h4>
             
             <div className="flex items-start gap-3">
               <MapPin className="w-5 h-5 text-gray-500 shrink-0" />
@@ -253,10 +255,10 @@ export default function CampPostGenerator({ camp, onClose }: CampPostProps) {
               loading={downloading}
             >
               {downloading ? (
-                <>Generating High-Res JPG...</>
+                <>{t('modals.generatingJpg')}</>
               ) : (
                 <>
-                  <Download className="w-5 h-5 mr-2" /> Download Poster
+                  <Download className="w-5 h-5 mr-2" /> {t('modals.downloadPoster')}
                 </>
               )}
             </Button>
@@ -267,7 +269,7 @@ export default function CampPostGenerator({ camp, onClose }: CampPostProps) {
               onClick={onClose}
               disabled={downloading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
         </div>

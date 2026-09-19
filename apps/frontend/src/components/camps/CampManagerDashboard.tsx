@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Plus, Clock, MapPin, Share2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { Button } from '@/components/ui/Button';
 import SlotManager from '@/components/slots/SlotManager';
@@ -26,6 +27,7 @@ interface DonationCampDto {
 
 export default function CampManagerDashboard() {
   const { user } = useAuthStore();
+  const { t } = useI18n();
   const [camps, setCamps] = useState<DonationCampDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +62,7 @@ export default function CampManagerDashboard() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Calendar className="w-5 h-5 text-rose-500" />
-          My Managed Donation Camps
+          {t('campManager.managedCamps')}
         </h2>
         <div className="flex items-center gap-3">
           <button
@@ -69,10 +71,10 @@ export default function CampManagerDashboard() {
             className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium transition-colors border border-white/10"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('campManager.refresh')}
           </button>
           <Button size="sm" className="bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-900/20" onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" /> Create Camp
+            <Plus className="w-4 h-4 mr-1" /> {t('campManager.createCamp')}
           </Button>
         </div>
       </div>
@@ -87,13 +89,13 @@ export default function CampManagerDashboard() {
       {loading ? (
         <div className="glass-card rounded-2xl p-12 text-center text-gray-400">
           <div className="inline-block w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p>Loading your campaigns...</p>
+          <p>{t('campManager.loadingCampaigns')}</p>
         </div>
       ) : camps.length === 0 ? (
         <div className="glass-card rounded-2xl p-12 text-center border-dashed border-white/10 space-y-3">
           <Calendar className="w-12 h-12 text-gray-600 mx-auto" />
-          <p className="text-white font-medium">No donation camps organized yet</p>
-          <p className="text-sm text-gray-400">Create a new blood drive to start recruiting donors.</p>
+          <p className="text-white font-medium">{t('campManager.noCampsOrganized')}</p>
+          <p className="text-sm text-gray-400">{t('campManager.noCampsDesc')}</p>
         </div>
       ) : (
         <div className="grid gap-6">
@@ -135,7 +137,7 @@ export default function CampManagerDashboard() {
                     onClick={() => setCampToGeneratePost(camp)}
                   >
                     <Share2 className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
-                    Share Poster
+                    {t('campManager.sharePoster')}
                   </Button>
                   <Button 
                     variant="secondary"
@@ -144,7 +146,7 @@ export default function CampManagerDashboard() {
                     onClick={() => setActiveCampForSlots(activeCampForSlots === camp.id ? null : camp.id)}
                   >
                     <Clock className={`w-3.5 h-3.5 mr-1.5 ${activeCampForSlots === camp.id ? 'text-white' : 'text-rose-400'}`} />
-                    {activeCampForSlots === camp.id ? 'Close Slots' : 'Manage Slots'}
+                    {activeCampForSlots === camp.id ? t('campManager.closeSlots') : t('campManager.manageSlots')}
                   </Button>
                 </div>
               </div>
@@ -153,7 +155,7 @@ export default function CampManagerDashboard() {
               {activeCampForSlots === camp.id && (
                 <div className="bg-black/20 border-t border-white/5 p-6 animate-in slide-in-from-top-2 duration-300">
                   <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-rose-400" /> Appointments & Walk-ins
+                    <Clock className="w-4 h-4 text-rose-400" /> {t('campManager.appointmentsWalkins')}
                   </h4>
                   <SlotManager hostType="camp" hostId={camp.id} />
                 </div>

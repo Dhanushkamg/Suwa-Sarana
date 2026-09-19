@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Users, Clock, CheckCircle2, AlertCircle, Loader2, RefreshCw, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { DonationSlot, SlotBooking } from '@/types';
 
@@ -19,6 +20,7 @@ function formatDateTime(iso: string) {
 }
 
 export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
+  const { t } = useI18n();
   const [slots, setSlots] = useState<DonationSlot[]>([]);
   const [rosterSlotId, setRosterSlotId] = useState<number | null>(null);
   const [roster, setRoster] = useState<SlotBooking[]>([]);
@@ -159,18 +161,18 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">Slot Manager</h2>
+        <h2 className="text-lg font-bold text-white">{t('slotManager.slotManager')}</h2>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={fetchSlots}>
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setShowScanner(true)}>
             <QrCode className="w-3.5 h-3.5 mr-1" />
-            Scan QR
+            {t('slotManager.scanQR')}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setShowBulkForm(v => !v)}>
             <Plus className="w-3.5 h-3.5 mr-1" />
-            Add Slots
+            {t('slotManager.addSlots')}
           </Button>
         </div>
       </div>
@@ -188,15 +190,15 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-[#12121a] border border-white/10 rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Scan Donor QR</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowScanner(false)}>Close</Button>
+              <h3 className="text-lg font-bold text-white">{t('slotManager.scanDonorQR')}</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowScanner(false)}>{t('common.close') || 'Close'}</Button>
             </div>
             
             {/* The ID matches what html5-qrcode targets */}
             <div id="qr-reader" className="w-full rounded-lg overflow-hidden border border-white/10 bg-black/50"></div>
             
             <p className="text-xs text-gray-400 mt-4 text-center">
-              Position the donor's QR code within the camera frame.
+              {t('slotManager.scanInstructions')}
             </p>
           </div>
         </div>
@@ -205,10 +207,10 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
       {/* Bulk create form */}
       {showBulkForm && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-white">Bulk Generate Slots</h3>
+          <h3 className="text-sm font-semibold text-white">{t('slotManager.bulkGenerate')}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Overall Start</label>
+              <label className="block text-xs text-gray-400 mb-1">{t('slotManager.overallStart')}</label>
               <input
                 type="datetime-local"
                 value={bulkForm.overallStartTime}
@@ -217,7 +219,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Overall End</label>
+              <label className="block text-xs text-gray-400 mb-1">{t('slotManager.overallEnd')}</label>
               <input
                 type="datetime-local"
                 value={bulkForm.overallEndTime}
@@ -226,7 +228,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Interval (minutes)</label>
+              <label className="block text-xs text-gray-400 mb-1">{t('slotManager.intervalMinutes')}</label>
               <input
                 type="number"
                 min={5}
@@ -236,7 +238,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Donors per slot</label>
+              <label className="block text-xs text-gray-400 mb-1">{t('slotManager.donorsPerSlot')}</label>
               <input
                 type="number"
                 min={1}
@@ -247,9 +249,9 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="ghost" size="sm" onClick={() => setShowBulkForm(false)}>Cancel</Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowBulkForm(false)}>{t('common.cancel') || 'Cancel'}</Button>
             <Button variant="primary" size="sm" loading={creating} onClick={handleBulkCreate}>
-              Generate Slots
+              {t('slotManager.generateSlots')}
             </Button>
           </div>
         </div>
@@ -258,7 +260,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
       {/* Slot list */}
       {slots.length === 0 ? (
         <div className="text-center py-10 border border-white/5 rounded-2xl bg-white/[0.02] text-gray-400 text-sm">
-          No slots created yet. Use "Add Slots" to generate time windows.
+          {t('slotManager.noSlotsCreated')}
         </div>
       ) : (
         <div className="space-y-3">
@@ -307,7 +309,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
                     size="sm"
                     onClick={() => isExpanded ? setRosterSlotId(null) : fetchRoster(slot.id)}
                   >
-                    {isExpanded ? 'Hide Roster' : 'View Roster'}
+                    {isExpanded ? t('slotManager.hideRoster') : t('slotManager.viewRoster')}
                   </Button>
                 </div>
 
@@ -316,17 +318,17 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
                   <div className="border-t border-white/5 px-4 py-3">
                     {rosterLoading ? (
                       <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading roster...
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('slotManager.loadingRoster')}
                       </div>
                     ) : roster.length === 0 ? (
                       <div className="text-sm text-gray-500 py-2">
-                        <p>No bookings yet for this slot.</p>
+                        <p>{t('slotManager.noBookings')}</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {roster.map(b => (
                           <div key={b.id} className="flex items-center justify-between text-sm">
-                            <span className="text-gray-300">Booking #{b.id}</span>
+                            <span className="text-gray-300">{t('slotManager.booking')} #{b.id}</span>
                             <div className="flex items-center gap-2">
                               <span className={`text-xs ${b.status === 'CHECKED_IN' ? 'text-blue-400' : 'text-gray-400'}`}>
                                 {b.status}
@@ -338,7 +340,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
                                   loading={checkingIn === b.id}
                                   onClick={() => handleCheckIn(slot.id, b.id)}
                                 >
-                                  <CheckCircle2 className="w-3 h-3 mr-1" /> Check In
+                                  <CheckCircle2 className="w-3 h-3 mr-1" /> {t('slotManager.checkIn')}
                                 </Button>
                               )}
                             </div>

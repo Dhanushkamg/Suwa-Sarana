@@ -5,6 +5,7 @@ import { X, Calendar, MapPin, Clock, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import apiClient from '@/lib/apiClient';
+import { useI18n } from '@/lib/i18n';
 
 interface CreateCampModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface CreateCampModalProps {
 }
 
 export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCampModalProps) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -67,7 +69,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
         <div className="sticky top-0 bg-[#0d0d14]/90 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Calendar className="w-5 h-5 text-rose-500" />
-            Create Donation Camp
+            {t('modals.createCampTitle')}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-400">
             <X className="w-5 h-5" />
@@ -86,8 +88,8 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
               <Input
                 id="name"
                 name="name"
-                label="Campaign Name"
-                placeholder="e.g. Annual Blood Drive 2026"
+                label={t('modals.campaignName') || 'Campaign Name'}
+                placeholder={t('modals.campaignNamePlaceholder') || 'e.g. Annual Blood Drive'}
                 value={form.name}
                 onChange={handleChange}
                 required
@@ -95,7 +97,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-300">District</label>
+                  <label className="text-sm font-medium text-gray-300">{t('modals.district') || 'District'}</label>
                   <select
                     name="district"
                     value={form.district}
@@ -111,8 +113,8 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
                 <Input
                   id="location"
                   name="location"
-                  label="Venue / Location Details"
-                  placeholder="e.g. Town Hall, Colombo 07"
+                  label={t('modals.location') || 'Venue / Location Details'}
+                  placeholder={t('modals.locationPlaceholder') || 'e.g. Town Hall'}
                   value={form.location}
                   onChange={handleChange}
                   required
@@ -123,7 +125,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
                 <Input
                   id="latitude"
                   name="latitude"
-                  label="Latitude"
+                  label={t('modals.latitude') || 'Latitude'}
                   type="number"
                   step="any"
                   placeholder="6.9271"
@@ -134,7 +136,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
                 <Input
                   id="longitude"
                   name="longitude"
-                  label="Longitude"
+                  label={t('modals.longitude') || 'Longitude'}
                   type="number"
                   step="any"
                   placeholder="79.8612"
@@ -148,7 +150,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
                 <Input
                   id="scheduledDate"
                   name="scheduledDate"
-                  label="Date"
+                  label={t('modals.date') || 'Date'}
                   type="date"
                   value={form.scheduledDate}
                   onChange={handleChange}
@@ -157,7 +159,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
                 <Input
                   id="startTime"
                   name="startTime"
-                  label="Start Time"
+                  label={t('modals.startTime') || 'Start Time'}
                   type="time"
                   value={form.startTime}
                   onChange={handleChange}
@@ -166,7 +168,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
                 <Input
                   id="endTime"
                   name="endTime"
-                  label="End Time"
+                  label={t('modals.endTime') || 'End Time'}
                   type="time"
                   value={form.endTime}
                   onChange={handleChange}
@@ -177,8 +179,8 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
               <Input
                 id="requiredBloodGroups"
                 name="requiredBloodGroups"
-                label="Required Blood Groups (Optional)"
-                placeholder="e.g. O+, A- (Leave blank if open to all)"
+                label={t('modals.requiredBloodGroups') || 'Required Blood Groups (Optional)'}
+                placeholder={t('modals.requiredBloodGroupsPlaceholder') || 'e.g. O+, A- (Leave blank if open to all)'}
                 value={form.requiredBloodGroups}
                 onChange={handleChange}
               />
@@ -186,10 +188,10 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
 
             <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
               <Button type="button" variant="ghost" onClick={onClose}>
-                Cancel
+                {t('common.cancel') || 'Cancel'}
               </Button>
               <Button type="submit" loading={loading} className="bg-rose-600 hover:bg-rose-500 text-white">
-                Create Camp
+                {t('campManager.createCamp') || 'Create Camp'}
               </Button>
             </div>
           </form>
