@@ -4,8 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Heart, ArrowLeft, Mail, Phone, MapPin } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
+import { useI18n } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 export default function ContactPage() {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -38,13 +41,16 @@ export default function ContactPage() {
             </div>
             <span className="text-lg font-bold text-white">Suwa Sarana</span>
           </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            Back to Home
-          </Link>
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              {t('common.backToHome')}
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -56,10 +62,9 @@ export default function ContactPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 shadow-xl shadow-red-500/30 mb-6">
               <Mail className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-4">Contact Us</h1>
+            <h1 className="text-4xl font-bold text-white mb-4">{t('contact.title')}</h1>
             <p className="text-gray-400 max-w-xl mx-auto leading-relaxed">
-              Have a question, found a bug, or want to partner with us? We&apos;re here to help.
-              Reach out and we&apos;ll respond within 24 hours.
+              {t('contact.subtitle')}
             </p>
           </div>
 
@@ -70,7 +75,7 @@ export default function ContactPage() {
                 <Mail className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                <div className="font-semibold text-white mb-1">Email</div>
+                <div className="font-semibold text-white mb-1">{t('contact.email')}</div>
                 <a
                   href="mailto:support@suwasarana.lk"
                   className="text-sm text-gray-400 hover:text-red-400 transition-colors"
@@ -86,14 +91,14 @@ export default function ContactPage() {
                 <Phone className="w-6 h-6 text-orange-400" />
               </div>
               <div>
-                <div className="font-semibold text-white mb-1">Hotline</div>
+                <div className="font-semibold text-white mb-1">{t('contact.hotline')}</div>
                 <a
                   href="tel:+94112345678"
                   className="text-sm text-gray-400 hover:text-orange-400 transition-colors"
                 >
                   +94 11 234 5678
                 </a>
-                <p className="text-xs text-gray-600 mt-1">Mon–Fri, 8am–6pm</p>
+                <p className="text-xs text-gray-600 mt-1">{t('contact.hours')}</p>
               </div>
             </div>
 
@@ -103,9 +108,9 @@ export default function ContactPage() {
                 <MapPin className="w-6 h-6 text-rose-400" />
               </div>
               <div>
-                <div className="font-semibold text-white mb-1">Location</div>
+                <div className="font-semibold text-white mb-1">{t('contact.locationTitle')}</div>
                 <p className="text-sm text-gray-400">
-                  Colombo 07,<br />Western Province,<br />Sri Lanka
+                  {t('contact.locationDesc')}
                 </p>
               </div>
             </div>
@@ -113,7 +118,7 @@ export default function ContactPage() {
 
           {/* Contact Form */}
           <div className="bg-white/4 border border-white/8 rounded-2xl p-8">
-            <h2 className="text-xl font-semibold text-white mb-6">Send us a message</h2>
+            <h2 className="text-xl font-semibold text-white mb-6">{t('contact.formTitle')}</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
               {submitStatus === 'success' && (
                 <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
@@ -128,47 +133,47 @@ export default function ContactPage() {
               
               <div className="grid sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-300">Full Name</label>
+                  <label className="text-sm font-medium text-gray-300">{t('contact.nameLabel')}</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Your name"
+                    placeholder={t('contact.namePlaceholder')}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-300">Email Address</label>
+                  <label className="text-sm font-medium text-gray-300">{t('contact.emailLabel')}</label>
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="you@example.com"
+                    placeholder={t('contact.emailPlaceholder')}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-300">Subject</label>
+                <label className="text-sm font-medium text-gray-300">{t('contact.subjectLabel')}</label>
                 <input
                   type="text"
                   required
                   value={formData.subject}
                   onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                  placeholder="How can we help?"
+                  placeholder={t('contact.subjectPlaceholder')}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-300">Message</label>
+                <label className="text-sm font-medium text-gray-300">{t('contact.messageLabel')}</label>
                 <textarea
                   rows={5}
                   required
                   value={formData.message}
                   onChange={(e) => setFormData({...formData, message: e.target.value})}
-                  placeholder="Describe your question or issue in detail..."
+                  placeholder={t('contact.messagePlaceholder')}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all resize-none"
                 />
               </div>
@@ -177,7 +182,7 @@ export default function ContactPage() {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
               >
-                {loading ? 'Sending...' : 'Send Message'}
+                {loading ? t('contact.sending') : t('contact.sendBtn')}
               </button>
             </form>
           </div>

@@ -162,12 +162,12 @@ function RegisterForm() {
           } catch (err: unknown) {
             const message =
               (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-              'Registration failed';
+              t('authGoogle.registrationFailed');
             setServerError(message);
             setLoading(false);
           }
         }} className="space-y-4">
-          <p className="text-gray-300 text-sm mb-4">Please complete your profile to finish registration.</p>
+          <p className="text-gray-300 text-sm mb-4">{t('authGoogle.completeProfile')}</p>
           <Select
             id="googleRole"
             label={t('auth.roleLabel')}
@@ -177,7 +177,7 @@ function RegisterForm() {
           />
           <Input
             id="googlePhoneNumber"
-            label="Phone Number"
+            label={t('authGoogle.phoneNumber')}
             placeholder="+94XXXXXXXXX"
             value={googleRegData.phoneNumber}
             onChange={(e) => setGoogleRegData({ ...googleRegData, phoneNumber: e.target.value })}
@@ -185,13 +185,13 @@ function RegisterForm() {
           />
           <Input
             id="googleNicNumber"
-            label="NIC Number (Optional)"
+            label={t('authGoogle.nicOptional')}
             placeholder=""
             value={googleRegData.nicNumber}
             onChange={(e) => setGoogleRegData({ ...googleRegData, nicNumber: e.target.value })}
           />
           <Button type="submit" size="lg" className="w-full mt-4" loading={loading}>
-            Complete Registration
+            {t('authGoogle.completeRegistration')}
           </Button>
         </form>
       ) : (
@@ -316,7 +316,7 @@ function RegisterForm() {
                   } catch (err: unknown) {
                     const message =
                       (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                      'Google registration failed';
+                      t('authGoogle.googleRegFailed');
                     setServerError(message);
                   } finally {
                     setLoading(false);
@@ -324,7 +324,7 @@ function RegisterForm() {
                 }
               }}
               onError={() => {
-                setServerError('Google registration failed');
+                setServerError(t('authGoogle.googleRegFailed'));
               }}
             />
           </div>

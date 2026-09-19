@@ -137,13 +137,13 @@ export default function CircleResponseClient({ token, initialData }: Props) {
             <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 mx-auto flex items-center justify-center text-red-400 mb-4">
               <AlertCircle className="w-8 h-8" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Invite Unavailable</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">{t('circle.inviteUnavailable')}</h1>
             <p className="text-gray-400 text-sm max-w-md mx-auto mb-6">{error}</p>
             <Link
               href="/"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-medium border border-white/10 transition-colors"
             >
-              Go to Home Page
+              {t('circle.goToHome')}
             </Link>
           </div>
         ) : submitted ? (
@@ -152,7 +152,7 @@ export default function CircleResponseClient({ token, initialData }: Props) {
             <div className="w-20 h-20 rounded-3xl bg-emerald-500/20 border border-emerald-500/30 mx-auto flex items-center justify-center text-emerald-400 mb-5 shadow-xl shadow-emerald-500/20">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Thank You, {form.responderName}!</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">{t('circle.thankYou')}, {form.responderName}!</h1>
             <p className="text-gray-300 text-sm max-w-md mx-auto mb-6">
               Your response has been delivered directly to the patient's family/requester. They will contact you shortly at <strong className="text-white">{form.responderPhone}</strong>.
             </p>
@@ -209,10 +209,10 @@ export default function CircleResponseClient({ token, initialData }: Props) {
               <div>
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <User className="w-5 h-5 text-red-400" />
-                  Volunteer to Donate
+                  {t('circle.volunteerTitle')}
                 </h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  Fill in your contact information below so the patient's family can contact you directly.
+                  {t('circle.volunteerDesc')}
                 </p>
               </div>
 
@@ -225,8 +225,8 @@ export default function CircleResponseClient({ token, initialData }: Props) {
 
               <Input
                 id="responder-name"
-                label="Your Full Name"
-                placeholder="e.g. Kasun Perera"
+                label={t('circle.fullName') || "Your Full Name"}
+                placeholder={t('circle.fullNamePlaceholder') || "e.g. Kasun Perera"}
                 value={form.responderName}
                 onChange={(e) => setForm({ ...form, responderName: e.target.value })}
                 required
@@ -235,8 +235,8 @@ export default function CircleResponseClient({ token, initialData }: Props) {
               <Input
                 id="responder-phone"
                 type="tel"
-                label="Your Phone Number"
-                placeholder="e.g. 077 123 4567"
+                label={t('circle.phone') || "Your Phone Number"}
+                placeholder={t('circle.phonePlaceholder') || "e.g. 077 123 4567"}
                 value={form.responderPhone}
                 onChange={(e) => setForm({ ...form, responderPhone: e.target.value })}
                 required
@@ -244,7 +244,7 @@ export default function CircleResponseClient({ token, initialData }: Props) {
 
               <Select
                 id="responder-blood-type"
-                label="Your Blood Type"
+                label={t('circle.bloodType') || "Your Blood Type"}
                 options={bloodTypeOptions}
                 value={form.bloodType}
                 onChange={(e) => setForm({ ...form, bloodType: e.target.value })}
@@ -252,11 +252,11 @@ export default function CircleResponseClient({ token, initialData }: Props) {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                  Notes / Availability (Optional)
+                  {t('circle.notes') || "Notes / Availability (Optional)"}
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. Available after 2 PM today"
+                  placeholder={t('circle.notesPlaceholder') || "e.g. Available after 2 PM today"}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 transition-colors text-sm"
@@ -264,7 +264,7 @@ export default function CircleResponseClient({ token, initialData }: Props) {
               </div>
 
               <Button type="submit" size="lg" className="w-full" loading={submitting}>
-                Submit Volunteering Response
+                {t('circle.submit')}
               </Button>
             </form>
           </div>

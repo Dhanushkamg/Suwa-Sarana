@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/apiClient';
 import { Calendar, MapPin, Clock, Heart, ArrowLeft, Droplets } from 'lucide-react';
 import SlotPicker from '@/components/slots/SlotPicker';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
 interface Camp {
   id: number;
@@ -48,11 +49,12 @@ export default function CampsPage() {
       <header className="border-b border-white/5 bg-[#0d0d14]/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <LanguageSwitcher />
             <Link
               href="/"
               className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Home
+              <ArrowLeft className="w-4 h-4" /> {t('common.backToHome')}
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -69,15 +71,15 @@ export default function CampsPage() {
         <div className="mb-10 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold mb-4">
             <Calendar className="w-3.5 h-3.5" />
-            Community Blood Drives
+            {t('camps.communityDrives')}
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
-            {user?.role === 'DONOR' ? 'Recommended Camps For You' : 'Upcoming Donation Camps'}
+            {user?.role === 'DONOR' ? t('camps.recommendedCamps') : t('camps.upcomingCamps')}
           </h1>
           <p className="text-gray-400 text-sm md:text-base">
             {user?.role === 'DONOR' 
-              ? 'These donation camps specifically need your blood group. Book a slot to help save lives.' 
-              : 'Find and pre-register for upcoming blood donation camps organized across Sri Lanka in partnership with the National Blood Transfusion Service.'}
+              ? t('camps.recommendedDesc')
+              : t('camps.upcomingDesc')}
           </p>
         </div>
 
@@ -85,14 +87,14 @@ export default function CampsPage() {
         {loading ? (
           <div className="flex justify-center items-center py-20 text-gray-400">
             <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mr-3" />
-            Loading upcoming donation camps...
+            {t('camps.loadingCamps')}
           </div>
         ) : camps.length === 0 ? (
           <div className="text-center py-20 border border-white/5 rounded-2xl bg-white/[0.02]">
             <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold text-white mb-2">No Scheduled Camps</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('camps.noScheduledCamps')}</h3>
             <p className="text-gray-400 text-sm max-w-md mx-auto">
-              There are currently no active donation camps scheduled. Please check back soon or register as an on-demand donor.
+              {t('camps.noScheduledCampsDesc')}
             </p>
           </div>
         ) : (
@@ -128,7 +130,7 @@ export default function CampsPage() {
                     {camp.requiredBloodGroups && (
                       <div className="flex items-center gap-3">
                         <Droplets className="w-4 h-4 text-rose-400 flex-shrink-0" />
-                        <span className="font-semibold text-rose-300">Requires: {camp.requiredBloodGroups}</span>
+                        <span className="font-semibold text-rose-300">{t('camps.requires')} {camp.requiredBloodGroups}</span>
                       </div>
                     )}
                   </div>
@@ -139,7 +141,7 @@ export default function CampsPage() {
                   className="text-xs text-red-400 hover:text-red-300 transition-colors text-left mb-2 font-medium"
                   onClick={() => setExpandedCampId(expandedCampId === camp.id ? null : camp.id)}
                 >
-                  {expandedCampId === camp.id ? '▲ Hide time slots' : '▼ View & book a time slot'}
+                  {expandedCampId === camp.id ? `▲ ${t('camps.hideSlots')}` : `▼ ${t('camps.showSlots')}`}
                 </button>
 
                 {expandedCampId === camp.id && (

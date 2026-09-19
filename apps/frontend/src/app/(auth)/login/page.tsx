@@ -120,15 +120,15 @@ export default function LoginPage() {
           } catch (err: unknown) {
             const message =
               (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-              'Registration failed';
+              t('authGoogle.registrationFailed');
             setError(message);
             setLoading(false);
           }
         }} className="space-y-4">
-          <p className="text-gray-300 text-sm mb-4">Please complete your profile to continue.</p>
+          <p className="text-gray-300 text-sm mb-4">{t('authGoogle.completeProfile')}</p>
           <Input
             id="phoneNumber"
-            label="Phone Number"
+            label={t('authGoogle.phoneNumber')}
             placeholder="+94XXXXXXXXX"
             value={googleRegData.phoneNumber}
             onChange={(e) => setGoogleRegData({ ...googleRegData, phoneNumber: e.target.value })}
@@ -136,24 +136,24 @@ export default function LoginPage() {
           />
           <Input
             id="nicNumber"
-            label="NIC Number (Optional)"
+            label={t('authGoogle.nicOptional')}
             placeholder=""
             value={googleRegData.nicNumber}
             onChange={(e) => setGoogleRegData({ ...googleRegData, nicNumber: e.target.value })}
           />
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-300">Role</label>
+            <label className="text-sm font-medium text-gray-300">{t('authGoogle.role')}</label>
             <select
               value={googleRegData.role}
               onChange={(e) => setGoogleRegData({ ...googleRegData, role: e.target.value })}
               className="w-full rounded-xl border border-white/10 bg-white/5 py-3 px-4 text-sm text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-200 focus:border-red-500/60 focus:outline-none focus:ring-2 focus:ring-red-500/20"
             >
-              <option value="DONOR">Donor</option>
-              <option value="REQUESTER">Requester</option>
+              <option value="DONOR">{t('auth.roleDonor')}</option>
+              <option value="REQUESTER">{t('auth.roleRequester')}</option>
             </select>
           </div>
           <Button type="submit" size="lg" className="w-full mt-4" loading={loading}>
-            Complete Registration
+            {t('authGoogle.completeRegistration')}
           </Button>
         </form>
       ) : (
@@ -239,7 +239,7 @@ export default function LoginPage() {
                   } catch (err: unknown) {
                     const message =
                       (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                      'Google authentication failed';
+                      t('authGoogle.googleAuthFailed');
                     setError(message);
                   } finally {
                     setLoading(false);
@@ -247,7 +247,7 @@ export default function LoginPage() {
                 }
               }}
               onError={() => {
-                setError('Google authentication failed');
+                setError(t('authGoogle.googleAuthFailed'));
               }}
             />
           </div>

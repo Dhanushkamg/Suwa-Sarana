@@ -126,13 +126,13 @@ export default function ShareCardClient({ token, initialData }: Props) {
         ) : error || !info ? (
           <div className="glass-card rounded-3xl p-10 text-center border-red-500/20 bg-red-950/10">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">Card Unavailable</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">{t('share.cardUnavailable')}</h1>
             <p className="text-gray-400 text-sm mb-6">{error}</p>
             <Link
               href="/"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm transition-colors border border-white/10"
             >
-              Go to Home Page
+              {t('circle.goToHome')}
             </Link>
           </div>
         ) : (
@@ -149,7 +149,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
                      <div className="flex items-center gap-2">
                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
                        <span className="text-[10px] font-bold uppercase tracking-widest text-red-400">
-                         Verified Broadcast
+                         {t('share.verifiedBroadcast')}
                        </span>
                      </div>
                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
@@ -180,26 +180,26 @@ export default function ShareCardClient({ token, initialData }: Props) {
                   {/* Badges Row */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
-                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Time Left</div>
-                      <div className="text-white font-bold text-sm">{timeLeft || 'Expired'}</div>
+                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {t('share.timeLeft')}</div>
+                      <div className="text-white font-bold text-sm">{timeLeft || t('share.expired')}</div>
                     </div>
                     <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
-                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Location</div>
+                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {t('share.location')}</div>
                       <div className="text-white font-bold text-sm truncate">{info.district}</div>
                     </div>
                     <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
-                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Droplets className="w-3.5 h-3.5" /> Required</div>
+                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Droplets className="w-3.5 h-3.5" /> {t('share.required')}</div>
                       <div className="text-white font-bold text-sm">{info.unitsNeeded} Units</div>
                     </div>
                     <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
-                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> Status</div>
-                      <div className="text-emerald-400 font-bold text-sm">Accepting</div>
+                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> {t('share.status')}</div>
+                      <div className="text-emerald-400 font-bold text-sm">{t('share.accepting')}</div>
                     </div>
                   </div>
 
                   {/* Motivational Text */}
                   <div className="text-center py-4 border-t border-white/5">
-                     <p className="text-sm text-gray-400 italic">"One blood donation can save up to 3 lives."</p>
+                     <p className="text-sm text-gray-400 italic">{t('share.quote')}</p>
                   </div>
                   
                   {/* CTA Button */}
@@ -207,7 +207,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
                     href={`/circle/${token}`}
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-bold text-base shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
                   >
-                    <Heart className="w-5 h-5 fill-white" /> Yes, I want to Volunteer
+                    <Heart className="w-5 h-5 fill-white" /> {t('share.volunteerBtn')}
                   </Link>
                 </div>
               </div>
@@ -218,9 +218,9 @@ export default function ShareCardClient({ token, initialData }: Props) {
               <div className="text-center">
                  <h2 className="text-lg font-bold text-white flex items-center justify-center gap-2 mb-1">
                    <Share2 className="w-5 h-5 text-red-400" />
-                   Share This Request
+                   {t('share.shareTitle')}
                  </h2>
-                 <p className="text-xs text-gray-400">Amplify this appeal across your networks to find a donor faster.</p>
+                 <p className="text-xs text-gray-400">{t('share.shareDesc')}</p>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -288,14 +288,14 @@ export default function ShareCardClient({ token, initialData }: Props) {
                     className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-500 shadow-lg shadow-red-500/20 text-white transition-colors text-sm font-medium"
                  >
                     <Download className="w-4 h-4" />
-                    Download Image for Status/Post
+                    {t('share.downloadImage')}
                  </button>
                  <button
                     onClick={copyLink}
                     className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors text-sm font-medium"
                   >
                     {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    {copied ? 'Copied to Clipboard!' : 'Copy Appeal Message & Link'}
+                    {copied ? t('share.copied') : t('share.copyLink')}
                   </button>
               </div>
             </div>
