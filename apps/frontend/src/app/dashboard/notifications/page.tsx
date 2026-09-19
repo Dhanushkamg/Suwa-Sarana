@@ -28,9 +28,9 @@ export default function NotificationsPage() {
       {
         id: 'init-1',
         type: 'SYSTEM',
-        title: 'Notification Stream Initialized',
-        message: 'Listening for real-time donor matches, emergency escalation alerts, and platform broadcasts.',
-        timestamp: 'Active',
+        title: t('notifications.streamInit'),
+        message: t('notifications.streamInitDesc'),
+        timestamp: t('notifications.active') || 'Active',
       },
     ]);
 
@@ -62,7 +62,7 @@ export default function NotificationsPage() {
                   {
                     id: String(Date.now()) + Math.random(),
                     type: 'MATCH',
-                    title: data.title || 'New Blood Match Dispatch',
+                    title: data.title || t('notifications.newMatch'),
                     message: data.body || data.message || 'A new urgent blood request match has been dispatched to your account.',
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                   },
@@ -76,7 +76,7 @@ export default function NotificationsPage() {
                   {
                     id: String(Date.now()) + Math.random(),
                     type: 'ESCALATION',
-                    title: data.title || 'Search Radius Escalation',
+                    title: data.title || t('notifications.escalation'),
                     message: data.body || data.message || 'Geospatial search radius expanded for pending request.',
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                   },
@@ -90,7 +90,7 @@ export default function NotificationsPage() {
                   {
                     id: String(Date.now()) + Math.random(),
                     type: data.type || 'SYSTEM',
-                    title: data.title || 'Platform Notification',
+                    title: data.title || t('notifications.platformAlert'),
                     message: data.body || data.message || JSON.stringify(data),
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                   },
@@ -102,7 +102,7 @@ export default function NotificationsPage() {
                     {
                       id: String(Date.now()) + Math.random(),
                       type: 'SYSTEM',
-                      title: 'Platform Alert',
+                      title: t('notifications.platformAlert'),
                       message: event.data,
                       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     },
@@ -154,7 +154,7 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/5 border border-white/10 text-xs self-start sm:self-auto">
           <Radio className={`w-3.5 h-3.5 ${connected ? 'text-emerald-400 animate-pulse' : 'text-amber-400'}`} />
           <span className={connected ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium'}>
-            {connected ? 'Live SSE Stream Connected' : 'SSE Disconnected (Auto-reconnecting)'}
+            {connected ? t('notifications.liveConnected') : t('notifications.disconnected')}
           </span>
         </div>
       </div>

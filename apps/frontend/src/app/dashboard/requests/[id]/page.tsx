@@ -149,7 +149,7 @@ export default function RequestLiveStatusPage() {
   };
 
   if (loading) return <div className="text-center py-12 text-gray-500">{t('common.loading')}</div>;
-  if (error || !requestData) return <div className="text-center py-12 text-red-500">{error || 'Request not found'}</div>;
+  if (error || !requestData) return <div className="text-center py-12 text-red-500">{error || t('bloodRequests.notFound')}</div>;
 
   const shareText = `Emergency: Urgent ${requestData.patientBloodType} blood needed at ${requestData.hospitalName} (${requestData.district}). Please check if you can volunteer:`;
   const fullInviteUrl = circleInvite?.inviteUrl || (typeof window !== 'undefined' ? `${window.location.origin}/circle/${circleInvite?.inviteToken}` : '');
@@ -183,7 +183,7 @@ export default function RequestLiveStatusPage() {
             }`}>
               {requestData.urgency}
             </span>
-            <p className="text-xs text-gray-500 font-mono">Request #{requestData.id}</p>
+            <p className="text-xs text-gray-500 font-mono">{t('bloodRequests.details')} #{requestData.id}</p>
           </div>
         </div>
 
@@ -195,19 +195,19 @@ export default function RequestLiveStatusPage() {
             </p>
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-            <p className="text-xs text-gray-400 mb-1">Status</p>
+            <p className="text-xs text-gray-400 mb-1">{t('bloodRequests.status')}</p>
             <p className="text-lg font-bold text-white flex items-center gap-2">
               <Activity className="w-4 h-4 text-blue-400" /> {requestData.status}
             </p>
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-            <p className="text-xs text-gray-400 mb-1">Search Radius</p>
+            <p className="text-xs text-gray-400 mb-1">{t('bloodRequests.searchRadius')}</p>
             <p className="text-lg font-bold text-white flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-400" /> {requestData.currentRadiusKm} km
             </p>
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-            <p className="text-xs text-gray-400 mb-1">Expires</p>
+            <p className="text-xs text-gray-400 mb-1">{t('bloodRequests.expires')}</p>
             <p className="text-lg font-bold text-white flex items-center gap-2 text-sm">
               <Clock className="w-4 h-4 text-gray-400" /> 
               {new Date(requestData.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -226,13 +226,13 @@ export default function RequestLiveStatusPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                Replacement-Donor Private Circle
+                {t('bloodRequests.privateCircle')}
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-semibold uppercase">
-                  Family & Friends
+                  {t('bloodRequests.familyAndFriends')}
                 </span>
               </h2>
               <p className="text-sm text-gray-300 mt-1 max-w-xl">
-                Privately broadcast this blood request directly to your personal WhatsApp groups, family contacts, and social circles. Responses will appear here in real-time.
+                {t('bloodRequests.privateCircleDesc')}
               </p>
             </div>
           </div>
@@ -244,7 +244,7 @@ export default function RequestLiveStatusPage() {
               className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-lg shadow-purple-600/30 transition-all self-start md:self-auto disabled:opacity-50"
             >
               <Share2 className="w-4 h-4" />
-              {circleLoading ? 'Generating Link...' : 'Invite Your Circle'}
+              {circleLoading ? t('bloodRequests.generatingLink') : t('bloodRequests.inviteCircle')}
             </button>
           ) : (
             <button
@@ -252,7 +252,7 @@ export default function RequestLiveStatusPage() {
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white text-xs font-medium self-start md:self-auto transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Refresh Circle
+              {t('bloodRequests.refreshCircle')}
             </button>
           )}
         </div>
@@ -276,7 +276,7 @@ export default function RequestLiveStatusPage() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? 'Copied!' : 'Copy Link'}
+                  {copied ? t('bloodRequests.copied') : t('bloodRequests.copyLink')}
                 </button>
                 <Link
                   href={`/share/${circleInvite.inviteToken}`}
@@ -284,7 +284,7 @@ export default function RequestLiveStatusPage() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-medium transition-colors"
                 >
                   <Share2 className="w-3.5 h-3.5" />
-                  Preview Card
+                  {t('bloodRequests.previewCard')}
                 </Link>
                 <a
                   href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + fullInviteUrl)}`}
@@ -293,7 +293,7 @@ export default function RequestLiveStatusPage() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
-                  WhatsApp
+                  {t('bloodRequests.whatsapp')}
                 </a>
               </div>
             </div>
@@ -302,11 +302,11 @@ export default function RequestLiveStatusPage() {
             <div className="pt-2">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-purple-400" />
-                Circle Volunteers ({circleVolunteers.length})
+                {t('bloodRequests.circleVolunteers')} ({circleVolunteers.length})
               </h3>
               {circleVolunteers.length === 0 ? (
                 <div className="text-center py-8 rounded-xl bg-white/2 border border-white/5 text-gray-500 text-xs">
-                  No responses received yet. Share the invite link with your contacts to gather volunteer responses.
+                  {t('bloodRequests.noResponsesYet')}
                 </div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -346,10 +346,10 @@ export default function RequestLiveStatusPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Activity className="w-5 h-5 text-emerald-400" />
-            Live Matching Telemetry & Search Radius
+            {t('bloodRequests.liveMatchingTelemetry')}
           </h2>
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            Radius: {requestData.currentRadiusKm} km
+            {t('bloodRequests.radius')}: {requestData.currentRadiusKm} km
           </span>
         </div>
 
@@ -366,7 +366,7 @@ export default function RequestLiveStatusPage() {
           <div className="text-center py-6 text-gray-500 border border-dashed border-white/10 rounded-xl">
             <div className="animate-pulse flex flex-col items-center gap-2">
               <Activity className="w-5 h-5 text-emerald-500/50" />
-              <p className="text-xs">Scanning radius for eligible donors...</p>
+              <p className="text-xs">{t('bloodRequests.scanningRadius')}</p>
             </div>
           </div>
         ) : (

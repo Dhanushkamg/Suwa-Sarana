@@ -40,13 +40,13 @@ export default function RequestsListPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">{t('request.statusOpen')}</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">{t('bloodRequests.statusOpen')}</span>;
       case 'ESCALATING':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">{t('request.statusEscalating')}</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">{t('bloodRequests.statusEscalating')}</span>;
       case 'MATCHED':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{t('request.statusMatched')}</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{t('bloodRequests.statusMatched')}</span>;
       case 'FULFILLED':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">{t('request.statusFulfilled')}</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">{t('bloodRequests.statusFulfilled')}</span>;
       default:
         return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">{status}</span>;
     }
@@ -88,7 +88,7 @@ export default function RequestsListPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-medium transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('common.refresh')}
           </button>
           <Link
             href="/dashboard/requests/new"
@@ -115,15 +115,15 @@ export default function RequestsListPage() {
       ) : requests.length === 0 ? (
         <div className="glass-card rounded-2xl p-12 text-center border border-white/5 space-y-3">
           <Droplets className="w-12 h-12 text-gray-600 mx-auto" />
-          <p className="text-white font-medium">No blood requests active right now.</p>
-          <p className="text-sm text-gray-400">Create a new blood request to initiate matching across registered donors.</p>
+          <p className="text-white font-medium">{t('bloodRequests.noActiveRequests')}</p>
+          <p className="text-sm text-gray-400">{t('bloodRequests.noActiveRequestsDesc')}</p>
           <div className="pt-2">
             <Link
               href="/dashboard/requests/new"
               className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-medium text-sm px-4 py-2 rounded-xl transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Create Request
+              {t('bloodRequests.new')}
             </Link>
           </div>
         </div>
@@ -160,7 +160,7 @@ export default function RequestsListPage() {
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 <span className="text-xs text-gray-500 font-mono">#{req.id}</span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold transition-colors">
-                  Manage Circle →
+                  {t('bloodRequests.manageCircle')}
                 </span>
               </div>
             </Link>

@@ -205,7 +205,7 @@ export default function NewBloodRequestPage() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          ✨ AI Natural Language Assistant
+          {t('aiRequest.aiAssistant')}
         </button>
         <button
           type="button"
@@ -217,7 +217,7 @@ export default function NewBloodRequestPage() {
           }`}
         >
           <FileText className="w-4 h-4" />
-          Standard Structured Form
+          {t('aiRequest.standardForm')}
         </button>
       </div>
 
@@ -254,9 +254,9 @@ export default function NewBloodRequestPage() {
               <Bot className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Describe Your Emergency in Plain Words</h2>
+              <h2 className="text-xl font-bold text-white">{t('aiRequest.describeEmergency')}</h2>
               <p className="text-xs text-gray-300 mt-1">
-                Speak or type naturally in <strong>English</strong>, <strong>Sinhala (සිංහල)</strong>, or <strong>Tamil (தமிழ்)</strong>. Our multilingual medical intake AI will extract the blood type, hospital, urgency, and district automatically into an editable draft.
+                {t('aiRequest.aiInstructions')}
               </p>
             </div>
           </div>
@@ -264,7 +264,7 @@ export default function NewBloodRequestPage() {
           <div className="space-y-2">
             <textarea
               rows={4}
-              placeholder="e.g. Karapitiya hospital eke emergency ekakata O+ le units 2k ona wela thiyenawa..."
+              placeholder={t('aiRequest.aiPlaceholder')}
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 transition-colors text-sm leading-relaxed"
@@ -274,10 +274,10 @@ export default function NewBloodRequestPage() {
           {/* Quick Language Sample Chips */}
           <div className="space-y-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-              Or Try an Example Description:
+              {t('aiRequest.tryExample')}
             </span>
             <div className="flex flex-col gap-2">
-              {samplePrompts.map((p, idx) => (
+              {samplePrompts.filter(p => p.lang.toLowerCase() === (locale || 'en')).map((p, idx) => (
                 <button
                   key={idx}
                   type="button"
@@ -304,7 +304,7 @@ export default function NewBloodRequestPage() {
               className="w-full flex items-center justify-center gap-2 font-bold"
             >
               <Sparkles className="w-4 h-4" />
-              {aiLoading ? 'Analyzing & Extracting Details...' : 'Extract & Pre-fill Requisition Form'}
+              {aiLoading ? t('aiRequest.analyzing') : t('aiRequest.extractButton')}
             </Button>
           </div>
         </div>
@@ -315,9 +315,9 @@ export default function NewBloodRequestPage() {
         <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-6 md:p-8 space-y-6 border border-white/10">
           <div className="flex items-center justify-between border-b border-white/5 pb-4">
             <div>
-              <h2 className="text-lg font-bold text-white">Requisition Details Review</h2>
+              <h2 className="text-lg font-bold text-white">{t('aiRequest.reviewDetails')}</h2>
               <p className="text-xs text-gray-400">
-                Verify and edit every field before final submission.
+                {t('aiRequest.verifyEdit')}
               </p>
             </div>
             <button
@@ -325,7 +325,7 @@ export default function NewBloodRequestPage() {
               onClick={() => setMode('ai')}
               className="text-xs text-red-400 hover:text-red-300 inline-flex items-center gap-1 font-semibold"
             >
-              <Sparkles className="w-3.5 h-3.5" /> Re-parse with AI
+              <Sparkles className="w-3.5 h-3.5" /> {t('aiRequest.reparseAI')}
             </button>
           </div>
 
@@ -362,7 +362,7 @@ export default function NewBloodRequestPage() {
               <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-300">
                 <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-400" />
                 <span>
-                  <strong>Account Verification Required:</strong> CRITICAL urgency is restricted to admin-verified requesters and hospitals. Your current status is{' '}
+                  <strong>{t('aiRequest.accountVerificationReq')}</strong> {t('aiRequest.criticalRestricted')}{' '}
                   <span className="font-semibold uppercase text-white bg-amber-500/30 px-1.5 py-0.5 rounded">
                     {user?.verificationStatus || 'PENDING'}
                   </span>
@@ -395,7 +395,7 @@ export default function NewBloodRequestPage() {
           <div className="rounded-xl bg-white/4 p-4 border border-white/5 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                Geospatial Coordinates
+                {t('aiRequest.geospatialCoords')}
               </span>
               <button
                 type="button"
@@ -403,7 +403,7 @@ export default function NewBloodRequestPage() {
                 className="inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
               >
                 <MapPin className="w-3.5 h-3.5" />
-                Auto-detect GPS
+                {t('aiRequest.autoDetectGPS')}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
