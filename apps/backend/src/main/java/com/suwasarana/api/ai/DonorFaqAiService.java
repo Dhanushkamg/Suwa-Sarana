@@ -23,7 +23,7 @@ public class DonorFaqAiService {
     private static final Logger log = LoggerFactory.getLogger(DonorFaqAiService.class);
     private static final String GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String GROQ_MODEL = "qwen/qwen3.8-27b";
-    private static final String CLINICAL_DISCLAIMER = null;
+    private static final String CLINICAL_DISCLAIMER = "Disclaimer: This AI assistant provides general guidance based on NBTS criteria. Always consult a Medical Officer at the blood bank for final eligibility determination.";
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
