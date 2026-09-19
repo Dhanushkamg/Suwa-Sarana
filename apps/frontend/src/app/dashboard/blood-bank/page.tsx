@@ -3,9 +3,11 @@
 import { Building2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import CampManagerDashboard from '@/components/camps/CampManagerDashboard';
+import { useI18n } from '@/lib/i18n';
 
 export default function BloodBankDashboardPage() {
   const { user } = useAuthStore();
+  const { t } = useI18n();
 
   if (!user) return null;
 
@@ -23,15 +25,15 @@ export default function BloodBankDashboardPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30 uppercase tracking-wider">
-                  Blood Bank Portal
+                  {t('dashboard.bloodBankPortal')}
                 </span>
                 <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Verified Organization
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {t('dashboard.verifiedOrg')}
                 </span>
               </div>
-              <h1 className="text-3xl font-bold text-white">Blood Bank Command Center</h1>
+              <h1 className="text-3xl font-bold text-white">{t('dashboard.bloodBankCommandCenter')}</h1>
               <p className="text-gray-400 text-sm mt-1 max-w-xl">
-                Manage your national and regional blood donation camps, appointments, and inventory operations.
+                {t('dashboard.bloodBankCommandCenterDesc')}
               </p>
             </div>
           </div>

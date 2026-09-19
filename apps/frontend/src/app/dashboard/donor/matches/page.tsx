@@ -112,9 +112,9 @@ export default function DonorMatchesPage() {
           </Link>
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <Heart className="w-8 h-8 text-red-500 fill-red-500" />
-            My Matches
+            {t('common.myMatches')}
           </h1>
-          <p className="text-gray-400 mt-1">Respond to blood donation requests dispatched near you.</p>
+          <p className="text-gray-400 mt-1">{t('dashboard.myMatchesDesc')}</p>
         </div>
 
         <button
@@ -123,7 +123,7 @@ export default function DonorMatchesPage() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-medium self-start sm:self-auto transition-colors"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
+          {t('common.refresh')}
         </button>
       </div>
 
@@ -142,14 +142,14 @@ export default function DonorMatchesPage() {
       ) : matches.length === 0 ? (
         <div className="glass-card rounded-2xl p-12 text-center border border-white/5">
           <Heart className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-300 font-medium text-base">No active matches at the moment.</p>
-          <p className="text-gray-500 text-sm mt-1">Make sure your profile is set to available and within range of active requests.</p>
+          <p className="text-gray-300 font-medium text-base">{t('common.noActiveMatches')}</p>
+          <p className="text-gray-500 text-sm mt-1">{t('dashboard.noActiveMatchesDesc')}</p>
           <div className="mt-6">
             <Link
               href="/dashboard/donor"
               className="inline-flex items-center gap-2 text-xs text-red-400 hover:text-red-300 font-medium px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 transition-colors"
             >
-              Update Donor Profile & Availability →
+              {t('dashboard.updateDonorProfile')}
             </Link>
           </div>
         </div>
@@ -193,10 +193,10 @@ export default function DonorMatchesPage() {
 
               <div className="flex items-center gap-2 text-xs text-gray-500 mb-5">
                 <Clock className="w-3.5 h-3.5" />
-                Received: {new Date(match.createdAt).toLocaleString()}
+                {t('common.received')}: {new Date(match.createdAt).toLocaleString()}
                 <span className="mx-2 text-gray-700">·</span>
                 <Activity className="w-3.5 h-3.5" />
-                Status: <span className="font-medium text-white ml-1">{match.status}</span>
+                {t('bloodRequests.status')}: <span className="font-medium text-white ml-1">{match.status}</span>
               </div>
 
               {match.status === 'PENDING' && (
@@ -207,7 +207,7 @@ export default function DonorMatchesPage() {
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors font-medium text-sm disabled:opacity-50"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    Accept & Donate
+                    {t('dashboard.acceptAndDonate')}
                   </button>
                   <button
                     onClick={() => respond(match.id, 'DECLINED')}
@@ -215,19 +215,19 @@ export default function DonorMatchesPage() {
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors font-medium text-sm disabled:opacity-50"
                   >
                     <XCircle className="w-4 h-4" />
-                    Decline
+                    {t('dashboard.decline')}
                   </button>
                 </div>
               )}
 
               {match.status === 'ACCEPTED' && (
                 <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
-                  <CheckCircle2 className="w-5 h-5" /> You accepted this match. Thank you for your commitment to donate!
+                  <CheckCircle2 className="w-5 h-5" /> {t('dashboard.youAccepted')}
                 </div>
               )}
               {match.status === 'DECLINED' && (
                 <div className="flex items-center gap-2 text-gray-500 text-sm">
-                  <XCircle className="w-5 h-5" /> You declined this match.
+                  <XCircle className="w-5 h-5" /> {t('dashboard.youDeclined')}
                 </div>
               )}
             </div>

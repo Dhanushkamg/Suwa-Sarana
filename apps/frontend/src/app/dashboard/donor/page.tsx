@@ -70,7 +70,7 @@ export default function DonorProfilePage() {
         }
       } catch (err: unknown) {
         const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-          || 'Could not fetch donor profile. Please ensure you are logged in as a donor.';
+          || t('donorDashboard.profileError');
         setErrorMessage(msg);
       } finally {
         setInitialLoading(false);
@@ -97,7 +97,7 @@ export default function DonorProfilePage() {
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Failed to update donor profile.';
+        || t('donorDashboard.updateError');
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -118,8 +118,8 @@ export default function DonorProfilePage() {
     reliabilityScore >= 80 ? 'from-emerald-500 to-teal-600' :
     reliabilityScore >= 60 ? 'from-amber-500 to-orange-600' : 'from-red-500 to-rose-600';
   const reliabilityLabel =
-    reliabilityScore >= 80 ? 'Excellent Standing' :
-    reliabilityScore >= 60 ? 'Good Standing' : 'Needs Improvement';
+    reliabilityScore >= 80 ? t('donorDashboard.excellentStanding') :
+    reliabilityScore >= 60 ? t('donorDashboard.goodStanding') : t('donorDashboard.needsImprovement');
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -138,7 +138,7 @@ export default function DonorProfilePage() {
       {saved && (
         <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center gap-3 text-emerald-400">
           <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">Profile saved successfully!</span>
+          <span className="text-sm font-medium">{t('donorDashboard.profileSaved')}</span>
         </div>
       )}
 
@@ -175,7 +175,7 @@ export default function DonorProfilePage() {
                   <Award className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-white">{profile?.totalDonations ?? 0}</div>
-                <div className="text-xs text-gray-500 mt-1">Donations Made</div>
+                <div className="text-xs text-gray-500 mt-1">{t('donorDashboard.donationsMade')}</div>
               </div>
 
               <div className="glass-card rounded-2xl p-5 border border-white/5 text-center">
@@ -183,7 +183,7 @@ export default function DonorProfilePage() {
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-white">{profile?.livesHelpedEstimate ?? 0}</div>
-                <div className="text-xs text-gray-500 mt-1">Lives Helped</div>
+                <div className="text-xs text-gray-500 mt-1">{t('donorDashboard.livesHelped')}</div>
               </div>
             </div>
           )}
@@ -238,9 +238,9 @@ export default function DonorProfilePage() {
                   <Wifi className="w-5 h-5 text-blue-400" />
                 )}
                 <div>
-                  <div className="text-sm font-medium text-white">Low-Data Mode</div>
+                  <div className="text-sm font-medium text-white">{t('donorDashboard.lowDataMode')}</div>
                   <div className="text-xs text-gray-500">
-                    {lowDataMode ? 'Animations and stats hidden to save data.' : 'Enable for slower connections.'}
+                    {lowDataMode ? t('donorDashboard.lowDataModeOn') : t('donorDashboard.lowDataModeOff')}
                   </div>
                 </div>
               </div>
@@ -276,7 +276,7 @@ export default function DonorProfilePage() {
 
           <div className="mt-8 text-center">
             <Link href="/dashboard/donor/matches" className="text-sm text-red-400 hover:text-red-300 transition-colors font-medium">
-              View My Matches →
+              {t('donorDashboard.viewMyMatches')} →
             </Link>
           </div>
         </>
