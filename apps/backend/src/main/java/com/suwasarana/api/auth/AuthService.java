@@ -8,6 +8,8 @@ import com.suwasarana.api.security.JwtTokenProvider;
 import com.suwasarana.api.security.UserDetailsImpl;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
+import com.suwasarana.api.user.NicValidator;
+import com.suwasarana.api.auth.otp.OtpService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -42,6 +44,9 @@ public class AuthService {
     @Autowired
     private AuditLogService auditLog;
 
+    @Autowired
+    private OtpService otpService;
+
     public AuthResponse register(RegisterDto registerDto, String ipAddress) {
         if (userRepository.existsByEmail(registerDto.getEmail())) {
             throw new RuntimeException("Email is already in use!");
@@ -49,9 +54,20 @@ public class AuthService {
         if (userRepository.existsByPhoneNumber(registerDto.getPhoneNumber())) {
             throw new RuntimeException("Phone number is already in use!");
         }
+        if (registerDto.getNicNumber() != null && !registerDto.getNicNumber().isBlank()) {
+            if (!NicValidator.isValid(registerDto.getNicNumber())) {
+                throw new RuntimeException("Invalid NIC format.");
+            }
+        }
+        
+        if (!otpService.isPhoneVerified(registerDto.getPhoneNumber())) {
+            throw new RuntimeException("Phone number is not verified! Please complete OTP verification.");
+        }
 
         User user = new User();
         user.setEmail(registerDto.getEmail());
+        user.setFirstName(registerDto.getFirstName());
+        user.setLastName(registerDto.getLastName());
         user.setPhoneNumber(registerDto.getPhoneNumber());
         user.setPasswordHash(passwordEncoder.encode(registerDto.getPassword()));
         user.setRole(registerDto.getRole());
@@ -227,9 +243,20 @@ public class AuthService {
                 if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
                     throw new RuntimeException("Phone number is already in use!");
                 }
+                if (request.getNicNumber() != null && !request.getNicNumber().isBlank()) {
+                    if (!NicValidator.isValid(request.getNicNumber())) {
+                        throw new RuntimeException("Invalid NIC format.");
+                    }
+                }
+                
+                if (!otpService.isPhoneVerified(request.getPhoneNumber())) {
+                    throw new RuntimeException("Phone number is not verified! Please complete OTP verification.");
+                }
 
                 User user = new User();
                 user.setEmail(email);
+                user.setFirstName(request.getFirstName());
+                user.setLastName(request.getLastName());
                 user.setPhoneNumber(request.getPhoneNumber());
                 user.setRole(request.getRole());
                 user.setNicNumber(request.getNicNumber());

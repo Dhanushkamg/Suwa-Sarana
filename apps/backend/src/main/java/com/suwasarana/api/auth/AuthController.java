@@ -3,6 +3,9 @@ package com.suwasarana.api.auth;
 import com.suwasarana.api.auth.dto.AuthResponse;
 import com.suwasarana.api.auth.dto.LoginDto;
 import com.suwasarana.api.auth.dto.RegisterDto;
+import com.suwasarana.api.auth.dto.OtpRequestDto;
+import com.suwasarana.api.auth.dto.OtpVerifyDto;
+import com.suwasarana.api.auth.otp.OtpService;
 import com.suwasarana.api.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +24,9 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private OtpService otpService;
 
     @Operation(summary = "Register a new user", description = "Creates a new user account (Donor, Hospital, or Requester) and returns JWT tokens.")
     @PostMapping("/register")
@@ -42,6 +48,24 @@ public class AuthController {
         AuthResponse authResponse = authService.login(loginDto, getClientIp(request));
         setRefreshTokenCookie(response, authResponse.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success(authResponse));
+    }
+
+    @Operation(summary = "Send OTP", description = "Sends a 6-digit OTP to the specified phone number.")
+    @PostMapping("/send-otp")
+    public ResponseEntity<ApiResponse<Void>> sendOtp(@Valid @RequestBody OtpRequestDto otpRequestDto) {
+        otpService.generateAndSendOtp(otpRequestDto.getPhoneNumber());
+        return ResponseEntity.ok(ApiResponse.success(null, "OTP sent successfully"));
+    }
+
+    @Operation(summary = "Verify OTP", description = "Verifies the provided OTP for the phone number.")
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(@Valid @RequestBody OtpVerifyDto otpVerifyDto) {
+        boolean isValid = otpService.verifyOtp(otpVerifyDto.getPhoneNumber(), otpVerifyDto.getOtpCode());
+        if (isValid) {
+            return ResponseEntity.ok(ApiResponse.success(null, "OTP verified successfully"));
+        } else {
+            throw new RuntimeException("Invalid or expired OTP");
+        }
     }
 
     @Operation(summary = "Refresh access token", description = "Generates a new access token using an httpOnly refresh token cookie.")

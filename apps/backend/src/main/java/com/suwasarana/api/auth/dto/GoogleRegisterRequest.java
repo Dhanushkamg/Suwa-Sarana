@@ -13,7 +13,16 @@ public class GoogleRegisterRequest {
     @Pattern(regexp = "^\\+94[0-9]{9}$", message = "Phone number must be in format +94XXXXXXXXX")
     private String phoneNumber;
 
+    @NotBlank(message = "First name is required")
+    private String firstName;
+
+    @NotBlank(message = "Last name is required")
+    private String lastName;
+
     private String nicNumber;
+
+    @NotBlank(message = "OTP code is required")
+    private String otpCode;
 
     @NotNull(message = "Role is required")
     private Role role;
@@ -41,6 +50,15 @@ public class GoogleRegisterRequest {
     public void setNicNumber(String nicNumber) {
         this.nicNumber = nicNumber;
     }
+    
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    
+    public String getOtpCode() { return otpCode; }
+    public void setOtpCode(String otpCode) { this.otpCode = otpCode; }
 
     public Role getRole() {
         return role;
