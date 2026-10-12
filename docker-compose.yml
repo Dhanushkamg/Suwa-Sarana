@@ -32,19 +32,32 @@ services:
       DB_PASSWORD: postgres
       JWT_SECRET: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LXRvLW1lZXQtam1hYy1yZXF1aXJlbWVudHM=
       CORS_ALLOWED_ORIGIN: http://localhost:3000
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # Local demo only: creates the admin@test.com / donor@test.com ... demo logins. Never enable in production.
+      SEED_DATA_ENABLED: "true"
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   frontend:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
+      # NEXT_PUBLIC_* values are compiled into the browser bundle, so they are build args, not runtime env.
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080/api
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     container_name: suwasarana-frontend
     restart: unless-stopped
     depends_on:
-      - backend
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      backend:
+        condition: service_healthy
     ports:
       - "3000:3000"
 

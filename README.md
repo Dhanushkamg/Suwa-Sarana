@@ -3,7 +3,7 @@
 [![CI Pipeline](https://github.com/Dhanushkamg/Suwa-Sarana/actions/workflows/ci.yml/badge.svg)](https://github.com/Dhanushkamg/Suwa-Sarana/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Next.js 14](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Next.js 16](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![Java 21](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
@@ -41,7 +41,7 @@ suwa-sarana/
 ├── .github/workflows/          # GitHub Actions CI/CD pipeline
 ├── apps/
 │   ├── backend/                # Spring Boot 3.2 (Java 21), Spring Security, Flyway, JPA
-│   └── frontend/               # Next.js 14 App Router, TypeScript, Tailwind CSS, Leaflet
+│   └── frontend/               # Next.js 16 App Router, TypeScript, Tailwind CSS, Leaflet
 ├── packages/
 │   └── shared-types/           # Shared TypeScript interfaces
 ├── docs/                       # Architectural specs, audit notes & deployment runbook
@@ -52,13 +52,13 @@ suwa-sarana/
 ### Backend
 - **Framework**: Spring Boot 3.2 / Java 21
 - **Database**: PostgreSQL 16 (`cube` + `earthdistance` extensions)
-- **Migrations**: Flyway (7 versioned migrations: `V1` to `V7`)
+- **Migrations**: Flyway (versioned migrations `V1` to `V21`)
 - **Security & Limiting**: Spring Security 6, JJWT (0.12.5), Bucket4j (8.10.1)
 - **API Documentation**: SpringDoc OpenAPI 3.0 / Swagger UI
 - **Testing**: JUnit 5, Mockito, Spring Boot Test, Spring Security Test, H2 In-Memory
 
 ### Frontend
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Authentication**: Google OAuth2 (Google Identity Services) + Custom JWT
 - **Styling**: Tailwind CSS, Radix UI Primitives, Lucide Icons
 - **Mapping & Visuals**: Leaflet, React-Leaflet
@@ -71,7 +71,7 @@ suwa-sarana/
 
 ### Prerequisites
 - Java 21 JDK
-- Node.js 20+ and pnpm 9+
+- Node.js 22+ and pnpm 12 (`npm i -g pnpm@12.3.4`; the lockfile needs pnpm 12)
 - Docker & Docker Compose (or local PostgreSQL 16)
 
 ### 1. Clone & Configure
@@ -99,9 +99,9 @@ cd apps/backend
 
 #### Start Frontend
 ```bash
-# From workspace root:
+cd apps/frontend
 pnpm install
-pnpm --filter frontend dev
+pnpm dev
 ```
 
 ---
@@ -113,22 +113,22 @@ pnpm --filter frontend dev
 cd apps/backend
 ./mvnw test
 ```
-*Executes all 63 unit, integration, rate-limiting, and security tests.*
+*Executes the unit, integration, rate-limiting, and security tests (100+).*
 
 ### Frontend Production Build
 ```bash
 cd apps/frontend
 pnpm build
 ```
-*Validates static generation, TypeScript types, and server components across all 21+ routes.*
+*Validates static generation, TypeScript types, and server components across all routes. Also run `pnpm lint`, `pnpm exec tsc --noEmit` and `pnpm test`.*
 
 ---
 
 ## Documentation Links
 
-- [Production Deployment Guide](file:///d:/My%20new%20projects/Suwa%20sarana/docs/DEPLOYMENT.md) (`docs/DEPLOYMENT.md`)
-- [Master Implementation Plan](file:///d:/My%20new%20projects/Suwa%20sarana/docs/MASTER_PLAN.md) (`docs/MASTER_PLAN.md`)
-- [Repository Audit Notes](file:///d:/My%20new%20projects/Suwa%20sarana/docs/AUDIT_NOTES.md) (`docs/AUDIT_NOTES.md`)
+- [Production Deployment Guide](docs/DEPLOYMENT.md) (`docs/DEPLOYMENT.md`)
+- [Master Implementation Plan](docs/MASTER_PLAN.md) (`docs/MASTER_PLAN.md`)
+- [Repository Audit Notes](docs/AUDIT_NOTES.md) (`docs/AUDIT_NOTES.md`)
 
 ---
 

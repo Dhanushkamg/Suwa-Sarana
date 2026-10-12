@@ -27,29 +27,42 @@ jobs:
           chmod +x mvnw
           ./mvnw clean test
 
-  frontend-build:
-    name: Frontend Build (Next.js & TypeScript)
+  frontend:
+    name: Frontend (lint, types, tests, build)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/frontend
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # The lockfile is in pnpm 12 format; older pnpm versions cannot read it.
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 12.3.4
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
+          cache-dependency-path: apps/frontend/pnpm-lock.yaml
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Shared Packages & Frontend
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8080/api
-        run: |
-          pnpm --filter frontend build
+        run: pnpm build
