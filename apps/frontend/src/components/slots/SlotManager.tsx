@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Users, Clock, CheckCircle2, AlertCircle, Loader2, RefreshCw, QrCode } from 'lucide-react';
+import { Plus, Users, Clock, AlertCircle, Loader2, RefreshCw, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
-import { DonationSlot, SlotBooking } from '@/types';
+import { DonationSlot } from '@/types';
+
+function getErrorMessage(err: unknown, fallback: string): string {
+  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+  return typeof message === 'string' && message ? message : fallback;
+}
 
 interface SlotManagerProps {
   hostType: 'camp' | 'hospital';
@@ -22,11 +27,7 @@ function formatDateTime(iso: string) {
 export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
   const { t } = useI18n();
   const [slots, setSlots] = useState<DonationSlot[]>([]);
-  const [rosterSlotId, setRosterSlotId] = useState<number | null>(null);
-  const [roster, setRoster] = useState<SlotBooking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rosterLoading, setRosterLoading] = useState(false);
-  const [checkingIn, setCheckingIn] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   
   // Scanner state
@@ -51,85 +52,78 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
       const res = await apiClient.get(slotsEndpoint, { params: { openOnly: false } });
       setSlots(res.data.data ?? res.data);
     } catch {
-      setFeedback('Failed to load slots.');
+      setFeedback(t('slotManager.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [slotsEndpoint]);
+  }, [slotsEndpoint, t]);
 
   useEffect(() => { fetchSlots(); }, [fetchSlots]);
 
+  const handleCheckIn = useCallback(async (slotId: number, bookingId: number) => {
+    setFeedback(null);
+    try {
+      await apiClient.post(`/slots/${slotId}/check-in/${bookingId}`);
+      setFeedback(t('slotManager.checkInSuccess', { id: bookingId }));
+      await fetchSlots();
+    } catch (err: unknown) {
+      setFeedback(getErrorMessage(err, t('slotManager.checkInFailed')));
+    }
+  }, [fetchSlots, t]);
+
   useEffect(() => {
     if (!showScanner) return;
-    
-    let scannerInstance: any = null;
-    
+
+    let cancelled = false;
+    let cleared = false;
+    let scanner: { render: (ok: (text: string) => void, err: (e: unknown) => void) => void; clear: () => Promise<void> } | null = null;
+
+    // Stop the camera and remove the scanner UI exactly once
+    const clearScanner = async () => {
+      if (!scanner || cleared) return;
+      cleared = true;
+      try {
+        await scanner.clear();
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
     import('html5-qrcode').then(({ Html5QrcodeScanner }) => {
-      scannerInstance = new Html5QrcodeScanner(
-        "qr-reader",
+      // Modal was closed before the library finished loading: never start the camera
+      if (cancelled) return;
+      scanner = new Html5QrcodeScanner(
+        'qr-reader',
         { fps: 10, qrbox: { width: 250, height: 250 } },
         /* verbose= */ false
       );
-      
-      scannerInstance.render(
+
+      scanner.render(
         (decodedText: string) => {
           try {
             const data = JSON.parse(decodedText);
             if (data.s && data.b) {
-              scannerInstance.clear();
+              void clearScanner();
               setShowScanner(false);
-              handleCheckIn(data.s, data.b);
+              void handleCheckIn(data.s, data.b);
             } else {
-              setFeedback('Invalid Suwa Sarana QR format.');
+              setFeedback(t('slotManager.invalidQR'));
             }
-          } catch (e) {
-            setFeedback('Unrecognized QR code.');
+          } catch {
+            setFeedback(t('slotManager.unrecognizedQR'));
           }
         },
-        (error: any) => {
+        () => {
           // Ignore frequent frame-level scan errors
         }
       );
     });
 
     return () => {
-      if (scannerInstance) {
-        scannerInstance.clear().catch(console.error);
-      }
+      cancelled = true;
+      void clearScanner();
     };
-  }, [showScanner]);
-
-  const fetchRoster = async (slotId: number) => {
-    setRosterSlotId(slotId);
-    setRosterLoading(true);
-    try {
-      // Roster endpoint: GET /api/slots/{slotId}/check-in returns bookings for that slot
-      // We reuse the bookings listed from the slot — no dedicated roster endpoint needed
-      // since SlotBookingController's checkIn endpoint is per-booking.
-      // For the roster, we call a hypothetical /api/slots/{id}/bookings or fall back to
-      // the check-in flow after staff manually looks up the booking ID from the QR scan.
-      // For now, show a placeholder message directing staff to scan QR codes.
-      setRoster([]);
-    } catch {
-      setFeedback('Failed to load roster.');
-    } finally {
-      setRosterLoading(false);
-    }
-  };
-
-  const handleCheckIn = async (slotId: number, bookingId: number) => {
-    setCheckingIn(bookingId);
-    setFeedback(null);
-    try {
-      await apiClient.post(`/slots/${slotId}/check-in/${bookingId}`);
-      setFeedback(`Booking #${bookingId} checked in successfully.`);
-      await fetchRoster(slotId);
-    } catch (err: any) {
-      setFeedback(err.response?.data?.message || 'Check-in failed.');
-    } finally {
-      setCheckingIn(null);
-    }
-  };
+  }, [showScanner, handleCheckIn, t]);
 
   const handleBulkCreate = async () => {
     setCreating(true);
@@ -138,11 +132,11 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
       const endpoint = `${slotsEndpoint}/bulk`;
       const res = await apiClient.post(endpoint, bulkForm);
       const created: DonationSlot[] = res.data.data ?? res.data;
-      setFeedback(`Created ${created.length} slot(s) successfully.`);
+      setFeedback(t('slotManager.createdSlots', { count: created.length }));
       setShowBulkForm(false);
       await fetchSlots();
-    } catch (err: any) {
-      setFeedback(err.response?.data?.message || 'Failed to create slots.');
+    } catch (err: unknown) {
+      setFeedback(getErrorMessage(err, t('slotManager.createFailed')));
     } finally {
       setCreating(false);
     }
@@ -152,7 +146,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
     return (
       <div className="flex items-center gap-2 py-8 text-gray-400 text-sm">
         <Loader2 className="w-4 h-4 animate-spin" />
-        Loading slots...
+        {t('slotManager.loadingSlots')}
       </div>
     );
   }
@@ -160,10 +154,10 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-lg font-bold text-white">{t('slotManager.slotManager')}</h2>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={fetchSlots}>
+          <Button variant="ghost" size="sm" onClick={fetchSlots} aria-label={t('common.refresh')}>
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setShowScanner(true)}>
@@ -187,11 +181,11 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
 
       {/* Scanner Modal */}
       {showScanner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div role="dialog" aria-modal="true" aria-label={t('slotManager.scanDonorQR')} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-[#12121a] border border-white/10 rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">{t('slotManager.scanDonorQR')}</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowScanner(false)}>{t('common.close') || 'Close'}</Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowScanner(false)}>{t('common.close')}</Button>
             </div>
             
             {/* The ID matches what html5-qrcode targets */}
@@ -208,10 +202,11 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
       {showBulkForm && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
           <h3 className="text-sm font-semibold text-white">{t('slotManager.bulkGenerate')}</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">{t('slotManager.overallStart')}</label>
+              <label htmlFor="bulkStart" className="block text-xs text-gray-400 mb-1">{t('slotManager.overallStart')}</label>
               <input
+                id="bulkStart"
                 type="datetime-local"
                 value={bulkForm.overallStartTime}
                 onChange={e => setBulkForm(f => ({ ...f, overallStartTime: e.target.value }))}
@@ -219,8 +214,9 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">{t('slotManager.overallEnd')}</label>
+              <label htmlFor="bulkEnd" className="block text-xs text-gray-400 mb-1">{t('slotManager.overallEnd')}</label>
               <input
+                id="bulkEnd"
                 type="datetime-local"
                 value={bulkForm.overallEndTime}
                 onChange={e => setBulkForm(f => ({ ...f, overallEndTime: e.target.value }))}
@@ -228,8 +224,9 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">{t('slotManager.intervalMinutes')}</label>
+              <label htmlFor="bulkInterval" className="block text-xs text-gray-400 mb-1">{t('slotManager.intervalMinutes')}</label>
               <input
+                id="bulkInterval"
                 type="number"
                 min={5}
                 value={bulkForm.intervalMinutes}
@@ -238,8 +235,9 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">{t('slotManager.donorsPerSlot')}</label>
+              <label htmlFor="bulkCapacity" className="block text-xs text-gray-400 mb-1">{t('slotManager.donorsPerSlot')}</label>
               <input
+                id="bulkCapacity"
                 type="number"
                 min={1}
                 value={bulkForm.capacityPerSlot}
@@ -249,7 +247,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="ghost" size="sm" onClick={() => setShowBulkForm(false)}>{t('common.cancel') || 'Cancel'}</Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowBulkForm(false)}>{t('common.cancel')}</Button>
             <Button variant="primary" size="sm" loading={creating} onClick={handleBulkCreate}>
               {t('slotManager.generateSlots')}
             </Button>
@@ -266,7 +264,6 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
         <div className="space-y-3">
           {slots.map((slot) => {
             const fillPct = Math.min(100, (slot.bookedCount / slot.capacity) * 100);
-            const isExpanded = rosterSlotId === slot.id;
 
             return (
               <div
@@ -276,7 +273,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
                 {/* Slot header row */}
                 <div className="flex items-center justify-between gap-4 p-4 flex-wrap">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Clock className="w-3.5 h-3.5 text-amber-400" />
                       <span className="text-sm font-semibold text-white">
                         {formatDateTime(slot.startTime)} – {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -303,53 +300,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
                       </span>
                     </div>
                   </div>
-
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => isExpanded ? setRosterSlotId(null) : fetchRoster(slot.id)}
-                  >
-                    {isExpanded ? t('slotManager.hideRoster') : t('slotManager.viewRoster')}
-                  </Button>
                 </div>
-
-                {/* Expanded roster */}
-                {isExpanded && (
-                  <div className="border-t border-white/5 px-4 py-3">
-                    {rosterLoading ? (
-                      <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('slotManager.loadingRoster')}
-                      </div>
-                    ) : roster.length === 0 ? (
-                      <div className="text-sm text-gray-500 py-2">
-                        <p>{t('slotManager.noBookings')}</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {roster.map(b => (
-                          <div key={b.id} className="flex items-center justify-between text-sm">
-                            <span className="text-gray-300">{t('slotManager.booking')} #{b.id}</span>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs ${b.status === 'CHECKED_IN' ? 'text-blue-400' : 'text-gray-400'}`}>
-                                {b.status}
-                              </span>
-                              {b.status === 'BOOKED' && (
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  loading={checkingIn === b.id}
-                                  onClick={() => handleCheckIn(slot.id, b.id)}
-                                >
-                                  <CheckCircle2 className="w-3 h-3 mr-1" /> {t('slotManager.checkIn')}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}

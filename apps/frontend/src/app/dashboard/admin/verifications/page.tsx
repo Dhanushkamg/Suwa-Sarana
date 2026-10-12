@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ShieldCheck, ShieldX, UserCheck, AlertCircle, CheckCircle2, Hospital, User, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonList } from '@/components/ui/Skeleton';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
@@ -22,27 +24,29 @@ export default function AdminVerificationsPage() {
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchPendingUsers();
-  }, []);
-
-  const fetchPendingUsers = async () => {
+  // This endpoint returns a bare array (not wrapped in ApiResponse).
+  const fetchPendingUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setLoadError(null);
     try {
       const response = await apiClient.get<PendingUser[]>('/admin/verifications/pending');
-      setPendingUsers(response.data);
+      setPendingUsers(Array.isArray(response.data) ? response.data : []);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Failed to load pending verifications.';
-      setError(msg);
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setLoadError(msg || '');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchPendingUsers();
+  }, [fetchPendingUsers]);
 
   const handleApprove = async (userId: number, email: string) => {
     setProcessingId(userId);
@@ -50,11 +54,11 @@ export default function AdminVerificationsPage() {
     try {
       await apiClient.put(`/admin/verifications/${userId}/approve`);
       setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
-      setActionSuccess(`Successfully approved verification for ${email}.`);
+      setActionSuccess(t('dash.approvedMsg', { email }));
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Failed to approve user.';
+        || t('dash.approveFailed');
       setError(msg);
     } finally {
       setProcessingId(null);
@@ -67,11 +71,11 @@ export default function AdminVerificationsPage() {
     try {
       await apiClient.put(`/admin/verifications/${userId}/reject`);
       setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
-      setActionSuccess(`Verification rejected for ${email}.`);
+      setActionSuccess(t('dash.rejectedMsg', { email }));
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Failed to reject user.';
+        || t('dash.rejectFailed');
       setError(msg);
     } finally {
       setProcessingId(null);
@@ -117,7 +121,7 @@ export default function AdminVerificationsPage() {
               {t('adminDashboard.verificationsDesc')}
             </p>
           </div>
-          <Button variant="secondary" size="sm" onClick={fetchPendingUsers} loading={loading}>
+          <Button variant="secondary" size="sm" onClick={fetchPendingUsers} loading={loading} className="self-start sm:self-auto">
             {t('common.refresh')}
           </Button>
         </div>
@@ -138,20 +142,21 @@ export default function AdminVerificationsPage() {
       )}
 
       {loading ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
-          <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-gray-400">{t('adminDashboard.loadingPending')}</p>
+        <div role="status" aria-label={t('adminDashboard.loadingPending')}>
+          <SkeletonList rows={3} />
         </div>
+      ) : loadError !== null ? (
+        <EmptyState
+          icon={<AlertCircle className="w-10 h-10 text-red-400" />}
+          title={loadError || t('dash.loadFailed')}
+          action={<Button variant="secondary" onClick={fetchPendingUsers}>{t('dash.retry')}</Button>}
+        />
       ) : pendingUsers.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center mb-4">
-            <ShieldCheck className="w-8 h-8 text-emerald-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-1">{t('adminDashboard.verificationsClear')}</h3>
-          <p className="text-sm text-gray-400 max-w-md mx-auto">
-            {t('adminDashboard.noPendingAccounts')}
-          </p>
-        </div>
+        <EmptyState
+          icon={<ShieldCheck className="w-10 h-10 text-emerald-400" />}
+          title={t('adminDashboard.verificationsClear')}
+          description={t('adminDashboard.noPendingAccounts')}
+        />
       ) : (
         <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
           <div className="overflow-x-auto">
@@ -190,7 +195,7 @@ export default function AdminVerificationsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-xs text-gray-300">
                           <Phone className="w-3.5 h-3.5 text-gray-400" />
-                          {u.phoneNumber || 'N/A'}
+                          {u.phoneNumber || t('dash.notAvailable')}
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1">
                           <Mail className="w-3.5 h-3.5 text-gray-400" />
@@ -203,7 +208,7 @@ export default function AdminVerificationsPage() {
                             ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
                             : 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
                         }`}>
-                          {u.role.replace('_', ' ')}
+                          {u.role.replace(/_/g, ' ')}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

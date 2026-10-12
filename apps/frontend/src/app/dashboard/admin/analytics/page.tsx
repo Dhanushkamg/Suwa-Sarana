@@ -9,6 +9,13 @@ import Link from 'next/link';
 import apiClient from '@/lib/apiClient';
 import SriLankaHeatmap, { DistrictSummary } from '@/components/maps/SriLankaHeatmap';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
+
+interface ApiBody<T> {
+  data?: T;
+}
 
 export default function AdminAnalyticsHeatmapPage() {
   const { t } = useI18n();
@@ -23,16 +30,12 @@ export default function AdminAnalyticsHeatmapPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<any>('/admin/analytics/district-summary');
-      const data = res.data?.data ?? res.data;
-      if (Array.isArray(data)) {
-        setDistricts(data);
-      }
+      const res = await apiClient.get<ApiBody<DistrictSummary[]>>('/admin/analytics/district-summary');
+      const data = res.data?.data;
+      setDistricts(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Failed to load district shortage telemetry data.';
-      setError(msg);
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || '');
     } finally {
       setLoading(false);
     }
@@ -48,7 +51,7 @@ export default function AdminAnalyticsHeatmapPage() {
   const criticalDistricts = districts.filter((d) => d.shortageLevel === 'CRITICAL').length;
   const avgFulfillment = districts.length > 0
     ? Math.round((districts.reduce((acc, d) => acc + d.fulfillmentRate, 0) / districts.length) * 10) / 10
-    : 100;
+    : 0;
 
   const filteredDistricts = districts.filter((d) => {
     const matchesFilter = filter === 'ALL' || d.shortageLevel === filter;
@@ -79,7 +82,7 @@ export default function AdminAnalyticsHeatmapPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={loadAnalytics}
             disabled={loading}
@@ -91,13 +94,24 @@ export default function AdminAnalyticsHeatmapPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{error}</span>
+      {loading ? (
+        <div className="space-y-6" role="status" aria-label={t('common.loading')}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+          </div>
+          <Skeleton className="h-[420px] w-full" />
         </div>
-      )}
-
+      ) : error !== null ? (
+        <EmptyState
+          icon={<AlertTriangle className="w-10 h-10 text-red-400" />}
+          title={error || t('dash.loadFailed')}
+          action={<Button variant="secondary" onClick={loadAnalytics}>{t('dash.retry')}</Button>}
+        />
+      ) : (
+      <>
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card p-5 rounded-2xl border border-white/10 relative overflow-hidden">
@@ -278,7 +292,7 @@ export default function AdminAnalyticsHeatmapPage() {
           <table className="w-full text-left text-xs text-gray-300">
             <thead className="bg-white/5 uppercase font-bold text-gray-400 border-b border-white/10">
               <tr>
-                <th className="py-3 px-4">{t('publicPages.district')}</th>
+                <th className="py-3 px-4">{t('dash.district')}</th>
                 <th className="py-3 px-4">{t('bloodRequests.status')}</th>
                 <th className="py-3 px-4 text-right">{t('adminDashboard.availableDonors')}</th>
                 <th className="py-3 px-4 text-right">{t('adminDashboard.activeRequests')}</th>
@@ -300,9 +314,11 @@ export default function AdminAnalyticsHeatmapPage() {
                     onClick={() => setSelectedDistrict(d)}
                     className="hover:bg-white/5 transition-colors cursor-pointer"
                   >
-                    <td className="py-3 px-4 font-semibold text-white flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-gray-500" />
-                      {d.district}
+                    <td className="py-3 px-4 font-semibold text-white">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-gray-500" />
+                        {d.district}
+                      </div>
                     </td>
                     <td className="py-3 px-4">
                       <span
@@ -342,6 +358,8 @@ export default function AdminAnalyticsHeatmapPage() {
           </table>
         </div>
       </section>
+      </>
+      )}
     </div>
   );
 }

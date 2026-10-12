@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { API_BASE_URL } from '@/lib/constants';
+import { genericOgImage, siteHost } from '@/components/og/genericOgImage';
 
 export const alt = 'Suwa Sarana Emergency Blood Requisition Social Card';
 export const size = {
@@ -8,46 +9,37 @@ export const size = {
 };
 export const contentType = 'image/png';
 
-async function getQrCodeBase64(url: string): Promise<string | null> {
-  try {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&format=png&color=ffffff&bgcolor=1a0505&data=${encodeURIComponent(url)}`;
-    const res = await fetch(qrUrl);
-    if (!res.ok) return null;
-    const buffer = await res.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    return `data:image/png;base64,${base64}`;
-  } catch {
-    return null;
-  }
-}
-
 export default async function Image({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
 
-  let bloodType = 'O+';
-  let hospitalName = 'National Hospital of Sri Lanka';
-  let district = 'Colombo';
-  let urgency = 'CRITICAL';
-  let unitsNeeded = 2;
+  let bloodType = '';
+  let hospitalName = '';
+  let district = '';
+  let urgency = 'URGENT';
+  let unitsNeeded = 0;
 
   try {
     const res = await fetch(`${API_BASE_URL}/circle/${token}`, { cache: 'no-store' });
     if (res.ok) {
       const json = await res.json();
-      if (json.data) {
-        bloodType = json.data.patientBloodType || bloodType;
-        hospitalName = json.data.hospitalName || hospitalName;
-        district = json.data.district || district;
-        urgency = json.data.urgency || urgency;
-        unitsNeeded = json.data.unitsNeeded || unitsNeeded;
+      const d = json?.data;
+      if (d?.patientBloodType && d?.hospitalName && d?.unitsNeeded) {
+        bloodType = String(d.patientBloodType);
+        hospitalName = String(d.hospitalName);
+        district = String(d.district ?? '');
+        urgency = String(d.urgency || urgency);
+        unitsNeeded = Number(d.unitsNeeded);
       }
     }
   } catch {
-    // Fallback defaults
+    // handled below: no data -> generic card
   }
 
-  const shareUrl = `https://suwasarana.lk/share/${token}`;
-  const qrBase64 = await getQrCodeBase64(shareUrl);
+  // Never show invented emergency details: without real data, render a generic branded card
+  if (!bloodType || !hospitalName || !unitsNeeded) {
+    return genericOgImage(size);
+  }
+
   const isCritical = urgency === 'CRITICAL';
 
   return new ImageResponse(
@@ -246,7 +238,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           <div style={{ fontSize: '32px' }}>🏥</div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: '32px', fontWeight: '800', color: '#fff' }}>{hospitalName}</div>
-            <div style={{ fontSize: '20px', color: '#9ca3af' }}>{`${district} District`}</div>
+            <div style={{ fontSize: '20px', color: '#9ca3af' }}>{district ? `${district} District` : ''}</div>
           </div>
         </div>
 
@@ -284,7 +276,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           ))}
         </div>
 
-        {/* CTA + QR Row */}
+        {/* CTA */}
         <div
           style={{
             display: 'flex',
@@ -306,25 +298,6 @@ export default async function Image({ params }: { params: Promise<{ token: strin
               </div>
             </div>
           </div>
-          {/* QR Code */}
-          {qrBase64 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  padding: '10px',
-                  borderRadius: '16px',
-                  backgroundColor: '#1a0505',
-                  border: '2px solid rgba(220, 38, 38, 0.5)',
-                  boxShadow: '0 0 24px rgba(220,38,38,0.3)',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrBase64} width={140} height={140} alt="QR Code" style={{ borderRadius: '8px' }} />
-              </div>
-              <div style={{ fontSize: '16px', color: '#9ca3af' }}>Scan to volunteer & share</div>
-            </div>
-          )}
         </div>
 
         {/* FOOTER BANNER */}
@@ -342,7 +315,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ fontSize: '22px' }}>🌐</div>
-            <div style={{ fontSize: '26px', fontWeight: '900', color: '#fff' }}>suwasarana.lk</div>
+            <div style={{ fontSize: '26px', fontWeight: '900', color: '#fff' }}>{siteHost()}</div>
           </div>
         </div>
       </div>

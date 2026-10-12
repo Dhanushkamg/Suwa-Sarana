@@ -2,35 +2,8 @@
 
 import { useEffect, useRef, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
-
-// District fallback coordinates in Sri Lanka
-const DISTRICT_COORDS: Record<string, [number, number]> = {
-  Colombo: [6.9271, 79.8612],
-  Gampaha: [7.084, 80.0098],
-  Kalutara: [6.5854, 79.9607],
-  Kandy: [7.2906, 80.6337],
-  Matale: [7.4675, 80.6234],
-  'Nuwara Eliya': [6.9497, 80.7891],
-  Galle: [6.0535, 80.221],
-  Matara: [5.9549, 80.555],
-  Hambantota: [6.1429, 81.1212],
-  Jaffna: [9.6615, 80.0255],
-  Kilinochchi: [9.3803, 80.377],
-  Mannar: [8.981, 79.9044],
-  Vavuniya: [8.7542, 80.4982],
-  Mullaitivu: [9.2671, 80.8143],
-  Batticaloa: [7.731, 81.6747],
-  Ampara: [7.2912, 81.6724],
-  Trincomalee: [8.5874, 81.2152],
-  Kurunegala: [7.4863, 80.3623],
-  Puttalam: [8.0408, 79.8394],
-  Anuradhapura: [8.3114, 80.4037],
-  Polonnaruwa: [7.9403, 81.0188],
-  Badulla: [6.9934, 81.055],
-  Monaragala: [6.8728, 81.3507],
-  Ratnapura: [6.6828, 80.3992],
-  Kegalle: [7.2513, 80.3464],
-};
+import { DISTRICT_COORDS } from '@/lib/districts';
+import { escapeHtml } from './escapeHtml';
 
 interface Props {
   hospitalName: string;
@@ -105,9 +78,9 @@ export default function RequestDistanceMap({
         const marker = L.marker(coords, { icon: hospitalIcon });
         marker.bindPopup(`
           <div style="padding: 12px; font-family: inherit;">
-            <div style="font-weight: 800; color: #ffffff; font-size: 13px;">${hospitalName}</div>
-            <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">${district} District</div>
-            <div style="margin-top: 8px; font-size: 10px; font-weight: 700; color: #34d399;">Active Radius: ${radiusKm} km</div>
+            <div style="font-weight: 800; color: #ffffff; font-size: 13px;">${escapeHtml(hospitalName)}</div>
+            <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">${escapeHtml(district)} District</div>
+            <div style="margin-top: 8px; font-size: 10px; font-weight: 700; color: #34d399;">Active Radius: ${escapeHtml(radiusKm)} km</div>
           </div>
         `);
         marker.addTo(circleLayerRef.current);

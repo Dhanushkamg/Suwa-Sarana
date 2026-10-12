@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Heart, MapPin, Activity, Droplets, CheckCircle2,
-  AlertCircle, ShieldCheck, Clock, User, Phone, Sparkles, Share2
+  Heart, MapPin, Droplets, CheckCircle2,
+  AlertCircle, User, Sparkles, Share2
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -47,6 +47,13 @@ export default function CircleResponseClient({ token, initialData }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Translate the urgency enum when a label exists, otherwise show the raw value
+  const urgencyLabel = (u: string) => {
+    const key = `ui.urgency.${u}`;
+    const label = t(key);
+    return label === key ? u : label;
+  };
+
   const bloodTypeOptions = [
     { value: 'A+', label: t('bloodTypes.APositive') },
     { value: 'A-', label: t('bloodTypes.ANegative') },
@@ -63,20 +70,20 @@ export default function CircleResponseClient({ token, initialData }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<any>(`/circle/${token}`);
-      const data = res.data?.data ?? res.data;
+      const res = await apiClient.get<{ data?: CircleInfo } & CircleInfo>(`/circle/${token}`);
+      const data: CircleInfo = res.data?.data ?? res.data;
       setInfo(data);
       if (data?.patientBloodType) {
         setForm((prev) => ({ ...prev, bloodType: data.patientBloodType }));
       }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'This circle invite link is invalid or has expired.';
+        || t('circle.invalidToken');
       setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [token, initialData]);
+  }, [token, initialData, t]);
 
   useEffect(() => {
     loadCircleInfo();
@@ -97,7 +104,7 @@ export default function CircleResponseClient({ token, initialData }: Props) {
       setSubmitted(true);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Failed to submit response. Please verify your details.';
+        || t('circle.submitFailed');
       setFormError(msg);
     } finally {
       setSubmitting(false);
@@ -119,7 +126,7 @@ export default function CircleResponseClient({ token, initialData }: Props) {
             href={`/share/${token}`}
             className="inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 font-medium px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 transition-colors"
           >
-            <Share2 className="w-3.5 h-3.5" /> Social Card
+            <Share2 className="w-3.5 h-3.5" /> {t('circle.socialCard')}
           </Link>
           <LanguageSwitcher />
         </div>
@@ -130,10 +137,10 @@ export default function CircleResponseClient({ token, initialData }: Props) {
         {loading ? (
           <div className="glass-card rounded-3xl p-12 text-center">
             <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-gray-400">Loading emergency blood request...</p>
+            <p className="text-gray-400">{t('circle.loading')}</p>
           </div>
         ) : error || !info ? (
-          <div className="glass-card rounded-3xl p-10 text-center border-red-500/20">
+          <div role="alert" className="glass-card rounded-3xl p-6 sm:p-10 text-center border-red-500/20">
             <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 mx-auto flex items-center justify-center text-red-400 mb-4">
               <AlertCircle className="w-8 h-8" />
             </div>
@@ -148,21 +155,21 @@ export default function CircleResponseClient({ token, initialData }: Props) {
           </div>
         ) : submitted ? (
           /* Success Screen */
-          <div className="glass-card rounded-3xl p-10 text-center border-emerald-500/30 bg-emerald-950/10 animate-in fade-in zoom-in-95 duration-300">
+          <div className="glass-card rounded-3xl p-6 sm:p-10 text-center border-emerald-500/30 bg-emerald-950/10 animate-in fade-in zoom-in-95 duration-300">
             <div className="w-20 h-20 rounded-3xl bg-emerald-500/20 border border-emerald-500/30 mx-auto flex items-center justify-center text-emerald-400 mb-5 shadow-xl shadow-emerald-500/20">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">{t('circle.thankYou')}, {form.responderName}!</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2 break-words">{t('circle.thankYou')}, {form.responderName}!</h1>
             <p className="text-gray-300 text-sm max-w-md mx-auto mb-6">
-              Your response has been delivered directly to the patient's family/requester. They will contact you shortly at <strong className="text-white">{form.responderPhone}</strong>.
+              {t('circle.successBody')} <strong className="text-white">{form.responderPhone}</strong>
             </p>
 
             <div className="p-5 rounded-2xl bg-white/5 border border-white/10 max-w-md mx-auto space-y-3 mb-6">
               <div className="flex items-center gap-2 text-sm text-emerald-300 font-medium justify-center">
-                <Sparkles className="w-4 h-4" /> Want to save more lives in Sri Lanka?
+                <Sparkles className="w-4 h-4" /> {t('circle.wantMore')}
               </div>
               <p className="text-xs text-gray-400">
-                Register as a verified volunteer donor on Suwa Sarana to receive location-based alerts when someone near you needs blood.
+                {t('circle.wantMoreDesc')}
               </p>
             </div>
 
@@ -170,7 +177,7 @@ export default function CircleResponseClient({ token, initialData }: Props) {
               href="/register"
               className="inline-flex items-center justify-center gap-2 w-full max-w-md py-3.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-sm shadow-xl shadow-red-500/25 transition-all"
             >
-              <Heart className="w-4 h-4 fill-white" /> Register as a Regular Donor
+              <Heart className="w-4 h-4 fill-white" /> {t('circle.registerBtn')}
             </Link>
           </div>
         ) : (
@@ -183,11 +190,11 @@ export default function CircleResponseClient({ token, initialData }: Props) {
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-3xl font-black text-white shadow-xl shadow-red-500/30">
                     {info.patientBloodType}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/20 text-red-300 border border-red-500/30 mb-1 inline-block">
-                      {info.urgency} Urgency
+                      {t('circle.urgencyBadge', { urgency: urgencyLabel(info.urgency) })}
                     </span>
-                    <h1 className="text-2xl font-bold text-white">{info.hospitalName}</h1>
+                    <h1 className="text-2xl font-bold text-white break-words">{info.hospitalName}</h1>
                   </div>
                 </div>
               </div>
@@ -195,11 +202,11 @@ export default function CircleResponseClient({ token, initialData }: Props) {
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10 text-xs text-gray-300">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-red-400" />
-                  <span>District: <strong className="text-white">{info.district}</strong></span>
+                  <span>{t('circle.districtLabel')} <strong className="text-white">{info.district}</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Droplets className="w-4 h-4 text-red-400" />
-                  <span>Required: <strong className="text-white">{info.unitsNeeded} Units</strong></span>
+                  <span>{t('circle.requiredLabel')} <strong className="text-white">{t('circle.unitsCount', { count: info.unitsNeeded })}</strong></span>
                 </div>
               </div>
             </div>
@@ -217,7 +224,7 @@ export default function CircleResponseClient({ token, initialData }: Props) {
               </div>
 
               {formError && (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 text-xs">
+                <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 text-xs">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{formError}</span>
                 </div>
@@ -225,8 +232,8 @@ export default function CircleResponseClient({ token, initialData }: Props) {
 
               <Input
                 id="responder-name"
-                label={t('circle.fullName') || "Your Full Name"}
-                placeholder={t('circle.fullNamePlaceholder') || "e.g. Kasun Perera"}
+                label={t('circle.fullName')}
+                placeholder={t('circle.fullNamePlaceholder')}
                 value={form.responderName}
                 onChange={(e) => setForm({ ...form, responderName: e.target.value })}
                 required
@@ -235,8 +242,8 @@ export default function CircleResponseClient({ token, initialData }: Props) {
               <Input
                 id="responder-phone"
                 type="tel"
-                label={t('circle.phone') || "Your Phone Number"}
-                placeholder={t('circle.phonePlaceholder') || "e.g. 077 123 4567"}
+                label={t('circle.phone')}
+                placeholder={t('circle.phonePlaceholder')}
                 value={form.responderPhone}
                 onChange={(e) => setForm({ ...form, responderPhone: e.target.value })}
                 required
@@ -244,19 +251,20 @@ export default function CircleResponseClient({ token, initialData }: Props) {
 
               <Select
                 id="responder-blood-type"
-                label={t('circle.bloodType') || "Your Blood Type"}
+                label={t('circle.bloodType')}
                 options={bloodTypeOptions}
                 value={form.bloodType}
                 onChange={(e) => setForm({ ...form, bloodType: e.target.value })}
               />
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                  {t('circle.notes') || "Notes / Availability (Optional)"}
+                <label htmlFor="responder-notes" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+                  {t('circle.notes')}
                 </label>
                 <textarea
+                  id="responder-notes"
                   rows={2}
-                  placeholder={t('circle.notesPlaceholder') || "e.g. Available after 2 PM today"}
+                  placeholder={t('circle.notesPlaceholder')}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 transition-colors text-sm"
@@ -273,7 +281,7 @@ export default function CircleResponseClient({ token, initialData }: Props) {
 
       {/* Footer */}
       <footer className="max-w-xl mx-auto w-full text-center text-xs text-gray-600 pt-6 border-t border-white/5">
-        Suwa Sarana Emergency Blood Requisition Platform · Sri Lanka
+        {t('circle.footer')}
       </footer>
     </main>
   );

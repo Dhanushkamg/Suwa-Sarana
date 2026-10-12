@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Clock, Users, CheckCircle2, AlertCircle, Loader2, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import apiClient from '@/lib/apiClient';
+import { useI18n } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import { DonationSlot, SlotBooking } from '@/types';
 
@@ -22,6 +23,7 @@ function formatDate(iso: string) {
 }
 
 export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerProps) {
+  const { t } = useI18n();
   const { user } = useAuthStore();
   const [slots, setSlots] = useState<DonationSlot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
 
   const handleBook = async (slot: DonationSlot) => {
     if (!user || user.role !== 'DONOR') {
-      setFeedback({ slotId: slot.id, type: 'error', message: 'Please sign in as a Donor to book a slot.' });
+      setFeedback({ slotId: slot.id, type: 'error', message: t('slotPicker.signInAsDonor') });
       return;
     }
 
@@ -65,21 +67,22 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
     try {
       const res = await apiClient.post(`/slots/${slot.id}/book`);
       const booking: SlotBooking = res.data.data ?? res.data;
-      setFeedback({ slotId: slot.id, type: 'success', message: 'Slot booked! Check My Bookings for your confirmation.' });
+      setFeedback({ slotId: slot.id, type: 'success', message: t('slotPicker.booked') });
       onBooked?.(booking);
       await fetchSlots(); // refresh capacity immediately
-    } catch (err: any) {
-      const status = err.response?.status;
-      const msg = err.response?.data?.message;
+    } catch (err: unknown) {
+      const resp = (err as { response?: { status?: number; data?: { message?: unknown } } })?.response;
+      const status = resp?.status;
+      const msg = typeof resp?.data?.message === 'string' ? resp.data.message : undefined;
 
       if (status === 409) {
-        setFeedback({ slotId: slot.id, type: 'error', message: msg || 'This slot is full or you have already booked it.' });
+        setFeedback({ slotId: slot.id, type: 'error', message: msg || t('slotPicker.conflict') });
       } else if (status === 422) {
-        setFeedback({ slotId: slot.id, type: 'error', message: msg || 'You are currently not eligible to donate (NBTS deferral rules).' });
+        setFeedback({ slotId: slot.id, type: 'error', message: msg || t('slotPicker.ineligible') });
       } else if (status === 401) {
-        setFeedback({ slotId: slot.id, type: 'error', message: 'Please sign in to book a slot.' });
+        setFeedback({ slotId: slot.id, type: 'error', message: t('slotPicker.signIn') });
       } else {
-        setFeedback({ slotId: slot.id, type: 'error', message: msg || 'Failed to book slot. Please try again.' });
+        setFeedback({ slotId: slot.id, type: 'error', message: msg || t('slotPicker.bookFailed') });
       }
     } finally {
       setBookingId(null);
@@ -90,7 +93,7 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
     return (
       <div className="flex items-center gap-2 py-4 text-gray-400 text-sm">
         <Loader2 className="w-4 h-4 animate-spin" />
-        Loading available slots...
+        {t('slotPicker.loading')}
       </div>
     );
   }
@@ -99,7 +102,7 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
     return (
       <div className="py-4 text-center text-sm text-gray-500">
         <CalendarCheck className="w-6 h-6 mx-auto mb-2 opacity-40" />
-        No time slots have been scheduled yet.
+        {t('slotPicker.empty')}
       </div>
     );
   }
@@ -107,7 +110,7 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
   return (
     <div className="space-y-2 mt-4">
       <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-3">
-        Available Time Slots
+        {t('slotPicker.available')}
       </p>
 
       {slots.map((slot) => {
@@ -135,8 +138,8 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
                 <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-400">
                   <Users className="w-3 h-3" />
                   {isFull
-                    ? 'Fully Booked'
-                    : `${slot.spotsLeft} of ${slot.capacity} spot${slot.spotsLeft !== 1 ? 's' : ''} left`}
+                    ? t('slotPicker.fullyBooked')
+                    : t(slot.spotsLeft !== 1 ? 'slotPicker.spotsLeft' : 'slotPicker.spotLeft', { left: slot.spotsLeft, capacity: slot.capacity })}
                 </div>
               </div>
 
@@ -152,7 +155,7 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
 
                 {isCancelled ? (
                   <span className="text-xs text-gray-500">
-                    {slot.status === 'COMPLETED' ? 'Completed' : 'Cancelled'}
+                    {slot.status === 'COMPLETED' ? t('slotPicker.completed') : t('slotPicker.cancelled')}
                   </span>
                 ) : (
                   <Button
@@ -162,7 +165,7 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
                     loading={isBooking}
                     onClick={() => handleBook(slot)}
                   >
-                    {isFull ? 'Full' : 'Book'}
+                    {isFull ? t('slotPicker.full') : t('slotPicker.book')}
                   </Button>
                 )}
               </div>
@@ -170,7 +173,7 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
 
             {/* Per-slot feedback */}
             {slotFeedback && (
-              <div className={`flex items-start gap-2 mt-2 text-xs rounded-lg p-2 ${
+              <div role={slotFeedback.type === 'error' ? 'alert' : 'status'} className={`flex items-start gap-2 mt-2 text-xs rounded-lg p-2 ${
                 slotFeedback.type === 'success'
                   ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                   : 'bg-red-500/10 text-red-300 border border-red-500/20'

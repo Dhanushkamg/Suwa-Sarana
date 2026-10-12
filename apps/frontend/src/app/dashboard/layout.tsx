@@ -7,32 +7,60 @@ import { Heart, LogOut, Home, Droplets, Bell, ShieldCheck, Plus, Building2, Map,
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { homeForRole } from '@/lib/auth';
+import type { User } from '@/types';
+
+/** Which roles may open each dashboard section; anything else is sent to the user's own home. */
+const SECTION_ROLES: { prefix: string; roles: User['role'][] }[] = [
+  { prefix: '/dashboard/donor/heatmap', roles: ['DONOR', 'ADMIN'] },
+  { prefix: '/dashboard/donor', roles: ['DONOR'] },
+  { prefix: '/dashboard/admin', roles: ['ADMIN'] },
+  { prefix: '/dashboard/hospital', roles: ['HOSPITAL_REQUESTER'] },
+  { prefix: '/dashboard/blood-bank', roles: ['BLOOD_BANK_REQUESTER'] },
+  { prefix: '/dashboard/requests/new', roles: ['REQUESTER', 'HOSPITAL_REQUESTER'] },
+];
+
+function isAllowed(pathname: string, role: User['role']) {
+  const section = SECTION_ROLES.find((s) => pathname === s.prefix || pathname.startsWith(s.prefix + '/'));
+  return !section || section.roles.includes(role);
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useI18n();
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, isInitialized, initialize, user, logout } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // After a full page load the in-memory token is gone: try to restore the session before deciding to redirect.
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, router]);
+    initialize();
+  }, [initialize]);
 
-  if (!isAuthenticated) return null;
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (!isAuthenticated || !user) {
+      router.replace('/login');
+    } else if (!isAllowed(pathname, user.role)) {
+      router.replace(homeForRole(user.role));
+    }
+  }, [isInitialized, isAuthenticated, user, pathname, router]);
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-[#0d0d14] flex items-center justify-center" role="status" aria-label={t('common.loading')}>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-red-500" />
+      </div>
+    );
+  }
+  if (!isAuthenticated || !user || !isAllowed(pathname, user.role)) return null;
 
   const handleLogout = async () => {
     await logout();
     router.push('/');
   };
 
-  const formatRole = (role?: string) => {
-    if (!role) return '';
-    if (role === 'HOSPITAL_REQUESTER') return 'hospital requester';
-    return role.toLowerCase().replace('_', ' ');
-  };
+  const formatRole = (role?: string) => (role ? role.toLowerCase().replace(/_/g, ' ') : '');
 
   const getNavItems = () => {
     switch (user?.role) {
@@ -93,6 +121,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 -mr-2 text-gray-400 hover:text-white transition-colors"
           aria-label="Toggle menu"
+          aria-expanded={isMobileMenuOpen}
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -142,6 +171,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
                   isActive
                     ? 'bg-red-500/10 text-red-400 font-semibold border border-red-500/20'

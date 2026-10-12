@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { Heart, ArrowLeft } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useI18n } from '@/lib/i18n';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
+
   return (
     <div className="min-h-screen flex bg-[#0d0d14]">
       {/* Left panel - Branding */}
@@ -36,15 +39,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <span className="gradient-text">Suwa Sarana</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-sm mx-auto leading-relaxed">
-            Community blood donation &amp; emergency matching platform for Sri Lanka
+            {t('authFlow.tagline')}
           </p>
 
           {/* Stats */}
           <div className="mt-12 grid grid-cols-3 gap-4">
             {[
-              { value: '466K+', label: 'Units/year' },
-              { value: '24', label: 'Districts' },
-              { value: '8', label: 'Blood types' },
+              { value: '25', label: t('authFlow.statDistricts') },
+              { value: '8', label: t('authFlow.statBloodTypes') },
+              { value: '3', label: t('authFlow.statLanguages') },
             ].map((stat) => (
               <div
                 key={stat.label}
@@ -59,7 +62,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Right panel - Form */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 lg:px-16 relative">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-12 pt-24 lg:px-16 lg:py-12 relative">
         <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
           {/* Back to Home — visible on all screen sizes */}
           <Link
@@ -67,7 +70,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             className="hidden lg:inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-white transition-colors group"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            Home
+            {t('authFlow.home')}
           </Link>
           <div className="ml-auto">
             <LanguageSwitcher />

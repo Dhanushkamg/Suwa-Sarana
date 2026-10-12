@@ -32,6 +32,9 @@ export interface AuthState {
   accessToken: string | null;
   user: User | null;
   isAuthenticated: boolean;
+  /** True once the first attempt to restore a session (after a page load) has finished. */
+  isInitialized: boolean;
+  initialize: () => Promise<void>;
   login: (token: string, user: User) => void;
   logout: () => Promise<void>;
   setAccessToken: (token: string) => void;

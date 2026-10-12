@@ -13,14 +13,22 @@ import { Select } from '@/components/ui/Select';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { useAuthStore } from '@/store/authStore';
+import { DISTRICTS, districtCenter } from '@/lib/districts';
 
-const DISTRICTS = [
-  'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
-  'Galle', 'Matara', 'Hambantota', 'Jaffna', 'Kilinochchi', 'Mannar',
-  'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee',
-  'Kurunegala', 'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla',
-  'Monaragala', 'Ratnapura', 'Kegalle'
-];
+interface AiDraft {
+  patientBloodType?: string;
+  unitsNeeded?: number;
+  urgency?: string;
+  hospitalName?: string;
+  district?: string;
+  latitude?: number;
+  longitude?: number;
+  message?: string;
+}
+
+interface ApiBody<T> {
+  data?: T;
+}
 
 export default function NewBloodRequestPage() {
   const router = useRouter();
@@ -39,9 +47,12 @@ export default function NewBloodRequestPage() {
     urgency: 'URGENT',
     hospitalName: '',
     district: 'Colombo',
-    latitude: 6.9271,
-    longitude: 79.8612,
+    latitude: districtCenter('Colombo')[0],
+    longitude: districtCenter('Colombo')[1],
   });
+  // True once the coordinates were set by GPS, the AI draft or manual typing: they then stop following the district.
+  const [coordsLocked, setCoordsLocked] = useState(false);
+  const [locationNote, setLocationNote] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -63,7 +74,7 @@ export default function NewBloodRequestPage() {
     { value: 'URGENT', label: t('urgency.URGENT') },
     {
       value: 'CRITICAL',
-      label: isVerified ? t('urgency.CRITICAL') : `${t('urgency.CRITICAL')} (Verified Only)`,
+      label: isVerified ? t('urgency.CRITICAL') : `${t('urgency.CRITICAL')} (${t('dash.verifiedOnly')})`,
       disabled: !isVerified,
     },
   ];
@@ -92,30 +103,38 @@ export default function NewBloodRequestPage() {
     setAiMessage(null);
 
     try {
-      const res = await apiClient.post<any>('/requests/ai-draft', {
+      const res = await apiClient.post<ApiBody<AiDraft>>('/requests/ai-draft', {
         text: aiPrompt.trim(),
         locale: locale || 'en',
       });
-      const data = res.data?.data ?? res.data;
+      const data = res.data?.data;
 
       if (data) {
-        setForm((prev) => ({
-          ...prev,
-          patientBloodType: data.patientBloodType || prev.patientBloodType,
-          unitsNeeded: data.unitsNeeded || prev.unitsNeeded,
-          urgency: data.urgency === 'CRITICAL' && !isVerified ? 'URGENT' : (data.urgency || prev.urgency),
-          hospitalName: data.hospitalName || prev.hospitalName,
-          district: data.district || prev.district,
-          latitude: data.latitude || prev.latitude,
-          longitude: data.longitude || prev.longitude,
-        }));
-        setAiMessage(data.message || 'Draft extracted successfully! Review the pre-filled fields below.');
+        const aiHasCoords = typeof data.latitude === 'number' && typeof data.longitude === 'number';
+        if (aiHasCoords) setCoordsLocked(true);
+        setForm((prev) => {
+          const district = data.district || prev.district;
+          // Coordinates: AI-supplied > manually locked > centre of the (new) district.
+          const [dLat, dLng] = districtCenter(district);
+          const useDistrict = !aiHasCoords && !coordsLocked;
+          return {
+            ...prev,
+            patientBloodType: data.patientBloodType || prev.patientBloodType,
+            unitsNeeded: data.unitsNeeded || prev.unitsNeeded,
+            urgency: data.urgency === 'CRITICAL' && !isVerified ? 'URGENT' : (data.urgency || prev.urgency),
+            hospitalName: data.hospitalName || prev.hospitalName,
+            district,
+            latitude: aiHasCoords ? (data.latitude as number) : useDistrict ? dLat : prev.latitude,
+            longitude: aiHasCoords ? (data.longitude as number) : useDistrict ? dLng : prev.longitude,
+          };
+        });
+        setAiMessage(data.message || t('dash.aiDraftDone'));
         setMode('form'); // Switch to standard review form
       }
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'AI parsing unavailable. Please use the standard structured form below.';
+        t('dash.aiUnavailable');
       setError(msg);
       setMode('form');
     } finally {
@@ -128,7 +147,7 @@ export default function NewBloodRequestPage() {
     setError('');
 
     if (form.urgency === 'CRITICAL' && !isVerified) {
-      setError('CRITICAL urgency is restricted to verified accounts.');
+      setError(t('dash.criticalRestrictedError'));
       return;
     }
 
@@ -159,21 +178,33 @@ export default function NewBloodRequestPage() {
     }
   };
 
+  const handleDistrictChange = (district: string) => {
+    setForm((prev) => {
+      if (coordsLocked) return { ...prev, district };
+      const [latitude, longitude] = districtCenter(district);
+      return { ...prev, district, latitude, longitude };
+    });
+  };
+
   const detectLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setForm((prev) => ({
-            ...prev,
-            latitude: Number(pos.coords.latitude.toFixed(6)),
-            longitude: Number(pos.coords.longitude.toFixed(6)),
-          }));
-        },
-        () => {
-          // Keep default coordinates if denied
-        }
-      );
+    setLocationNote(null);
+    if (!('geolocation' in navigator)) {
+      setLocationNote(t('dash.locationDenied'));
+      return;
     }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoordsLocked(true);
+        setForm((prev) => ({
+          ...prev,
+          latitude: Number(pos.coords.latitude.toFixed(6)),
+          longitude: Number(pos.coords.longitude.toFixed(6)),
+        }));
+      },
+      // Denied: keep the district-based coordinates and tell the user.
+      () => setLocationNote(t('dash.locationDenied')),
+      { timeout: 10000 }
+    );
   };
 
   return (
@@ -313,7 +344,7 @@ export default function NewBloodRequestPage() {
       {/* Structured Review & Final Submission Form */}
       {mode === 'form' && (
         <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-6 md:p-8 space-y-6 border border-white/10">
-          <div className="flex items-center justify-between border-b border-white/5 pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-4">
             <div>
               <h2 className="text-lg font-bold text-white">{t('aiRequest.reviewDetails')}</h2>
               <p className="text-xs text-gray-400">
@@ -377,7 +408,7 @@ export default function NewBloodRequestPage() {
               id="hospital-name"
               type="text"
               label={t('request.hospitalName')}
-              placeholder="e.g. National Hospital of Sri Lanka"
+              placeholder={t('dash.hospitalPlaceholder')}
               value={form.hospitalName}
               onChange={(e) => setForm({ ...form, hospitalName: e.target.value })}
               required
@@ -388,12 +419,12 @@ export default function NewBloodRequestPage() {
               label={t('request.district')}
               options={districtOptions}
               value={form.district}
-              onChange={(e) => setForm({ ...form, district: e.target.value })}
+              onChange={(e) => handleDistrictChange(e.target.value)}
             />
           </div>
 
           <div className="rounded-xl bg-white/4 p-4 border border-white/5 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
                 {t('aiRequest.geospatialCoords')}
               </span>
@@ -413,7 +444,10 @@ export default function NewBloodRequestPage() {
                 step="any"
                 label={t('request.latitude')}
                 value={String(form.latitude)}
-                onChange={(e) => setForm({ ...form, latitude: Number(e.target.value) })}
+                onChange={(e) => {
+                  setCoordsLocked(true);
+                  setForm({ ...form, latitude: Number(e.target.value) });
+                }}
               />
               <Input
                 id="longitude"
@@ -421,9 +455,14 @@ export default function NewBloodRequestPage() {
                 step="any"
                 label={t('request.longitude')}
                 value={String(form.longitude)}
-                onChange={(e) => setForm({ ...form, longitude: Number(e.target.value) })}
+                onChange={(e) => {
+                  setCoordsLocked(true);
+                  setForm({ ...form, longitude: Number(e.target.value) });
+                }}
               />
             </div>
+            <p className="text-xs text-gray-500">{t('dash.coordsHint')}</p>
+            {locationNote && <p className="text-xs text-amber-400">{locationNote}</p>}
           </div>
 
           <div className="pt-2">

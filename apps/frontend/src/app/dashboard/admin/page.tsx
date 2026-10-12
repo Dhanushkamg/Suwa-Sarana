@@ -5,6 +5,11 @@ import { ArrowLeft, ShieldCheck, ShieldAlert, BarChart3, Users, AlertTriangle, C
 import Link from 'next/link';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
+import { Skeleton } from '@/components/ui/Skeleton';
+
+interface ApiBody<T> {
+  data?: T;
+}
 
 type AnalyticsData = Record<string, number>;
 type Report = {
@@ -28,17 +33,16 @@ export default function AdminDashboardPage() {
     setError(null);
     try {
       const [analyticsRes, reportsRes] = await Promise.all([
-        apiClient.get<any>('/admin/analytics'),
-        apiClient.get<any>('/admin/reports'),
+        apiClient.get<ApiBody<AnalyticsData>>('/admin/analytics'),
+        apiClient.get<ApiBody<Report[]>>('/admin/reports'),
       ]);
-      const analyticsData = analyticsRes.data?.data ?? analyticsRes.data;
-      const reportsData = reportsRes.data?.data ?? reportsRes.data;
+      const analyticsData = analyticsRes.data?.data;
+      const reportsData = reportsRes.data?.data;
       setAnalytics(analyticsData || {});
       setReports(Array.isArray(reportsData) ? reportsData : []);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Failed to load admin telemetry data.';
-      setError(msg);
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || '');
     } finally {
       setLoading(false);
     }
@@ -78,7 +82,7 @@ export default function AdminDashboardPage() {
           <p className="text-gray-400 mt-1">{t('adminDashboard.overviewDesc')}</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={loadAdminData}
             disabled={loading}
@@ -111,10 +115,16 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 animate-in fade-in duration-200">
+      {error !== null && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex flex-wrap items-center gap-3 text-red-400 animate-in fade-in duration-200">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{error}</span>
+          <span className="text-sm font-medium flex-1">{error || t('dash.loadFailed')}</span>
+          <button
+            onClick={loadAdminData}
+            className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-semibold transition-colors"
+          >
+            {t('dash.retry')}
+          </button>
         </div>
       )}
 
@@ -153,9 +163,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-gray-500">
-            <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p>{t('common.loading')}</p>
+          <div className="space-y-3" role="status" aria-label={t('common.loading')}>
+            <Skeleton className="h-7 w-full" />
+            <Skeleton className="h-7 w-5/6" />
+            <Skeleton className="h-7 w-2/3" />
           </div>
         ) : Object.keys(analytics).length === 0 ? (
           <p className="text-gray-500 text-center py-6">{t('adminDashboard.noData')}</p>
@@ -170,7 +181,7 @@ export default function AdminDashboardPage() {
                   pct > 70 ? 'bg-red-500' : pct > 40 ? 'bg-amber-500' : 'bg-emerald-500';
                 return (
                   <div key={district} className="flex items-center gap-4">
-                    <div className="w-28 text-sm text-gray-300 text-right flex-shrink-0">{district}</div>
+                    <div className="w-20 sm:w-28 text-xs sm:text-sm text-gray-300 text-right flex-shrink-0 truncate" title={district}>{district}</div>
                     <div className="flex-1 h-7 rounded-lg bg-white/5 overflow-hidden relative">
                       <div
                         className={`h-full ${color} opacity-80 rounded-lg transition-all duration-700`}
@@ -204,18 +215,18 @@ export default function AdminDashboardPage() {
         <p className="text-xs text-gray-400 mb-4">
           {t('adminDashboard.quickVerifyDesc')}
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <input
             type="number"
             placeholder={t('adminDashboard.enterUserId')}
             value={verifyUserId}
             onChange={(e) => setVerifyUserId(e.target.value)}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
+            className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
           />
           <button
             onClick={handleVerify}
             disabled={verifyStatus === 'loading'}
-            className="px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors font-medium text-sm disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors font-medium text-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {verifyStatus === 'loading' ? (
               <span>{t('adminDashboard.verifying')}</span>

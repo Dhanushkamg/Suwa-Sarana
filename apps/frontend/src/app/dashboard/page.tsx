@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
+import { homeForRole } from '@/lib/auth';
 import { Heart, Droplets, Bell, ArrowRight, Plus, ListOrdered } from 'lucide-react';
 import Link from 'next/link';
 
@@ -13,13 +14,9 @@ export default function DashboardPage() {
   const { t } = useI18n();
 
   useEffect(() => {
-    if (user?.role === 'DONOR') {
-      router.replace('/dashboard/donor');
-    } else if (user?.role === 'ADMIN') {
-      router.replace('/dashboard/admin');
-    } else if (user?.role === 'HOSPITAL_REQUESTER') {
-      router.replace('/dashboard/hospital');
-    }
+    // Only plain requesters stay here; every other role has its own home.
+    const home = homeForRole(user?.role);
+    if (user && home !== '/dashboard') router.replace(home);
   }, [user, router]);
 
   return (

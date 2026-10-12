@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Map, MapPin, Calendar, Heart } from 'lucide-react';
+import { Map } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 const AdminMap = dynamic(() => import('@/components/camps/AdminMap'), { ssr: false });
@@ -36,7 +36,7 @@ export default function AdminCampsPage() {
 
       {/* Map Section */}
       <div className="glass-card rounded-3xl p-6 border border-white/5">
-        <div className="flex items-center gap-6 mb-6">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
             <span className="w-3 h-3 rounded-full bg-blue-500" /> {t('adminDashboard.activeCamps')}
           </div>

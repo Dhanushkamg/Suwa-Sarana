@@ -54,6 +54,8 @@ describe('LanguageSwitcher Component', () => {
     render(<LanguageSwitcher />);
     
     // The active language 'தமிழ்' should be in the document
-    expect(screen.getByText('தமிழ்')).toBeInTheDocument();
+    // Shown on the toggle button and as a menu option
+    expect(screen.getAllByText('தமிழ்').length).toBeGreaterThan(0);
+    expect(screen.getByRole('menuitemradio', { name: 'தமிழ்' })).toHaveAttribute('aria-checked', 'true');
   });
 });

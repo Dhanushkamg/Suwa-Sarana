@@ -16,14 +16,22 @@
     "myMatches": "My Matches",
     "noActiveMatches": "No active matches at the moment.",
     "received": "Received",
-    "close": "Close"
+    "close": "Close",
+    "approve": "Approve",
+    "reject": "Reject",
+    "actions": "Actions",
+    "view": "View",
+    "search": "Search",
+    "requests": "requests",
+    "request": "Request"
   },
   "nav": {
     "howItWorks": "How it works",
     "features": "Features",
     "impact": "Impact",
     "signIn": "Sign in",
-    "donateBlood": "Donate blood"
+    "donateBlood": "Donate blood",
+    "donationCamps": "Donation Camps"
   },
   "hero": {
     "badge": "Sri Lanka's first real-time donor matching platform",
@@ -46,7 +54,11 @@
     "organizedBy": "Organized by:",
     "campStatus": "Camp Status",
     "scheduledActive": "Scheduled (Active)",
-    "cancelledCompleted": "Cancelled / Completed"
+    "cancelledCompleted": "Cancelled / Completed",
+    "districtsSupported": "Districts supported",
+    "languages": "Languages supported",
+    "liveValue": "Live",
+    "liveAlerts": "Real-time donor alerts"
   },
   "howItWorks": {
     "title": "How it works",
@@ -255,7 +267,9 @@
     "noScheduledCampsDesc": "There are currently no active donation camps scheduled. Please check back soon or register as an on-demand donor.",
     "requires": "Requires:",
     "hideSlots": "Hide time slots",
-    "showSlots": "View & book a time slot"
+    "showSlots": "View & book a time slot",
+    "loadFailed": "Couldn't load donation camps",
+    "loadFailedDesc": "Please check your connection and try again."
   },
   "aiRequest": {
     "aiAssistant": "AI Natural Language Assistant",
@@ -284,7 +298,8 @@
     "sharePoster": "Share Poster",
     "manageSlots": "Manage Slots",
     "closeSlots": "Close Slots",
-    "appointmentsWalkins": "Appointments & Walk-ins"
+    "appointmentsWalkins": "Appointments & Walk-ins",
+    "loadFailed": "Failed to load your donation camps."
   },
   "slotManager": {
     "slotManager": "Slot Manager",
@@ -304,7 +319,15 @@
     "loadingRoster": "Loading roster...",
     "noBookings": "No bookings yet for this slot.",
     "booking": "Booking",
-    "checkIn": "Check In"
+    "checkIn": "Check In",
+    "loadFailed": "Failed to load slots.",
+    "loadingSlots": "Loading slots...",
+    "checkInSuccess": "Booking #{id} checked in successfully.",
+    "checkInFailed": "Check-in failed.",
+    "invalidQR": "Invalid Suwa Sarana QR format.",
+    "unrecognizedQR": "Unrecognized QR code.",
+    "createdSlots": "Created {count} slot(s) successfully.",
+    "createFailed": "Failed to create slots."
   },
   "modals": {
     "createCampTitle": "Create Donation Camp",
@@ -324,7 +347,8 @@
     "posterDesc": "This high-resolution image is automatically generated using your camp's details. You can download and share it on Facebook, Instagram, or WhatsApp to attract donors.",
     "campaignDetails": "Campaign Details",
     "downloadPoster": "Download Poster",
-    "generatingJpg": "Generating High-Res JPG..."
+    "generatingJpg": "Generating High-Res JPG...",
+    "createCampFailed": "Failed to create camp"
   },
   "circle": {
     "volunteerTitle": "Volunteer to Donate",
@@ -340,7 +364,19 @@
     "thankYou": "Thank You",
     "invalidToken": "This circle invite link is invalid or has expired.",
     "goToHome": "Go to Home Page",
-    "inviteUnavailable": "Invite Unavailable"
+    "inviteUnavailable": "Invite Unavailable",
+    "submitFailed": "Failed to submit response. Please verify your details.",
+    "socialCard": "Social Card",
+    "loading": "Loading emergency blood request...",
+    "successBody": "Your response has been delivered directly to the patient's family/requester. They will contact you shortly at",
+    "wantMore": "Want to save more lives in Sri Lanka?",
+    "wantMoreDesc": "Register as a verified volunteer donor on Suwa Sarana to receive location-based alerts when someone near you needs blood.",
+    "registerBtn": "Register as a Regular Donor",
+    "urgencyBadge": "Urgency: {urgency}",
+    "districtLabel": "District:",
+    "requiredLabel": "Required:",
+    "unitsCount": "{count} Units",
+    "footer": "Suwa Sarana Emergency Blood Requisition Platform · Sri Lanka"
   },
   "share": {
     "shareTitle": "Share This Request",
@@ -357,7 +393,15 @@
     "accepting": "Accepting",
     "expired": "Expired",
     "cardUnavailable": "Card Unavailable",
-    "verifiedBroadcast": "Verified Broadcast"
+    "verifiedBroadcast": "Verified Broadcast",
+    "notFound": "Emergency requisition card not found or expired.",
+    "timeLeftValue": "{hours}h {minutes}m left",
+    "volunteerForm": "Volunteer Form",
+    "loading": "Loading emergency details...",
+    "ofNeeded": "of {bloodType} Needed",
+    "urgently": "URGENTLY",
+    "downloadFailed": "Could not download the image. Please try again or take a screenshot.",
+    "network": "Sri Lanka Emergency Blood Network"
   },
   "contact": {
     "title": "Contact Us",
@@ -377,7 +421,9 @@
     "messageLabel": "Message",
     "messagePlaceholder": "Describe your question or issue in detail...",
     "sending": "Sending...",
-    "sendBtn": "Send Message"
+    "sendBtn": "Send Message",
+    "successMessage": "Thank you! Your message has been sent. We'll get back to you within 24 hours.",
+    "errorMessage": "Failed to send message. Please try again."
   },
   "privacy": {
     "title": "Privacy Policy",
@@ -551,13 +597,195 @@
     "disconnected": "SSE Disconnected (Auto-reconnecting)",
     "newMatch": "New Blood Match Dispatch",
     "escalation": "Search Radius Escalation",
-    "platformAlert": "Platform Alert"
+    "platformAlert": "Platform Alert",
+    "active": "Active"
   },
   "publicPages": {
     "circleTitle": "Donation Circle",
     "shareTitle": "Share Request",
     "contact": "Contact Us",
     "privacy": "Privacy Policy",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "district": "District",
+    "date": "Date",
+    "time": "Time",
+    "required": "Required:",
+    "allTypes": "All Types",
+    "organizedBy": "Organized by:",
+    "campStatus": "Camp Status",
+    "scheduledActive": "Scheduled (Active)",
+    "cancelledCompleted": "Cancelled / Completed"
+  },
+  "authFlow": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "nicOptional": "NIC number (optional)",
+    "roleHospital": "🏥 I represent a hospital",
+    "roleBloodBank": "🩸 I represent a blood bank",
+    "sendOtp": "Send verification code",
+    "otpSent": "We sent a 6-digit code to {phone}",
+    "otpLabel": "Verification code",
+    "verifyCreate": "Verify & create account",
+    "backToInfo": "Back",
+    "resend": "Resend code",
+    "resendIn": "Resend code in {seconds}s",
+    "or": "or",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "firstNameRequired": "First name is required",
+    "lastNameRequired": "Last name is required",
+    "phoneRequired": "Phone number is required",
+    "phoneInvalid": "Enter a valid number: 07XXXXXXXX or +94XXXXXXXXX",
+    "nicInvalid": "Enter a valid NIC number",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Enter a valid email",
+    "passwordRequired": "Password is required",
+    "passwordShort": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords do not match",
+    "otpRequired": "Enter the verification code",
+    "otpSendFailed": "Could not send the code. Please try again.",
+    "registerFailed": "Registration failed. Please check your details and try again.",
+    "resetTitle": "Reset password",
+    "resetSubtitle": "Enter the phone number on your account and we'll text you a verification code.",
+    "newPassword": "New password",
+    "resetButton": "Update password",
+    "resetDone": "Password updated",
+    "resetDoneDesc": "You've been signed out on all devices. Sign in with your new password.",
+    "backToSignIn": "Back to sign in",
+    "home": "Home",
+    "statDistricts": "Districts",
+    "statBloodTypes": "Blood types",
+    "statLanguages": "Languages",
+    "tagline": "Community blood donation & emergency matching platform for Sri Lanka"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Please try again.",
+    "retry": "Try again",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The page you're looking for doesn't exist or has moved."
+  },
+  "ui": {
+    "toggleMenu": "Toggle navigation menu",
+    "urgency": {
+      "CRITICAL": "CRITICAL",
+      "URGENT": "URGENT",
+      "ROUTINE": "ROUTINE"
+    }
+  },
+  "slotPicker": {
+    "signInAsDonor": "Please sign in as a Donor to book a slot.",
+    "booked": "Slot booked! Check My Bookings for your confirmation.",
+    "conflict": "This slot is full or you have already booked it.",
+    "ineligible": "You are currently not eligible to donate (NBTS deferral rules).",
+    "signIn": "Please sign in to book a slot.",
+    "bookFailed": "Failed to book slot. Please try again.",
+    "loading": "Loading available slots...",
+    "empty": "No time slots have been scheduled yet.",
+    "available": "Available Time Slots",
+    "fullyBooked": "Fully Booked",
+    "spotsLeft": "{left} of {capacity} spots left",
+    "spotLeft": "{left} of {capacity} spot left",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "full": "Full",
+    "book": "Book"
+  },
+  "myBookings": {
+    "upcoming": "Upcoming",
+    "checkedIn": "Checked In",
+    "noShow": "No Show",
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "checkedInAt": "Checked in at {time}",
+    "cancelSuccess": "Booking cancelled successfully.",
+    "cancelFailed": "Failed to cancel booking.",
+    "loading": "Loading your bookings...",
+    "loadFailed": "Could not load your bookings.",
+    "emptyTitle": "No bookings yet",
+    "emptyText": "Browse donation camps to book a time slot.",
+    "upcomingCount": "Upcoming ({count})",
+    "pastCount": "Past ({count})"
+  },
+  "chat": {
+    "welcome": "Ayubowan & Vanakkam! 🙏 I am your Suwa Sarana Blood Donation Eligibility Assistant. Ask me anything about deferral periods, age/weight criteria, or donation safety in English, සිංහල, or தமிழ்.",
+    "noAnswer": "I could not process your query. Please consult clinical staff at the blood bank.",
+    "error": "Sorry, I am currently unable to reach the eligibility engine. Please check with clinical staff at your nearest blood bank.",
+    "assistantName": "Eligibility AI Assistant",
+    "grounded": "NBTS Grounded",
+    "subtitle": "Eligibility & Deferral FAQ",
+    "banner": "Information provided by this assistant is based solely on verified and trusted sources from the National Blood Transfusion Service (NBTS) Sri Lanka.",
+    "thinking": "Consulting NBTS eligibility rules...",
+    "placeholder": "Ask in English, සිංහල, or தமிழ்...",
+    "send": "Send",
+    "prompt1Label": "Tattoo & Piercing",
+    "prompt1Query": "Can I donate blood if I got a tattoo or piercing recently?",
+    "prompt2Label": "Age & Weight",
+    "prompt2Query": "What is the minimum age and weight to donate blood?",
+    "prompt3Label": "Donation Interval",
+    "prompt3Query": "How often can I donate blood in Sri Lanka?"
+  },
+  "dash": {
+    "retry": "Try again",
+    "all": "All",
+    "loadFailed": "Could not load data. Please try again.",
+    "pendingVerification": "Pending verification",
+    "rejectedVerification": "Verification rejected",
+    "unitsCount": "{n} units",
+    "radiusKm": "{km} km radius",
+    "sessionRequired": "A user session is required to manage this.",
+    "urgency": {
+      "ROUTINE": "Routine",
+      "URGENT": "Urgent",
+      "CRITICAL": "Critical"
+    },
+    "matchStatus": {
+      "PENDING": "Pending",
+      "ACCEPTED": "Accepted",
+      "DECLINED": "Declined",
+      "EXPIRED": "Expired",
+      "COMPLETED": "Completed"
+    },
+    "yourBloodType": "Your blood type",
+    "dob": "Date of birth",
+    "dobHint": "You must be between 18 and 60 years old to donate blood.",
+    "dobInvalid": "Donors must be between 18 and 60 years old.",
+    "weight": "Weight (kg)",
+    "weightHint": "Minimum 50 kg to donate blood (optional).",
+    "weightInvalid": "Enter a weight between 30 and 300 kg.",
+    "useMyLocation": "Use my location",
+    "locationSaved": "Using your saved location",
+    "locationDevice": "Using your device location",
+    "locationDistrict": "Using the centre of {district}",
+    "locationDenied": "Could not get your location. The centre of your district will be used instead.",
+    "newProfile": "You do not have a donor profile yet. Fill in the details below to start receiving match alerts.",
+    "availabilityFailed": "Could not update your availability.",
+    "respondFailed": "Could not send your response. Please try again.",
+    "heatmapTitle": "Sri Lanka Supply Heatmap",
+    "heatmapDesc": "Live interactive view of district-level blood shortages. Critical zones are areas where active requests exceed available donors.",
+    "criticalZones": "Critical Zones",
+    "loadingIntel": "Loading live data...",
+    "connectionError": "Connection error",
+    "searchPlaceholder": "Search hospital or district",
+    "noResults": "No requests match your filters.",
+    "fulfilledRequests": "Fulfilled requests",
+    "shareText": "Emergency: Urgent {bloodType} blood needed at {hospital} ({district}). Please check if you can volunteer:",
+    "newActivity": "New match activity",
+    "circleFailed": "Could not generate the private circle invite link.",
+    "matchDispatched": "A new urgent blood request match has been dispatched to your account.",
+    "radiusExpanded": "The search radius was expanded for a pending request.",
+    "verifiedOnly": "Verified only",
+    "criticalRestrictedError": "CRITICAL urgency is restricted to verified accounts.",
+    "hospitalPlaceholder": "e.g. National Hospital of Sri Lanka",
+    "aiDraftDone": "Draft extracted successfully! Review the pre-filled fields below.",
+    "aiUnavailable": "AI parsing is unavailable. Please use the standard form below.",
+    "coordsHint": "Coordinates follow the selected district unless you use GPS auto-detect or edit them.",
+    "dismissFailed": "Could not dismiss the flag. Please try again.",
+    "approvedMsg": "Verification approved for {email}.",
+    "rejectedMsg": "Verification rejected for {email}.",
+    "approveFailed": "Could not approve the user.",
+    "rejectFailed": "Could not reject the user.",
+    "notAvailable": "N/A",
+    "district": "District"
   }
 }

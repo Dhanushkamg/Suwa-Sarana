@@ -19,13 +19,14 @@ export default function ContactPage() {
     setLoading(true);
     setSubmitStatus('idle');
     try {
-      const res = await apiClient.post('/contact', formData);
+      await apiClient.post('/contact', formData);
       setSubmitStatus('success');
-      setSubmitMessage(res.data.message || 'Message sent successfully.');
+      setSubmitMessage(t('contact.successMessage'));
       setFormData({ name: '', email: '', subject: '', message: '' });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
       setSubmitStatus('error');
-      setSubmitMessage(err.response?.data?.message || 'Failed to send message.');
+      setSubmitMessage(typeof message === 'string' && message ? message : t('contact.errorMessage'));
     } finally {
       setLoading(false);
     }
@@ -34,18 +35,18 @@ export default function ContactPage() {
     <div className="min-h-screen bg-[#0d0d14] text-white">
       {/* Nav */}
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-[#0d0d14]/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:shadow-red-500/50 transition-all duration-300">
               <Heart className="w-5 h-5 text-white fill-white" />
             </div>
-            <span className="text-lg font-bold text-white">Suwa Sarana</span>
+            <span className="text-lg font-bold text-white hidden sm:inline">Suwa Sarana</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <LanguageSwitcher />
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors group"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors group whitespace-nowrap"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
               {t('common.backToHome')}
@@ -62,7 +63,7 @@ export default function ContactPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 shadow-xl shadow-red-500/30 mb-6">
               <Mail className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-4">{t('contact.title')}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('contact.title')}</h1>
             <p className="text-gray-400 max-w-xl mx-auto leading-relaxed">
               {t('contact.subtitle')}
             </p>
@@ -117,24 +118,25 @@ export default function ContactPage() {
           </div>
 
           {/* Contact Form */}
-          <div className="bg-white/4 border border-white/8 rounded-2xl p-8">
+          <div className="bg-white/4 border border-white/8 rounded-2xl p-5 sm:p-8">
             <h2 className="text-xl font-semibold text-white mb-6">{t('contact.formTitle')}</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
               {submitStatus === 'success' && (
-                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                <div role="status" className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
                   {submitMessage}
                 </div>
               )}
               {submitStatus === 'error' && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                <div role="alert" className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                   {submitMessage}
                 </div>
               )}
               
               <div className="grid sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-300">{t('contact.nameLabel')}</label>
+                  <label htmlFor="contact-name" className="text-sm font-medium text-gray-300">{t('contact.nameLabel')}</label>
                   <input
+                    id="contact-name"
                     type="text"
                     required
                     value={formData.name}
@@ -144,8 +146,9 @@ export default function ContactPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-300">{t('contact.emailLabel')}</label>
+                  <label htmlFor="contact-email" className="text-sm font-medium text-gray-300">{t('contact.emailLabel')}</label>
                   <input
+                    id="contact-email"
                     type="email"
                     required
                     value={formData.email}
@@ -156,8 +159,9 @@ export default function ContactPage() {
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-300">{t('contact.subjectLabel')}</label>
+                <label htmlFor="contact-subject" className="text-sm font-medium text-gray-300">{t('contact.subjectLabel')}</label>
                 <input
+                  id="contact-subject"
                   type="text"
                   required
                   value={formData.subject}
@@ -167,8 +171,9 @@ export default function ContactPage() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-300">{t('contact.messageLabel')}</label>
+                <label htmlFor="contact-message" className="text-sm font-medium text-gray-300">{t('contact.messageLabel')}</label>
                 <textarea
+                  id="contact-message"
                   rows={5}
                   required
                   value={formData.message}
@@ -194,12 +199,12 @@ export default function ContactPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-            <span>Suwa Sarana © 2026. All rights reserved.</span>
+            <span>{t('footer.rights')}</span>
           </div>
           <div className="flex gap-6">
-            <Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-gray-400 transition-colors">Terms</Link>
-            <Link href="/contact" className="text-red-400">Contact</Link>
+            <Link href="/privacy" className="hover:text-gray-400 transition-colors">{t('footer.privacy')}</Link>
+            <Link href="/terms" className="hover:text-gray-400 transition-colors">{t('footer.terms')}</Link>
+            <Link href="/contact" className="text-red-400">{t('footer.contact')}</Link>
           </div>
         </div>
       </footer>

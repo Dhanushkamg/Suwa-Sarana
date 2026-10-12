@@ -1,98 +1,77 @@
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from './constants';
 import { useAuthStore } from '@/store/authStore';
+import { AuthData, setSessionHint, toUser, unwrap } from './auth';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // IMPORTANT: Allows cookies (Refresh Token) to be sent automatically
+  withCredentials: true, // lets the HttpOnly refresh-token cookie travel with auth requests
 });
 
-// Attach JWT access token to every request.
-// The token is read from the Zustand store (in-memory only, not localStorage).
+// Attach the in-memory access token to every request.
 apiClient.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  const token = useAuthStore.getState().accessToken;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-let isRefreshing = false;
-let failedQueue: { resolve: (value: string | null) => void; reject: (reason?: unknown) => void }[] = [];
+type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
+// One refresh at a time: every request that hits a 401 meanwhile waits for the same new token.
+let refreshPromise: Promise<string> | null = null;
+
+function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true })
+      .then((res) => {
+        const auth = unwrap<AuthData>(res.data);
+        const { login } = useAuthStore.getState();
+        login(auth.accessToken, toUser(auth));
+        return auth.accessToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+function signOutLocally() {
+  setSessionHint(false);
+  useAuthStore.setState({ accessToken: null, user: null, isAuthenticated: false });
+  // Public pages (landing, camps...) work signed out; only the dashboard needs a login.
+  if (window.location.pathname.startsWith('/dashboard')) {
+    window.location.href = '/login';
+  }
+}
 
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const original = error.config as RetriableRequest | undefined;
+    const isAuthCall = original?.url?.includes('/auth/') ?? false;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise(function (resolve, reject) {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = 'Bearer ' + token;
-            return apiClient(originalRequest);
-          })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const { data } = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
-
-        const newAccessToken = data.data.accessToken;
-
-        // Store the new token in the Zustand store (memory only — not localStorage)
-        if (typeof window !== 'undefined') {
-          useAuthStore.getState().setAccessToken(newAccessToken);
-        }
-
-        apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-        processQueue(null, newAccessToken);
-        return apiClient(originalRequest);
-      } catch (err) {
-        processQueue(err, null);
-        if (typeof window !== 'undefined') {
-          // Silent refresh failed — clear auth state and redirect to login
-          useAuthStore.getState().setAccessToken('');
-          useAuthStore.setState({ accessToken: null, user: null, isAuthenticated: false });
-          window.location.href = window.location.origin + '/login';
-        }
-        return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
-      }
+    // A 401 on /auth/* means "wrong credentials" etc., not "token expired" — let the form show the message.
+    if (error.response?.status !== 401 || !original || original._retry || isAuthCall) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+    original._retry = true;
+
+    try {
+      const token = await refreshAccessToken();
+      original.headers.Authorization = `Bearer ${token}`;
+      return apiClient(original);
+    } catch {
+      signOutLocally();
+      return Promise.reject(error);
+    }
   }
 );
 
 export default apiClient;
-

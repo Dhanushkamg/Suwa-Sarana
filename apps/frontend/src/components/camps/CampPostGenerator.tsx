@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import * as htmlToImage from 'html-to-image';
-import { Download, Loader2, Droplets, Heart, Calendar, MapPin, Clock, Share2, Users } from 'lucide-react';
+import { Download, Droplets, Heart, Calendar, MapPin, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/lib/i18n';
 

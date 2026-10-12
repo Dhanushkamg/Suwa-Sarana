@@ -4,12 +4,21 @@ import { Building2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import CampManagerDashboard from '@/components/camps/CampManagerDashboard';
 import { useI18n } from '@/lib/i18n';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export default function BloodBankDashboardPage() {
   const { user } = useAuthStore();
   const { t } = useI18n();
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8" role="status" aria-label={t('common.loading')}>
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -23,13 +32,18 @@ export default function BloodBankDashboardPage() {
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30 uppercase tracking-wider">
                   {t('dashboard.bloodBankPortal')}
                 </span>
-                <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {t('dashboard.verifiedOrg')}
-                </span>
+                {user.verificationStatus === 'VERIFIED' ? (
+                  <StatusBadge value="VERIFIED" label={t('dashboard.verifiedOrg')} />
+                ) : (
+                  <StatusBadge
+                    value={user.verificationStatus ?? 'PENDING'}
+                    label={user.verificationStatus === 'REJECTED' ? t('dash.rejectedVerification') : t('dash.pendingVerification')}
+                  />
+                )}
               </div>
               <h1 className="text-3xl font-bold text-white">{t('dashboard.bloodBankCommandCenter')}</h1>
               <p className="text-gray-400 text-sm mt-1 max-w-xl">

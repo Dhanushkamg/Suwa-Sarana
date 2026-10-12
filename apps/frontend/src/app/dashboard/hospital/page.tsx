@@ -7,8 +7,16 @@ import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { BloodRequest } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import SlotManager from '@/components/slots/SlotManager';
 import CampManagerDashboard from '@/components/camps/CampManagerDashboard';
+
+interface ApiBody<T> {
+  data?: T;
+}
 
 export default function HospitalRequesterDashboardPage() {
   const { user } = useAuthStore();
@@ -21,17 +29,13 @@ export default function HospitalRequesterDashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<any>('/requests');
-      const reqData = res.data?.data ?? res.data;
-      if (Array.isArray(reqData)) {
-        setRequests(reqData);
-      } else {
-        setRequests([]);
-      }
+      // Only this hospital's own requests.
+      const res = await apiClient.get<ApiBody<BloodRequest[]>>('/requests/me');
+      const reqData = res.data?.data;
+      setRequests(Array.isArray(reqData) ? reqData : []);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Failed to load hospital requests telemetry.';
-      setError(msg);
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || '');
     } finally {
       setLoading(false);
     }
@@ -42,7 +46,11 @@ export default function HospitalRequesterDashboardPage() {
   }, [loadHospitalData]);
 
   const criticalCount = requests.filter((r) => r.urgency === 'CRITICAL').length;
-  const activeCount = requests.filter((r) => r.status === 'OPEN' || r.status === 'ESCALATING').length;
+  const activeRequests = requests.filter((r) => r.status === 'OPEN' || r.status === 'ESCALATING');
+  const activeCount = activeRequests.length;
+  const fulfilledCount = requests.filter((r) => r.status === 'FULFILLED').length;
+  const currentRadius = activeRequests.reduce((max, r) => Math.max(max, r.currentRadiusKm), 5);
+  const statusLabel = (s: string) => t('request.status' + s.charAt(0) + s.slice(1).toLowerCase());
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -56,13 +64,18 @@ export default function HospitalRequesterDashboardPage() {
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30 uppercase tracking-wider">
                   {t('hospitalDashboard.portalTitle')}
                 </span>
-                <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {t('hospitalDashboard.verifiedUnit')}
-                </span>
+                {user?.verificationStatus === 'VERIFIED' ? (
+                  <StatusBadge value="VERIFIED" label={t('hospitalDashboard.verifiedUnit')} />
+                ) : (
+                  <StatusBadge
+                    value={user?.verificationStatus ?? 'PENDING'}
+                    label={user?.verificationStatus === 'REJECTED' ? t('dash.rejectedVerification') : t('dash.pendingVerification')}
+                  />
+                )}
               </div>
               <h1 className="text-3xl font-bold text-white">{t('hospitalDashboard.dispatchCenter')}</h1>
               <p className="text-gray-400 text-sm mt-1 max-w-xl">
@@ -91,13 +104,6 @@ export default function HospitalRequesterDashboardPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 animate-in fade-in duration-200">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{error}</span>
-        </div>
-      )}
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card rounded-2xl p-5 border border-white/5 flex items-center gap-4">
@@ -125,8 +131,8 @@ export default function HospitalRequesterDashboardPage() {
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-white">100%</div>
-            <div className="text-xs text-gray-400 mt-0.5">{t('hospitalDashboard.escalationActive')}</div>
+            <div className="text-2xl font-bold text-white">{fulfilledCount}</div>
+            <div className="text-xs text-gray-400 mt-0.5">{t('dash.fulfilledRequests')}</div>
           </div>
         </div>
 
@@ -135,7 +141,7 @@ export default function HospitalRequesterDashboardPage() {
             <Activity className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-white">5 km - 25 km</div>
+            <div className="text-2xl font-bold text-white">{currentRadius} km</div>
             <div className="text-xs text-gray-400 mt-0.5">{t('hospitalDashboard.searchRadius')}</div>
           </div>
         </div>
@@ -157,16 +163,19 @@ export default function HospitalRequesterDashboardPage() {
         </div>
 
         {loading ? (
-          <div className="glass-card rounded-2xl p-12 text-center text-gray-400 border border-white/5">
-            <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p>{t('common.loading')}</p>
-          </div>
+          <SkeletonList rows={3} />
+        ) : error !== null ? (
+          <EmptyState
+            icon={<AlertCircle className="w-10 h-10 text-red-400" />}
+            title={error || t('dash.loadFailed')}
+            action={<Button variant="secondary" onClick={loadHospitalData}>{t('dash.retry')}</Button>}
+          />
         ) : requests.length === 0 ? (
-          <div className="glass-card rounded-2xl p-12 text-center border-dashed border-white/10 space-y-3">
-            <Droplets className="w-12 h-12 text-gray-600 mx-auto" />
-            <p className="text-white font-medium">{t('hospitalDashboard.noActiveRequests')}</p>
-            <p className="text-sm text-gray-400">{t('hospitalDashboard.noActiveRequestsDesc')}</p>
-            <div className="pt-2">
+          <EmptyState
+            icon={<Droplets className="w-12 h-12" />}
+            title={t('hospitalDashboard.noActiveRequests')}
+            description={t('hospitalDashboard.noActiveRequestsDesc')}
+            action={
               <Link
                 href="/dashboard/requests/new"
                 className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-medium text-sm px-4 py-2 rounded-xl transition-colors"
@@ -174,8 +183,8 @@ export default function HospitalRequesterDashboardPage() {
                 <Plus className="w-4 h-4" />
                 {t('hospitalDashboard.createRequest')}
               </Link>
-            </div>
-          </div>
+            }
+          />
         ) : (
           <div className="grid gap-4">
             {requests.map((req) => (
@@ -188,27 +197,17 @@ export default function HospitalRequesterDashboardPage() {
                     {req.patientBloodType}
                   </div>
                   <div>
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="font-bold text-white text-base">{req.hospitalName}</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        req.urgency === 'CRITICAL'
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                          : req.urgency === 'URGENT'
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                          : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                      }`}>
-                        {req.urgency}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/5 text-gray-300 border border-white/10">
-                        {req.status}
-                      </span>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
+                      <span className="font-bold text-white text-base break-words">{req.hospitalName}</span>
+                      <StatusBadge value={req.urgency} label={t(`dash.urgency.${req.urgency}`)} />
+                      <StatusBadge value={req.status} label={statusLabel(req.status)} />
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400">
                       <span>{t('request.district')}: <strong className="text-gray-300">{req.district}</strong></span>
                       <span>{t('hospitalDashboard.radius')}: <strong className="text-gray-300">{req.currentRadiusKm} km</strong></span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5 text-gray-500" />
-                        {t('hospitalDashboard.expires')} {new Date(req.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {t('hospitalDashboard.expires')} {new Date(req.expiresAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
                     </div>
                   </div>
@@ -245,7 +244,7 @@ export default function HospitalRequesterDashboardPage() {
           {user ? (
             <SlotManager hostType="hospital" hostId={user.id} />
           ) : (
-            <div className="text-sm text-gray-500 text-center py-6">User session required to manage slots.</div>
+            <div className="text-sm text-gray-500 text-center py-6">{t('dash.sessionRequired')}</div>
           )}
         </div>
       </div>

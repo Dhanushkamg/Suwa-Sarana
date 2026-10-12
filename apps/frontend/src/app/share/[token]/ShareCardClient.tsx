@@ -38,15 +38,15 @@ export default function ShareCardClient({ token, initialData }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<any>(`/circle/${token}`);
-      const data = res.data?.data ?? res.data;
+      const res = await apiClient.get<{ data?: CircleInfo } & CircleInfo>(`/circle/${token}`);
+      const data: CircleInfo = res.data?.data ?? res.data;
       setInfo(data);
     } catch {
-      setError('Emergency requisition card not found or expired.');
+      setError(t('share.notFound'));
     } finally {
       setLoading(false);
     }
-  }, [token, initialData]);
+  }, [token, initialData, t]);
 
   useEffect(() => {
     loadInfo();
@@ -59,24 +59,31 @@ export default function ShareCardClient({ token, initialData }: Props) {
       const difference = new Date(info.expiresAt).getTime() - new Date().getTime();
       
       if (difference <= 0) {
-        setTimeLeft('Expired');
+        setTimeLeft(t('share.expired'));
         return;
       }
 
       const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
       const minutes = Math.floor((difference / 1000 / 60) % 60);
-      setTimeLeft(`${hours}h ${minutes}m left`);
+      setTimeLeft(t('share.timeLeftValue', { hours, minutes }));
     };
 
     calculateTimeLeft();
     const timer = setInterval(calculateTimeLeft, 60000); // Update every minute
 
     return () => clearInterval(timer);
-  }, [info?.expiresAt, info?.isExpired]);
+  }, [info?.expiresAt, info?.isExpired, t]);
+
+  // Translate the urgency enum when a label exists, otherwise show the raw value
+  const urgencyLabel = (u: string) => {
+    const key = `ui.urgency.${u}`;
+    const label = t(key);
+    return label === key ? u : label;
+  };
 
   const circleUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/circle/${token}`
-    : `https://suwasarana.lk/circle/${token}`;
+    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk'}/circle/${token}`;
 
   const shareText = info
     ? `🚨 EMERGENCY: ${info.unitsNeeded} Units of ${info.patientBloodType} blood needed URGENTLY at ${info.hospitalName} (${info.district}). Your donation can save a life today. Please volunteer or share this message:`
@@ -105,14 +112,14 @@ export default function ShareCardClient({ token, initialData }: Props) {
           </div>
           <div className="flex flex-col">
              <span className="text-lg font-black tracking-tight text-white leading-tight">Suwa Sarana</span>
-             <span className="text-[10px] text-gray-400 font-medium">Sri Lanka Emergency Blood Network</span>
+             <span className="text-[10px] text-gray-400 font-medium">{t('share.network')}</span>
           </div>
         </Link>
         <Link
           href={`/circle/${token}`}
           className="inline-flex items-center gap-1.5 text-xs text-white font-medium px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 shadow-md shadow-red-600/20 transition-colors"
         >
-          Volunteer Form →
+          {t('share.volunteerForm')} →
         </Link>
       </header>
 
@@ -121,10 +128,10 @@ export default function ShareCardClient({ token, initialData }: Props) {
         {loading ? (
           <div className="glass-card rounded-3xl p-12 text-center border border-white/5">
             <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-gray-400">Loading emergency details...</p>
+            <p className="text-gray-400">{t('share.loading')}</p>
           </div>
         ) : error || !info ? (
-          <div className="glass-card rounded-3xl p-10 text-center border-red-500/20 bg-red-950/10">
+          <div role="alert" className="glass-card rounded-3xl p-6 sm:p-10 text-center border-red-500/20 bg-red-950/10">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-white mb-2">{t('share.cardUnavailable')}</h1>
             <p className="text-gray-400 text-sm mb-6">{error}</p>
@@ -139,7 +146,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
           <>
             {/* Dramatic Social Card Preview Container */}
             <div className="rounded-[2rem] p-1 border border-red-500/30 bg-gradient-to-b from-red-500/20 to-transparent shadow-2xl shadow-red-900/30">
-              <div className="bg-[#0f0505] rounded-[1.8rem] p-6 md:p-8 relative overflow-hidden">
+              <div className="bg-[#0f0505] rounded-[1.8rem] p-4 sm:p-6 md:p-8 relative overflow-hidden">
                 {/* Card Internal Glow */}
                  <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-[60px]" />
                  
@@ -157,7 +164,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
                           ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
                           : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                      }`}>
-                       🚨 {info.urgency}
+                       🚨 {urgencyLabel(info.urgency)}
                      </span>
                   </div>
 
@@ -167,11 +174,11 @@ export default function ShareCardClient({ token, initialData }: Props) {
                         <div className="absolute inset-0 bg-white/10" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 30%, 0 60%)' }} />
                         {info.patientBloodType}
                      </div>
-                     <div className="flex flex-col justify-center">
-                        <h2 className="text-xl md:text-2xl font-black text-white leading-tight mb-2">
-                          <span className="text-red-400">{info.unitsNeeded} Units</span> of {info.patientBloodType} Needed <span className="bg-red-600 text-white px-2 py-0.5 rounded text-sm align-middle ml-1 shadow-md shadow-red-900/50">URGENTLY</span>
+                     <div className="flex flex-col justify-center min-w-0">
+                        <h2 className="text-xl md:text-2xl font-black text-white leading-tight mb-2 break-words">
+                          <span className="text-red-400">{t('circle.unitsCount', { count: info.unitsNeeded })}</span> {t('share.ofNeeded', { bloodType: info.patientBloodType })} <span className="bg-red-600 text-white px-2 py-0.5 rounded text-sm align-middle ml-1 shadow-md shadow-red-900/50">{t('share.urgently')}</span>
                         </h2>
-                        <h3 className="text-sm md:text-base text-gray-300 font-medium">
+                        <h3 className="text-sm md:text-base text-gray-300 font-medium break-words">
                           {info.hospitalName}
                         </h3>
                      </div>
@@ -189,7 +196,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
                     </div>
                     <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
                       <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Droplets className="w-3.5 h-3.5" /> {t('share.required')}</div>
-                      <div className="text-white font-bold text-sm">{info.unitsNeeded} Units</div>
+                      <div className="text-white font-bold text-sm">{t('circle.unitsCount', { count: info.unitsNeeded })}</div>
                     </div>
                     <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
                       <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> {t('share.status')}</div>
@@ -267,6 +274,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
               
               <div className="pt-2 space-y-3">
                  <button
+                    type="button"
                     onClick={async () => {
                       try {
                         const res = await fetch(`/share/${token}/opengraph-image?t=${Date.now()}`, { cache: 'no-store' });
@@ -282,7 +290,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
                         document.body.removeChild(a);
                       } catch (err) {
                         console.error('Download failed:', err);
-                        alert('Could not download the image. Please try again or take a screenshot.');
+                        alert(t('share.downloadFailed'));
                       }
                     }}
                     className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-500 shadow-lg shadow-red-500/20 text-white transition-colors text-sm font-medium"
@@ -291,6 +299,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
                     {t('share.downloadImage')}
                  </button>
                  <button
+                    type="button"
                     onClick={copyLink}
                     className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors text-sm font-medium"
                   >
@@ -306,8 +315,8 @@ export default function ShareCardClient({ token, initialData }: Props) {
       {/* Footer */}
       <footer className="max-w-xl mx-auto w-full text-center py-6 border-t border-white/5 relative z-10 mt-4">
         <div className="flex flex-col items-center gap-2">
-           <span className="text-sm font-bold text-gray-300">suwasarana.lk</span>
-           <span className="text-[10px] text-gray-500 uppercase tracking-widest">Sri Lanka Emergency Blood Network</span>
+           <span className="text-sm font-bold text-gray-300">{(process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk').replace(/^https?:\/\//, '')}</span>
+           <span className="text-[10px] text-gray-500 uppercase tracking-widest">{t('share.network')}</span>
         </div>
       </footer>
     </main>

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
+import { escapeHtml } from '@/components/maps/escapeHtml';
 
 interface Camp {
   id: number;
@@ -99,26 +100,26 @@ export default function AdminMap() {
           const popupContent = `
             <div style="padding: 14px; min-width: 240px; font-family: inherit; background: #0f0f1a; border-radius: 12px;">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                <h4 style="font-weight: 800; font-size: 14px; color: #ffffff; margin: 0;">${camp.name}</h4>
+                <h4 style="font-weight: 800; font-size: 14px; color: #ffffff; margin: 0;">${escapeHtml(camp.name)}</h4>
                 <span style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 6px; background: ${color}20; color: ${color}; border: 1px solid ${color}40;">
-                  ${camp.status}
+                  ${escapeHtml(camp.status)}
                 </span>
               </div>
-              <div style="font-size: 12px; color: #9ca3af; margin-bottom: 10px;">📍 ${camp.location}, ${camp.district}</div>
+              <div style="font-size: 12px; color: #9ca3af; margin-bottom: 10px;">📍 ${escapeHtml(camp.location)}, ${escapeHtml(camp.district)}</div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px;">
                 <div style="background: rgba(255,255,255,0.05); padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                  <div style="color: #6b7280; margin-bottom: 2px;">${t('publicPages.date')}</div>
-                  <div style="color: #e5e7eb; font-weight: 700;">${camp.scheduledDate}</div>
+                  <div style="color: #6b7280; margin-bottom: 2px;">${escapeHtml(t('publicPages.date'))}</div>
+                  <div style="color: #e5e7eb; font-weight: 700;">${escapeHtml(camp.scheduledDate)}</div>
                 </div>
                 <div style="background: rgba(255,255,255,0.05); padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                  <div style="color: #6b7280; margin-bottom: 2px;">${t('publicPages.time')}</div>
-                  <div style="color: #e5e7eb; font-weight: 700;">${camp.startTime} – ${camp.endTime}</div>
+                  <div style="color: #6b7280; margin-bottom: 2px;">${escapeHtml(t('publicPages.time'))}</div>
+                  <div style="color: #e5e7eb; font-weight: 700;">${escapeHtml(camp.startTime)} – ${escapeHtml(camp.endTime)}</div>
                 </div>
               </div>
               <div style="margin-top: 8px; background: rgba(255,255,255,0.03); padding: 6px 8px; border-radius: 8px; font-size: 11px; color: #d1d5db; border: 1px solid rgba(255,255,255,0.06);">
-                🩸 ${t('publicPages.required')} <strong style="color: #f87171;">${camp.requiredBloodGroups || t('publicPages.allTypes')}</strong>
+                🩸 ${escapeHtml(t('publicPages.required'))} <strong style="color: #f87171;">${escapeHtml(camp.requiredBloodGroups || t('publicPages.allTypes'))}</strong>
               </div>
-              <div style="margin-top: 6px; font-size: 10px; color: #6b7280;">${t('publicPages.organizedBy')} ${camp.organizerName}</div>
+              <div style="margin-top: 6px; font-size: 10px; color: #6b7280;">${escapeHtml(t('publicPages.organizedBy'))} ${escapeHtml(camp.organizerName)}</div>
             </div>
           `;
 
@@ -138,7 +139,7 @@ export default function AdminMap() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   return (
     <div className="relative w-full h-[600px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-[#09090e]">

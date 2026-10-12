@@ -1,106 +1,93 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Heart, MapPin, Activity, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Heart, MapPin, Activity, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw, Droplets } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
-import { API_BASE_URL } from '@/lib/constants';
 import apiClient from '@/lib/apiClient';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
-type DonorMatch = {
+interface MatchRequest {
   id: number;
-  requestId: number;
   patientBloodType: string;
   urgency: string;
   hospitalName: string;
   district: string;
+  unitsNeeded: number;
+  status: string;
+  expiresAt: string;
+}
+
+interface DonorMatch {
+  id: number;
   status: string;
   createdAt: string;
-};
+  request?: MatchRequest | null;
+}
+
+interface ApiBody<T> {
+  data?: T;
+}
+
+const REFRESH_MS = 30_000;
+
+function apiMessage(err: unknown): string | undefined {
+  return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+}
 
 export default function DonorMatchesPage() {
   const { t } = useI18n();
   const [matches, setMatches] = useState<DonorMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [respondingId, setRespondingId] = useState<number | null>(null);
 
-  const loadMatches = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadMatches = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
-      const res = await apiClient.get<any>('/donors/me/matches');
-      const data = res.data?.data ?? res.data;
-      if (Array.isArray(data)) {
-        const formatted: DonorMatch[] = data.map((item: any) => ({
-          id: item.id,
-          requestId: item.request?.id ?? item.requestId ?? item.id,
-          patientBloodType: item.request?.patientBloodType ?? item.patientBloodType ?? 'O+',
-          urgency: item.request?.urgency ?? item.urgency ?? 'URGENT',
-          hospitalName: item.request?.hospitalName ?? item.hospitalName ?? 'Medical Center',
-          district: item.request?.district ?? item.district ?? 'Colombo',
-          status: item.status ?? 'PENDING',
-          createdAt: item.createdAt ?? new Date().toISOString(),
-        }));
-        setMatches(formatted);
-      } else {
-        setMatches([]);
-      }
+      const res = await apiClient.get<ApiBody<DonorMatch[]>>('/donors/me/matches');
+      const data = res.data?.data;
+      // Only render matches that carry their request details.
+      setMatches(Array.isArray(data) ? data.filter((m) => m.request) : []);
+      setError(null);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || 'Failed to load matches from server.';
-      setError(msg);
+      // A background refresh failing should not wipe the list the donor is looking at.
+      if (!silent) setError(apiMessage(err) || '');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadMatches();
-  }, [loadMatches]);
-
-  // Subscribe to SSE for real-time new match notifications
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
-
-    let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource(`${API_BASE_URL}/notifications/stream`);
-
-      eventSource.addEventListener('NEW_MATCH', () => {
-        loadMatches();
-      });
-
-      eventSource.onerror = () => {
-        eventSource?.close();
-      };
-    } catch {
-      // SSE connection error
-    }
-
-    return () => {
-      eventSource?.close();
-    };
+    // Simple periodic refresh instead of a long-lived stream.
+    const timer = setInterval(() => {
+      if (!document.hidden) loadMatches(true);
+    }, REFRESH_MS);
+    return () => clearInterval(timer);
   }, [loadMatches]);
 
   const respond = async (matchId: number, response: 'ACCEPTED' | 'DECLINED') => {
     setRespondingId(matchId);
-    setError(null);
+    setActionError(null);
     try {
-      await apiClient.post(`/matches/${matchId}/respond?response=${response}`);
-      setMatches((prev) =>
-        prev.map((m) => (m.id === matchId ? { ...m, status: response } : m))
-      );
+      await apiClient.post(`/matches/${matchId}/respond`, null, { params: { response } });
+      setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, status: response } : m)));
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || `Failed to submit response (${response}).`;
-      setError(msg);
+      setActionError(apiMessage(err) || t('dash.respondFailed'));
     } finally {
       setRespondingId(null);
     }
   };
+
+  const requestStatusLabel = (s: string) => t('request.status' + s.charAt(0) + s.slice(1).toLowerCase());
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -118,7 +105,7 @@ export default function DonorMatchesPage() {
         </div>
 
         <button
-          onClick={loadMatches}
+          onClick={() => loadMatches()}
           disabled={loading}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-medium self-start sm:self-auto transition-colors"
         >
@@ -127,111 +114,114 @@ export default function DonorMatchesPage() {
         </button>
       </div>
 
-      {error && (
+      {actionError && (
         <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 animate-in fade-in duration-200">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{error}</span>
+          <span className="text-sm font-medium">{actionError}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="glass-card rounded-2xl p-12 text-center text-gray-400 border border-white/5">
-          <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p>{t('common.loading')}</p>
-        </div>
+        <SkeletonList rows={3} />
+      ) : error !== null ? (
+        <EmptyState
+          icon={<AlertCircle className="w-10 h-10 text-red-400" />}
+          title={error || t('dash.loadFailed')}
+          action={<Button variant="secondary" onClick={() => loadMatches()}>{t('dash.retry')}</Button>}
+        />
       ) : matches.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center border border-white/5">
-          <Heart className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-300 font-medium text-base">{t('common.noActiveMatches')}</p>
-          <p className="text-gray-500 text-sm mt-1">{t('dashboard.noActiveMatchesDesc')}</p>
-          <div className="mt-6">
+        <EmptyState
+          icon={<Heart className="w-12 h-12" />}
+          title={t('common.noActiveMatches')}
+          description={t('dashboard.noActiveMatchesDesc')}
+          action={
             <Link
               href="/dashboard/donor"
               className="inline-flex items-center gap-2 text-xs text-red-400 hover:text-red-300 font-medium px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 transition-colors"
             >
               {t('dashboard.updateDonorProfile')}
             </Link>
-          </div>
-        </div>
+          }
+        />
       ) : (
         <div className="space-y-4">
-          {matches.map((match) => (
-            <div
-              key={match.id}
-              className="glass-card rounded-2xl p-6 border border-white/10 hover:border-red-500/20 transition-all duration-200"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-600/20 border border-red-500/30 flex items-center justify-center text-xl font-black text-red-400">
-                    {match.patientBloodType}
+          {matches.map((match) => {
+            const req = match.request as MatchRequest;
+            const requestActive = req.status === 'OPEN' || req.status === 'ESCALATING';
+            return (
+              <div
+                key={match.id}
+                className="glass-card rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-red-500/20 transition-all duration-200"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-600/20 border border-red-500/30 flex items-center justify-center text-xl font-black text-red-400 flex-shrink-0">
+                      {req.patientBloodType}
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="font-bold text-white text-lg break-words">{req.hospitalName}</h2>
+                      <p className="text-sm text-gray-400 flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                        <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {req.district}</span>
+                        <span className="inline-flex items-center gap-1"><Droplets className="w-3.5 h-3.5 text-red-400" /> {t('dash.unitsCount', { n: req.unitsNeeded })}</span>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="font-bold text-white text-lg">{match.hospitalName}</h2>
-                    <p className="text-sm text-gray-400 flex items-center gap-2 mt-1">
-                      <MapPin className="w-3.5 h-3.5" /> {match.district}
-                    </p>
+
+                  <div className="flex items-center gap-2">
+                    <StatusBadge value={req.urgency} label={t(`dash.urgency.${req.urgency}`)} />
+                    {!requestActive && <StatusBadge value={req.status} label={requestStatusLabel(req.status)} />}
                   </div>
                 </div>
 
-                {match.urgency === 'CRITICAL' && (
-                  <span className="flex items-center gap-1.5 text-xs text-red-400 font-bold bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
-                    CRITICAL
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mb-5">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    {t('common.received')}: {new Date(match.createdAt).toLocaleString()}
                   </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    {t('bloodRequests.expires')}: {new Date(req.expiresAt).toLocaleString()}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5" />
+                    {t('bloodRequests.status')}: <span className="font-medium text-white">{t(`dash.matchStatus.${match.status}`)}</span>
+                  </span>
+                </div>
+
+                {match.status === 'PENDING' && requestActive && (
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={() => respond(match.id, 'ACCEPTED')}
+                      disabled={respondingId === match.id}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors font-medium text-sm disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {t('dashboard.acceptAndDonate')}
+                    </button>
+                    <button
+                      onClick={() => respond(match.id, 'DECLINED')}
+                      disabled={respondingId === match.id}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors font-medium text-sm disabled:opacity-50"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      {t('dashboard.decline')}
+                    </button>
+                  </div>
                 )}
-                {match.urgency === 'URGENT' && (
-                  <span className="text-xs text-amber-400 font-medium bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full">
-                    URGENT
-                  </span>
+
+                {match.status === 'ACCEPTED' && (
+                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> {t('dashboard.youAccepted')}
+                  </div>
                 )}
-                {match.urgency === 'ROUTINE' && (
-                  <span className="text-xs text-gray-400 font-medium bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
-                    ROUTINE
-                  </span>
+                {match.status === 'DECLINED' && (
+                  <div className="flex items-center gap-2 text-gray-500 text-sm">
+                    <XCircle className="w-5 h-5 flex-shrink-0" /> {t('dashboard.youDeclined')}
+                  </div>
                 )}
               </div>
-
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-5">
-                <Clock className="w-3.5 h-3.5" />
-                {t('common.received')}: {new Date(match.createdAt).toLocaleString()}
-                <span className="mx-2 text-gray-700">·</span>
-                <Activity className="w-3.5 h-3.5" />
-                {t('bloodRequests.status')}: <span className="font-medium text-white ml-1">{match.status}</span>
-              </div>
-
-              {match.status === 'PENDING' && (
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => respond(match.id, 'ACCEPTED')}
-                    disabled={respondingId === match.id}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors font-medium text-sm disabled:opacity-50"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    {t('dashboard.acceptAndDonate')}
-                  </button>
-                  <button
-                    onClick={() => respond(match.id, 'DECLINED')}
-                    disabled={respondingId === match.id}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors font-medium text-sm disabled:opacity-50"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    {t('dashboard.decline')}
-                  </button>
-                </div>
-              )}
-
-              {match.status === 'ACCEPTED' && (
-                <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
-                  <CheckCircle2 className="w-5 h-5" /> {t('dashboard.youAccepted')}
-                </div>
-              )}
-              {match.status === 'DECLINED' && (
-                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                  <XCircle className="w-5 h-5" /> {t('dashboard.youDeclined')}
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

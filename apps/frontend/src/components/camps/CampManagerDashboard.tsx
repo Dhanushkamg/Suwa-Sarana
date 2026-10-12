@@ -42,30 +42,34 @@ export default function CampManagerDashboard() {
     try {
       const res = await apiClient.get('/camps/my-camps');
       setCamps(res.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load your donation camps.');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+      setError(typeof message === 'string' && message ? message : t('campManager.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
+  // Depend on the primitive id (not the whole user object) to avoid refetch loops
+  const userId = user?.id;
   useEffect(() => {
-    if (user) {
+    if (userId) {
       loadCamps();
     }
-  }, [user, loadCamps]);
+  }, [userId, loadCamps]);
 
   if (!user) return null;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Calendar className="w-5 h-5 text-rose-500" />
           {t('campManager.managedCamps')}
         </h2>
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={loadCamps}
             disabled={loading}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium transition-colors border border-white/10"
@@ -80,7 +84,7 @@ export default function CampManagerDashboard() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400">
+        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span className="text-sm font-medium">{error}</span>
         </div>
@@ -104,7 +108,7 @@ export default function CampManagerDashboard() {
               <div className="p-6 flex flex-col md:flex-row gap-6 md:items-center justify-between">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-white">{camp.name}</h3>
+                    <h3 className="text-xl font-bold text-white break-words">{camp.name}</h3>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                       camp.status === 'SCHEDULED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
                       camp.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :

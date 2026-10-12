@@ -3,12 +3,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, ShieldAlert, Bot, AlertTriangle, CheckCircle2,
-  RefreshCw, Filter, ExternalLink, Check, Eye, MapPin, Droplets, Activity
+  RefreshCw, Check, Eye, MapPin, Droplets, Activity
 } from 'lucide-react';
 import Link from 'next/link';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
 import { BloodRequest } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+
+interface ApiBody<T> {
+  data?: T;
+}
 
 interface TriagedRequest extends BloodRequest {
   fraudRiskScore?: number;
@@ -23,21 +31,18 @@ export default function AdminTriageQueuePage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'HIGH' | 'MODERATE' | 'LOW'>('ALL');
   const [resolvingId, setResolvingId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const loadTriageQueue = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<any>('/admin/triage/queue');
-      const data = res.data?.data ?? res.data;
-      if (Array.isArray(data)) {
-        setRequests(data);
-      }
+      const res = await apiClient.get<ApiBody<TriagedRequest[]>>('/admin/triage/queue');
+      const data = res.data?.data;
+      setRequests(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Failed to load AI triage queue.';
-      setError(msg);
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || '');
     } finally {
       setLoading(false);
     }
@@ -49,13 +54,15 @@ export default function AdminTriageQueuePage() {
 
   const handleResolve = async (id: number) => {
     setResolvingId(id);
+    setActionError(null);
     try {
       await apiClient.put(`/admin/triage/${id}/review`, {
         notes: 'Dismissed by administrator from triage console.',
       });
       loadTriageQueue();
-    } catch {
-      // Failed to resolve
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setActionError(msg || t('dash.dismissFailed'));
     } finally {
       setResolvingId(null);
     }
@@ -96,7 +103,7 @@ export default function AdminTriageQueuePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={loadTriageQueue}
             disabled={loading}
@@ -119,10 +126,10 @@ export default function AdminTriageQueuePage() {
         </div>
       </div>
 
-      {error && (
+      {actionError && (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{error}</span>
+          <span className="text-sm font-medium">{actionError}</span>
         </div>
       )}
 
@@ -189,16 +196,21 @@ export default function AdminTriageQueuePage() {
       {/* Triage List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="glass-card rounded-2xl p-12 text-center text-gray-500">
-            <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p>{t('adminDashboard.evaluatingQueue')}</p>
+          <div className="space-y-2" role="status" aria-label={t('adminDashboard.evaluatingQueue')}>
+            <SkeletonList rows={3} />
           </div>
+        ) : error !== null ? (
+          <EmptyState
+            icon={<AlertTriangle className="w-10 h-10 text-red-400" />}
+            title={error || t('dash.loadFailed')}
+            action={<Button variant="secondary" onClick={loadTriageQueue}>{t('dash.retry')}</Button>}
+          />
         ) : filtered.length === 0 ? (
-          <div className="glass-card rounded-2xl p-12 text-center text-gray-500">
-            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-60" />
-            <h3 className="text-lg font-bold text-white mb-1">{t('adminDashboard.queueClear')}</h3>
-            <p className="text-xs text-gray-400">{t('adminDashboard.noThreshold')}</p>
-          </div>
+          <EmptyState
+            icon={<CheckCircle2 className="w-12 h-12 text-emerald-400 opacity-60" />}
+            title={t('adminDashboard.queueClear')}
+            description={t('adminDashboard.noThreshold')}
+          />
         ) : (
           filtered.map((req) => {
             const score = req.fraudRiskScore || 0;
@@ -224,21 +236,22 @@ export default function AdminTriageQueuePage() {
                       {req.patientBloodType}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold text-white">{req.hospitalName}</h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-bold text-white break-words">{req.hospitalName}</h3>
                         <span className="text-xs text-gray-500 font-mono">#{req.id}</span>
                       </div>
-                      <p className="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-gray-400 flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
                         <MapPin className="w-3.5 h-3.5 text-gray-500" /> {req.district}
                         <span className="text-gray-600">·</span>
-                        <Droplets className="w-3.5 h-3.5 text-red-400" /> {req.unitsNeeded} Units
+                        <Droplets className="w-3.5 h-3.5 text-red-400" /> {t('dash.unitsCount', { n: req.unitsNeeded ?? 0 })}
                         <span className="text-gray-600">·</span>
-                        <Activity className="w-3.5 h-3.5 text-blue-400" /> {req.urgency}
+                        <Activity className="w-3.5 h-3.5 text-blue-400" />
+                        <StatusBadge value={req.urgency} label={t(`dash.urgency.${req.urgency}`)} />
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 self-start lg:self-auto">
+                  <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
                     <div className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 ${badgeBg}`}>
                       <span>{t('adminDashboard.riskScore')}:</span>
                       <span className="font-mono text-sm">{score}/100</span>

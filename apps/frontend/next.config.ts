@@ -52,11 +52,11 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: [
-              'camera=()',
+              'camera=(self)', // QR check-in scanner (html5-qrcode) needs the camera
               'microphone=()',
               'payment=()',
               'usb=()',
-              'geolocation=(self)', // Leaflet map may use geolocation
+              'geolocation=(self)', // "use my location" for donor profile and requests
             ].join(', '),
           },
           // ---------------------------------------------------------------
