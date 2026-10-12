@@ -209,6 +209,8 @@ public class DataInitializer implements CommandLineRunner {
                 user.setEmail(email);
                 user.setPhoneNumber(phone);
             }
+            if (user.getFirstName() == null) user.setFirstName("Test");
+            if (user.getLastName() == null) user.setLastName(role.name().substring(0, 1) + role.name().substring(1).toLowerCase().replace('_', ' '));
             user.setPasswordHash(passwordEncoder.encode(password));
             user.setRole(role);
             user.setVerificationStatus(status);

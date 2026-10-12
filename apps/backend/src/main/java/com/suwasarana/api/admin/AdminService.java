@@ -1,6 +1,8 @@
 package com.suwasarana.api.admin;
 
 import com.suwasarana.api.admin.dto.DistrictSummaryDto;
+import com.suwasarana.api.admin.dto.ReportDto;
+import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.donor.DonorProfile;
 import com.suwasarana.api.donor.DonorRepository;
 import com.suwasarana.api.request.BloodRequest;
@@ -64,13 +66,24 @@ public class AdminService {
     @Transactional
     public void verifyUser(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
         user.setVerificationStatus(VerificationStatus.VERIFIED);
         userRepository.save(user);
     }
 
-    public List<RequestReport> getReports() {
-        return requestReportRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<ReportDto> getReports() {
+        return requestReportRepository.findAll().stream().map(this::mapToReportDto).toList();
+    }
+
+    private ReportDto mapToReportDto(RequestReport report) {
+        ReportDto dto = new ReportDto();
+        dto.setId(report.getId());
+        dto.setRequestId(report.getRequest().getId());
+        dto.setReason(report.getReason());
+        dto.setCreatedAt(report.getCreatedAt());
+        dto.setReporterId(report.getReportedBy().getId());
+        return dto;
     }
 
     public Map<String, Object> getDistrictAnalytics() {
@@ -178,9 +191,18 @@ public class AdminService {
     @Transactional
     public void reviewTriageRequest(Long requestId, String adminNotes) {
         BloodRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+                .orElseThrow(() -> ApiException.notFound("Request not found"));
         request.setFraudRiskScore(0);
-        request.setAiFlagReason("Reviewed and resolved by admin. Notes: " + (adminNotes != null ? adminNotes : "None"));
+        // Keep the original AI reason and append the admin note (column is VARCHAR(255))
+        String note = " | Admin: " + (adminNotes != null && !adminNotes.isBlank() ? adminNotes.trim() : "reviewed");
+        if (note.length() > 255) {
+            note = note.substring(0, 255);
+        }
+        String original = request.getAiFlagReason() != null ? request.getAiFlagReason() : "";
+        if (original.length() + note.length() > 255) {
+            original = original.substring(0, 255 - note.length());
+        }
+        request.setAiFlagReason(original + note);
         requestRepository.save(request);
     }
 }

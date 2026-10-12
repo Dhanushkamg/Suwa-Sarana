@@ -56,6 +56,14 @@ public class DonationCamp {
         updatedAt = ZonedDateTime.now();
     }
 
+    /** Public display name for a user ("First Last") — never the email. */
+    public static String displayName(User user) {
+        String first = user.getFirstName() == null ? "" : user.getFirstName().trim();
+        String last = user.getLastName() == null ? "" : user.getLastName().trim();
+        String name = (first + " " + last).trim();
+        return name.isEmpty() ? "Organizer" : name;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }

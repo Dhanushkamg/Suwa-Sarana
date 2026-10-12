@@ -38,20 +38,22 @@ public class SlotBookingController {
 
     @Operation(summary = "Create a single slot for a camp")
     @PostMapping("/api/camps/{campId}/slots")
-    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER', 'ADMIN')")
     public ResponseEntity<ApiResponse<DonationSlotDto>> createCampSlot(
             @PathVariable Long campId,
-            @Valid @RequestBody CreateSlotDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(slotBookingService.createCampSlot(campId, dto)));
+            @Valid @RequestBody CreateSlotDto dto,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(ApiResponse.success(slotBookingService.createCampSlot(campId, dto, userDetails.getId())));
     }
 
     @Operation(summary = "Bulk-generate slots for a camp at regular intervals")
     @PostMapping("/api/camps/{campId}/slots/bulk")
-    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<DonationSlotDto>>> bulkCreateCampSlots(
             @PathVariable Long campId,
-            @Valid @RequestBody BulkCreateSlotDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(slotBookingService.bulkCreateCampSlots(campId, dto)));
+            @Valid @RequestBody BulkCreateSlotDto dto,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(ApiResponse.success(slotBookingService.bulkCreateCampSlots(campId, dto, userDetails.getId())));
     }
 
     // -------------------------------------------------------------------------
@@ -68,20 +70,22 @@ public class SlotBookingController {
 
     @Operation(summary = "Create a single slot for a hospital walk-in window")
     @PostMapping("/api/hospitals/{hospitalUserId}/slots")
-    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER', 'ADMIN')")
     public ResponseEntity<ApiResponse<DonationSlotDto>> createHospitalSlot(
             @PathVariable Long hospitalUserId,
-            @Valid @RequestBody CreateSlotDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(slotBookingService.createHospitalSlot(hospitalUserId, dto)));
+            @Valid @RequestBody CreateSlotDto dto,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(ApiResponse.success(slotBookingService.createHospitalSlot(hospitalUserId, dto, userDetails.getId())));
     }
 
     @Operation(summary = "Bulk-generate slots for a hospital walk-in window")
     @PostMapping("/api/hospitals/{hospitalUserId}/slots/bulk")
-    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<DonationSlotDto>>> bulkCreateHospitalSlots(
             @PathVariable Long hospitalUserId,
-            @Valid @RequestBody BulkCreateSlotDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(slotBookingService.bulkCreateHospitalSlots(hospitalUserId, dto)));
+            @Valid @RequestBody BulkCreateSlotDto dto,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(ApiResponse.success(slotBookingService.bulkCreateHospitalSlots(hospitalUserId, dto, userDetails.getId())));
     }
 
     // -------------------------------------------------------------------------
@@ -108,11 +112,12 @@ public class SlotBookingController {
 
     @Operation(summary = "Mark a donor as checked in", description = "Used by hospital/organiser staff when a donor arrives. Updates booking status to CHECKED_IN.")
     @PostMapping("/api/slots/{slotId}/check-in/{bookingId}")
-    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER', 'ADMIN')")
     public ResponseEntity<ApiResponse<SlotBookingDto>> checkIn(
             @PathVariable Long slotId,
-            @PathVariable Long bookingId) {
-        return ResponseEntity.ok(ApiResponse.success(slotBookingService.checkIn(slotId, bookingId), "Donor checked in"));
+            @PathVariable Long bookingId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(ApiResponse.success(slotBookingService.checkIn(slotId, bookingId, userDetails.getId()), "Donor checked in"));
     }
 
     // -------------------------------------------------------------------------

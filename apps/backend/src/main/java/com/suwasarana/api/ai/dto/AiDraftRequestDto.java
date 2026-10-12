@@ -1,10 +1,12 @@
 package com.suwasarana.api.ai.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class AiDraftRequestDto {
 
     @NotBlank(message = "Natural language text prompt is required")
+    @Size(max = 2000, message = "Text must be at most 2000 characters")
     private String text;
 
     private String locale; // "en", "si", "ta"

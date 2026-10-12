@@ -3,6 +3,7 @@ package com.suwasarana.api.donor;
 import com.suwasarana.api.common.ApiResponse;
 import com.suwasarana.api.donor.dto.AvailabilityDto;
 import com.suwasarana.api.donor.dto.DonorProfileDto;
+import com.suwasarana.api.donor.dto.MatchDto;
 import com.suwasarana.api.donor.dto.UpdateDonorProfileDto;
 import com.suwasarana.api.security.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,7 +53,7 @@ public class DonorController {
 
     @Operation(summary = "Get received match requests", description = "Lists all emergency dispatch requests received by the authenticated donor.")
     @GetMapping("/matches")
-    public ResponseEntity<ApiResponse<java.util.List<com.suwasarana.api.matching.RequestMatch>>> getMyMatches(
+    public ResponseEntity<ApiResponse<java.util.List<MatchDto>>> getMyMatches(
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(ApiResponse.success(donorService.getMyMatches(userDetails.getId())));
     }

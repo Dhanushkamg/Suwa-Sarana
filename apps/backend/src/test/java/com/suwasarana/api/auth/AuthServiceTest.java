@@ -47,6 +47,9 @@ class AuthServiceTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock
+    private com.suwasarana.api.auth.otp.OtpService otpService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -99,6 +102,73 @@ class AuthServiceTest {
 
         assertThrows(RuntimeException.class, () -> authService.register(registerDto, "127.0.0.1"));
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_adminRole_isRejectedBeforeAnythingIsSaved() {
+        RegisterDto registerDto = new RegisterDto();
+        registerDto.setEmail("evil@test.com");
+        registerDto.setPhoneNumber("0712345678");
+        registerDto.setPassword("password123");
+        registerDto.setRole(Role.ADMIN);
+
+        com.suwasarana.api.common.ApiException ex = assertThrows(com.suwasarana.api.common.ApiException.class,
+                () -> authService.register(registerDto, "127.0.0.1"));
+
+        assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, ex.getStatus());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_unverifiedPhone_isRejected() {
+        RegisterDto registerDto = new RegisterDto();
+        registerDto.setEmail("new@test.com");
+        registerDto.setPhoneNumber("0712345678");
+        registerDto.setPassword("password123");
+        registerDto.setRole(Role.DONOR);
+        when(otpService.isPhoneVerified("0712345678")).thenReturn(false);
+
+        assertThrows(com.suwasarana.api.common.ApiException.class, () -> authService.register(registerDto, "127.0.0.1"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPassword_verifiedPhone_updatesPasswordAndSignsOutEverywhere() {
+        com.suwasarana.api.auth.dto.ResetPasswordDto dto = new com.suwasarana.api.auth.dto.ResetPasswordDto();
+        dto.setPhoneNumber("+94712345678");
+        dto.setNewPassword("brand-new-pass");
+        when(otpService.isPhoneVerified("+94712345678")).thenReturn(true);
+        when(userRepository.findByPhoneNumber("+94712345678")).thenReturn(Optional.empty());
+        // Stored in the older 07XXXXXXXX form
+        when(userRepository.findByPhoneNumber("0712345678")).thenReturn(Optional.of(sampleUser));
+        when(passwordEncoder.encode("brand-new-pass")).thenReturn("hashed");
+
+        authService.resetPassword(dto, "127.0.0.1");
+
+        assertEquals("hashed", sampleUser.getPasswordHash());
+        verify(refreshTokenRepository).deleteByUser(sampleUser);
+        verify(otpService).consume("+94712345678");
+    }
+
+    @Test
+    void resetPassword_unverifiedPhone_isRejected() {
+        com.suwasarana.api.auth.dto.ResetPasswordDto dto = new com.suwasarana.api.auth.dto.ResetPasswordDto();
+        dto.setPhoneNumber("+94712345678");
+        dto.setNewPassword("brand-new-pass");
+        when(otpService.isPhoneVerified("+94712345678")).thenReturn(false);
+
+        assertThrows(com.suwasarana.api.common.ApiException.class, () -> authService.resetPassword(dto, "127.0.0.1"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void refreshToken_unknownToken_isUnauthorized() {
+        when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.empty());
+
+        com.suwasarana.api.common.ApiException ex = assertThrows(com.suwasarana.api.common.ApiException.class,
+                () -> authService.refreshToken("nope", "127.0.0.1"));
+
+        assertEquals(org.springframework.http.HttpStatus.UNAUTHORIZED, ex.getStatus());
     }
 
     @Test

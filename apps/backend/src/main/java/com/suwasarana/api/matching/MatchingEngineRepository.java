@@ -16,8 +16,11 @@ public interface MatchingEngineRepository extends JpaRepository<DonorProfile, Lo
             WHERE d.blood_type = :bloodType
             AND d.is_available = true
             AND (earth_distance(ll_to_earth(:lat, :lon), ll_to_earth(d.latitude, d.longitude)) / 1000) <= :radiusKm
-            AND d.id NOT IN (
-                SELECT rm.donor_id FROM request_matches rm WHERE rm.request_id = :requestId
+            AND NOT EXISTS (
+                SELECT 1 FROM request_matches rm WHERE rm.donor_id = d.id AND rm.request_id = :requestId
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM donor_deferrals df WHERE df.donor_id = d.id AND df.deferred_until >= CURRENT_DATE
             )
             ORDER BY d.reliability_score DESC,
                      earth_distance(ll_to_earth(:lat, :lon), ll_to_earth(d.latitude, d.longitude)) ASC

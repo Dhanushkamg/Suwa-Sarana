@@ -39,7 +39,7 @@ public class DonorProfile {
     @Column(nullable = false)
     private boolean isAvailable = true;
 
-    @Column(nullable = false, precision = 4, scale = 2)
+    @Column(nullable = false, precision = 5, scale = 2)
     private BigDecimal reliabilityScore = new BigDecimal("50.00");
 
     private LocalTime quietHoursStart;

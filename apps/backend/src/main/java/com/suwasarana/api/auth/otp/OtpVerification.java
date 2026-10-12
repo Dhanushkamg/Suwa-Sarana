@@ -21,6 +21,10 @@ public class OtpVerification {
     private boolean isVerified = false;
 
     @Column(nullable = false)
+    private int attempts = 0;
+
+    /** For an unverified code: when it stops being valid. After verification: when the verified phone stops being accepted for registration. */
+    @Column(nullable = false)
     private LocalDateTime expiresAt;
 
     @Column(nullable = false, updatable = false)
@@ -38,6 +42,9 @@ public class OtpVerification {
     public boolean isVerified() { return isVerified; }
     public void setVerified(boolean verified) { isVerified = verified; }
     
+    public int getAttempts() { return attempts; }
+    public void setAttempts(int attempts) { this.attempts = attempts; }
+
     public LocalDateTime getExpiresAt() { return expiresAt; }
     public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
     

@@ -11,13 +11,14 @@ public class SubmitCircleResponseDto {
     private String responderName;
 
     @NotBlank(message = "Phone number is required")
-    @Size(max = 20, message = "Phone number must not exceed 20 characters")
+    @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Must be a valid phone number")
     private String responderPhone;
 
     @NotBlank(message = "Blood type is required")
     @Pattern(regexp = "^(A\\+|A-|B\\+|B-|AB\\+|AB-|O\\+|O-)$", message = "Invalid blood type format (must be A+, A-, B+, B-, AB+, AB-, O+, O-)")
     private String bloodType;
 
+    @Size(max = 500, message = "Notes must not exceed 500 characters")
     private String notes;
 
     public SubmitCircleResponseDto() {}

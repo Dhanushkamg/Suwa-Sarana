@@ -1,5 +1,6 @@
 package com.suwasarana.api.slot.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -19,10 +20,12 @@ public class BulkCreateSlotDto {
 
     @NotNull(message = "Interval in minutes is required")
     @Min(value = 5, message = "Interval must be at least 5 minutes")
+    @Max(value = 1440, message = "Interval must be at most 1440 minutes")
     private Integer intervalMinutes;
 
     @NotNull(message = "Capacity per slot is required")
     @Min(value = 1, message = "Capacity must be at least 1")
+    @Max(value = 1000, message = "Capacity must be at most 1000")
     private Integer capacityPerSlot;
 
     public LocalDateTime getOverallStartTime() { return overallStartTime; }

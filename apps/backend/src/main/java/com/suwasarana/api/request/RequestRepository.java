@@ -30,7 +30,10 @@ public interface RequestRepository extends JpaRepository<BloodRequest, Long> {
     @Query("UPDATE BloodRequest r SET r.status = :status WHERE r.id = :id")
     void updateStatus(@Param("id") Long id, @Param("status") RequestStatus status);
 
+    List<BloodRequest> findByStatusInOrderByCreatedAtDesc(java.util.Collection<RequestStatus> statuses);
+
     @Modifying
-    @Query("DELETE FROM BloodRequest r WHERE r.expiresAt < :cutoffDate")
-    int deleteByExpiresAtBefore(@Param("cutoffDate") java.time.LocalDateTime cutoffDate);
+    @Query("DELETE FROM BloodRequest r WHERE r.expiresAt < :cutoffDate AND r.status IN :statuses")
+    int deleteByStatusInAndExpiresAtBefore(@Param("statuses") java.util.Collection<RequestStatus> statuses,
+                                           @Param("cutoffDate") java.time.LocalDateTime cutoffDate);
 }

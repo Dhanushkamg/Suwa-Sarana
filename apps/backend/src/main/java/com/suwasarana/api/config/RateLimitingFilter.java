@@ -22,6 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class RateLimitingFilter implements Filter {
 
+    private static final java.util.Set<String> AUTH_LIMITED_PATHS = java.util.Set.of(
+            "/api/auth/login", "/api/auth/register", "/api/auth/send-otp", "/api/auth/verify-otp",
+            "/api/auth/google/verify", "/api/auth/google/register", "/api/auth/reset-password");
+
     // Cache of Client IP -> Bucket for Auth endpoints (10 req/min)
     private final Map<String, Bucket> authBuckets = new ConcurrentHashMap<>();
 
@@ -51,8 +55,8 @@ public class RateLimitingFilter implements Filter {
         String method = req.getMethod();
         String clientIp = getClientIp(req);
 
-        // Rate limit POST /api/auth/login and POST /api/auth/register
-        if (("POST".equalsIgnoreCase(method) && (path.equals("/api/auth/login") || path.equals("/api/auth/register")))) {
+        // Rate limit the credential / OTP / SMS-sending endpoints (OTP endpoints would otherwise allow SMS spam and code guessing)
+        if ("POST".equalsIgnoreCase(method) && AUTH_LIMITED_PATHS.contains(path)) {
             Bucket bucket = authBuckets.computeIfAbsent(clientIp, k -> createAuthBucket());
             if (!bucket.tryConsume(1)) {
                 sendRateLimitExceededResponse(res);

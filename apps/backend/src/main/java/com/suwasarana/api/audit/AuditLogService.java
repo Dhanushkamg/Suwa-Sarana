@@ -38,6 +38,11 @@ public class AuditLogService {
         audit.info("REGISTRATION | userId={} | email={} | role={} | ip={}", userId, email, role, ipAddress);
     }
 
+    /** Logs a password reset done through phone OTP. */
+    public void logPasswordReset(Long userId, String ipAddress) {
+        audit.info("PASSWORD_RESET | userId={} | ip={}", userId, ipAddress);
+    }
+
     /** Logs a refresh token usage (access token renewal). */
     public void logTokenRefresh(Long userId, String ipAddress) {
         audit.info("TOKEN_REFRESH | userId={} | ip={}", userId, ipAddress);

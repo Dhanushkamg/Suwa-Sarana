@@ -7,64 +7,32 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class EscalationScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(EscalationScheduler.class);
-    private static final short MAX_RADIUS_KM = 50;
-    private static final short RADIUS_INCREMENT = 10;
 
     @Autowired
     private RequestRepository requestRepository;
 
     @Autowired
-    private MatchingEngine matchingEngine;
+    private EscalationProcessor escalationProcessor;
 
-    // Run every 5 minutes
+    // Run every 5 minutes. Not transactional: each request is processed in its own transaction.
     @Scheduled(cron = "0 0/5 * * * *")
-    @Transactional
     public void processEscalations() {
         log.info("Running escalation scheduler...");
 
         List<BloodRequest> activeRequests = requestRepository.findActiveRequests();
-        LocalDateTime now = LocalDateTime.now();
 
         for (BloodRequest request : activeRequests) {
-            if (request.getExpiresAt().isBefore(now)) {
-                request.setStatus(com.suwasarana.api.request.RequestStatus.EXPIRED);
-                requestRepository.save(request);
-                log.info("Request {} expired", request.getId());
-                continue;
-            }
-
-            // Severity-based timeouts
-            long minutesSinceLastEscalation = java.time.Duration.between(request.getLastEscalatedAt(), now).toMinutes();
-            boolean shouldEscalate = false;
-
-            if (request.getUrgency() == com.suwasarana.api.request.Urgency.CRITICAL && minutesSinceLastEscalation >= 5) {
-                shouldEscalate = true;
-            } else if (request.getUrgency() == com.suwasarana.api.request.Urgency.URGENT && minutesSinceLastEscalation >= 10) {
-                shouldEscalate = true;
-            } else if (request.getUrgency() == com.suwasarana.api.request.Urgency.ROUTINE && minutesSinceLastEscalation >= 20) {
-                shouldEscalate = true;
-            }
-
-            if (shouldEscalate && request.getCurrentRadiusKm() < MAX_RADIUS_KM) {
-                short newRadius = (short) Math.min(request.getCurrentRadiusKm() + RADIUS_INCREMENT, MAX_RADIUS_KM);
-                request.setCurrentRadiusKm(newRadius);
-                request.setLastEscalatedAt(now);
-                request.setStatus(com.suwasarana.api.request.RequestStatus.ESCALATING);
-                requestRepository.save(request);
-
-                log.info("Escalated Request {} (Urgency: {}) radius to {}km", request.getId(), request.getUrgency(), newRadius);
-
-                // Run matching engine to find donors in the new wider radius
-                matchingEngine.runMatchingForRequest(request.getId());
+            try {
+                escalationProcessor.processRequest(request.getId());
+            } catch (Exception e) {
+                log.error("Escalation failed for Request {}", request.getId(), e);
             }
         }
     }

@@ -93,7 +93,7 @@ public class DonationSlot {
     /** Convenience: returns the display name of whichever host owns this slot. */
     public String resolveHostName() {
         if (camp != null) return camp.getName();
-        if (hospitalUser != null) return hospitalUser.getEmail();
+        if (hospitalUser != null) return DonationCamp.displayName(hospitalUser);
         return "Unknown";
     }
 }

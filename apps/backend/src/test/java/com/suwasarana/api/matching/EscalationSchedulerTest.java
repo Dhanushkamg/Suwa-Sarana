@@ -11,8 +11,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -27,6 +30,8 @@ class EscalationSchedulerTest {
     private MatchingEngine matchingEngine;
 
     @InjectMocks
+    private EscalationProcessor escalationProcessor;
+
     private EscalationScheduler escalationScheduler;
 
     private BloodRequest criticalRequest;
@@ -34,6 +39,10 @@ class EscalationSchedulerTest {
 
     @BeforeEach
     void setUp() {
+        escalationScheduler = new EscalationScheduler();
+        ReflectionTestUtils.setField(escalationScheduler, "requestRepository", requestRepository);
+        ReflectionTestUtils.setField(escalationScheduler, "escalationProcessor", escalationProcessor);
+
         criticalRequest = new BloodRequest();
         criticalRequest.setId(1L);
         criticalRequest.setUrgency(Urgency.CRITICAL);
@@ -56,6 +65,7 @@ class EscalationSchedulerTest {
     @Test
     void processEscalations_criticalRequest_shouldEscalateImmediately() {
         when(requestRepository.findActiveRequests()).thenReturn(List.of(criticalRequest));
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(criticalRequest));
 
         escalationScheduler.processEscalations();
 
@@ -66,6 +76,7 @@ class EscalationSchedulerTest {
     @Test
     void processEscalations_routineRequest_notYetDue_shouldNotEscalate() {
         when(requestRepository.findActiveRequests()).thenReturn(List.of(routineRequest));
+        when(requestRepository.findById(2L)).thenReturn(Optional.of(routineRequest));
 
         escalationScheduler.processEscalations();
 
@@ -77,11 +88,32 @@ class EscalationSchedulerTest {
     void processEscalations_expiredRequest_shouldMarkExpired() {
         criticalRequest.setExpiresAt(LocalDateTime.now().minusMinutes(1));
         when(requestRepository.findActiveRequests()).thenReturn(List.of(criticalRequest));
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(criticalRequest));
 
         escalationScheduler.processEscalations();
 
         verify(requestRepository).save(criticalRequest);
         assert criticalRequest.getStatus() == RequestStatus.EXPIRED;
         verify(matchingEngine, never()).runMatchingForRequest(any());
+    }
+
+    @Test
+    void processEscalations_oneRequestFailing_shouldStillProcessOthers() {
+        BloodRequest secondCritical = new BloodRequest();
+        secondCritical.setId(3L);
+        secondCritical.setUrgency(Urgency.CRITICAL);
+        secondCritical.setStatus(RequestStatus.ESCALATING);
+        secondCritical.setCurrentRadiusKm((short) 5);
+        secondCritical.setExpiresAt(LocalDateTime.now().plusHours(5));
+        secondCritical.setLastEscalatedAt(LocalDateTime.now().minusMinutes(10));
+
+        when(requestRepository.findActiveRequests()).thenReturn(List.of(criticalRequest, secondCritical));
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(criticalRequest));
+        when(requestRepository.findById(3L)).thenReturn(Optional.of(secondCritical));
+        doThrow(new RuntimeException("boom")).when(matchingEngine).runMatchingForRequest(1L);
+
+        escalationScheduler.processEscalations();
+
+        verify(matchingEngine).runMatchingForRequest(3L);
     }
 }

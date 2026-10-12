@@ -1,5 +1,6 @@
 package com.suwasarana.api.request;
 
+import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.request.dto.CreateRequestDto;
 import com.suwasarana.api.request.dto.RequestResponseDto;
 import com.suwasarana.api.user.Role;
@@ -32,9 +33,9 @@ public class RequestService {
     private RequestTriageAiService requestTriageAiService;
 
     @Transactional
-    public RequestResponseDto createRequest(Long userId, CreateRequestDto dto) {
+    public RequestResponseDto createRequest(Long userId, CreateRequestDto dto, boolean isAdmin) {
         User requester = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
 
         if (dto.getUrgency() == Urgency.CRITICAL && requester.getVerificationStatus() != VerificationStatus.VERIFIED) {
             throw new RequesterNotVerifiedException("Unverified users cannot create CRITICAL requests.");
@@ -66,46 +67,52 @@ public class RequestService {
         // Trigger immediate matching
         matchingEngine.runMatchingForRequest(savedRequest.getId());
 
-        return mapToDto(savedRequest);
+        return mapToDto(savedRequest, isAdmin);
     }
 
-    public RequestResponseDto getRequestById(Long id) {
+    public RequestResponseDto getRequestById(Long id, boolean isAdmin) {
         BloodRequest request = requestRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
-        return mapToDto(request);
+                .orElseThrow(() -> ApiException.notFound("Request not found"));
+        return mapToDto(request, isAdmin);
     }
 
     @Transactional
     public void cancelRequest(Long userId, Long requestId) {
         BloodRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+                .orElseThrow(() -> ApiException.notFound("Request not found"));
         
-        User requester = userRepository.findById(userId).orElseThrow();
+        User requester = userRepository.findById(userId)
+                .orElseThrow(() -> ApiException.notFound("User not found"));
         
         // Only the owner or an Admin can cancel
         if (!request.getRequester().getId().equals(userId) && requester.getRole() != Role.ADMIN) {
-            throw new org.springframework.security.access.AccessDeniedException("Cannot cancel another user's request");
+            throw ApiException.forbidden("Cannot cancel another user's request");
         }
         
         request.setStatus(RequestStatus.CANCELLED);
         requestRepository.save(request);
     }
 
-    public List<RequestResponseDto> getAllRequests() {
-        return requestRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .map(this::mapToDto)
+    public List<RequestResponseDto> getAllRequests(boolean isAdmin) {
+        // Admins see everything; everyone else only sees requests that are still active
+        List<BloodRequest> requests = isAdmin
+                ? requestRepository.findAllByOrderByCreatedAtDesc()
+                : requestRepository.findByStatusInOrderByCreatedAtDesc(
+                        List.of(RequestStatus.OPEN, RequestStatus.ESCALATING));
+        return requests.stream()
+                .map(r -> mapToDto(r, isAdmin))
                 .toList();
     }
 
-    public List<RequestResponseDto> getUserRequests(Long userId) {
+    public List<RequestResponseDto> getUserRequests(Long userId, boolean isAdmin) {
         return requestRepository.findByRequesterIdOrderByCreatedAtDesc(userId)
                 .stream()
-                .map(this::mapToDto)
+                .map(r -> mapToDto(r, isAdmin))
                 .toList();
     }
 
-    private RequestResponseDto mapToDto(BloodRequest request) {
+    // Fraud-triage fields are only exposed to admins
+    private RequestResponseDto mapToDto(BloodRequest request, boolean isAdmin) {
         RequestResponseDto dto = new RequestResponseDto();
         dto.setId(request.getId());
         dto.setPatientBloodType(request.getPatientBloodType());
@@ -119,9 +126,11 @@ public class RequestService {
         dto.setCurrentRadiusKm(request.getCurrentRadiusKm());
         dto.setCreatedAt(request.getCreatedAt());
         dto.setExpiresAt(request.getExpiresAt());
-        dto.setFraudRiskScore(request.getFraudRiskScore());
-        dto.setAiFlagReason(request.getAiFlagReason());
-        dto.setTriagedAt(request.getTriagedAt());
+        if (isAdmin) {
+            dto.setFraudRiskScore(request.getFraudRiskScore());
+            dto.setAiFlagReason(request.getAiFlagReason());
+            dto.setTriagedAt(request.getTriagedAt());
+        }
         return dto;
     }
 }

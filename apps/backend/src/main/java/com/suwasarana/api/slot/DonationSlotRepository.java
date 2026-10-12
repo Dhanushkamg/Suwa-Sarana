@@ -33,7 +33,7 @@ public interface DonationSlotRepository extends JpaRepository<DonationSlot, Long
      * Used by SlotReminderScheduler to find slots whose start time falls within
      * a given window (e.g. 23h–25h from now for the 24h reminder job).
      */
-    @Query("SELECT s FROM DonationSlot s WHERE s.startTime BETWEEN :from AND :to AND s.status = 'OPEN'")
+    @Query("SELECT s FROM DonationSlot s WHERE s.startTime BETWEEN :from AND :to AND s.status IN ('OPEN', 'FULL')")
     List<DonationSlot> findSlotsStartingBetween(
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);

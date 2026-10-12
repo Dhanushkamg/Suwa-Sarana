@@ -1,6 +1,7 @@
 package com.suwasarana.api.circle;
 
 import com.suwasarana.api.circle.dto.*;
+import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.exception.CircleExpiredException;
 import com.suwasarana.api.exception.CircleNotFoundException;
 import com.suwasarana.api.request.BloodRequest;
@@ -38,7 +39,7 @@ public class CircleService {
     @Transactional
     public CircleInviteDto createOrGetCircle(Long requestId, Long userId) {
         BloodRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Blood request not found"));
+                .orElseThrow(() -> ApiException.notFound("Blood request not found"));
 
         if (!request.getRequester().getId().equals(userId)) {
             throw new AccessDeniedException("Only the request creator can generate or manage private circles");
@@ -103,7 +104,7 @@ public class CircleService {
     @Transactional(readOnly = true)
     public List<CircleResponseDto> getCircleResponses(Long requestId, Long userId) {
         BloodRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Blood request not found"));
+                .orElseThrow(() -> ApiException.notFound("Blood request not found"));
 
         if (!request.getRequester().getId().equals(userId)) {
             throw new AccessDeniedException("Only the request creator can view private circle responses");

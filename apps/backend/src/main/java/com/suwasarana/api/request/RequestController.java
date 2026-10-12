@@ -36,7 +36,7 @@ public class RequestController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody CreateRequestDto dto) {
             
-        RequestResponseDto created = requestService.createRequest(userDetails.getId(), dto);
+        RequestResponseDto created = requestService.createRequest(userDetails.getId(), dto, isAdmin(userDetails));
         return ResponseEntity.ok(ApiResponse.success(created, "Blood request created successfully"));
     }
 
@@ -48,11 +48,12 @@ public class RequestController {
         return ResponseEntity.ok(ApiResponse.success(draft, "AI draft extracted successfully"));
     }
 
-    @Operation(summary = "Get all active requests", description = "Retrieves all blood requests across districts.")
+    @Operation(summary = "Get all active requests", description = "Retrieves active blood requests across districts (all requests for admins).")
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<List<RequestResponseDto>>> getAllRequests() {
-        List<RequestResponseDto> requests = requestService.getAllRequests();
+    public ResponseEntity<ApiResponse<List<RequestResponseDto>>> getAllRequests(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        List<RequestResponseDto> requests = requestService.getAllRequests(isAdmin(userDetails));
         return ResponseEntity.ok(ApiResponse.success(requests));
     }
 
@@ -60,15 +61,17 @@ public class RequestController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<List<RequestResponseDto>>> getMyRequests(
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        List<RequestResponseDto> requests = requestService.getUserRequests(userDetails.getId());
+        List<RequestResponseDto> requests = requestService.getUserRequests(userDetails.getId(), isAdmin(userDetails));
         return ResponseEntity.ok(ApiResponse.success(requests));
     }
 
     @Operation(summary = "Get blood request by ID", description = "Fetches complete details and fulfillment statistics for a specific blood request.")
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<RequestResponseDto>> getRequest(@PathVariable Long id) {
-        RequestResponseDto request = requestService.getRequestById(id);
+    public ResponseEntity<ApiResponse<RequestResponseDto>> getRequest(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        RequestResponseDto request = requestService.getRequestById(id, isAdmin(userDetails));
         return ResponseEntity.ok(ApiResponse.success(request));
     }
 
@@ -79,5 +82,9 @@ public class RequestController {
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         requestService.cancelRequest(userDetails.getId(), id);
         return ResponseEntity.ok(ApiResponse.success(null, "Request cancelled successfully"));
+    }
+
+    private boolean isAdmin(UserDetailsImpl userDetails) {
+        return userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

@@ -6,14 +6,17 @@ import com.suwasarana.api.auth.dto.RegisterDto;
 import com.suwasarana.api.auth.dto.OtpRequestDto;
 import com.suwasarana.api.auth.dto.OtpVerifyDto;
 import com.suwasarana.api.auth.otp.OtpService;
+import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +30,14 @@ public class AuthController {
 
     @Autowired
     private OtpService otpService;
+
+    // Secure=true needs HTTPS (browsers exempt localhost). SameSite must be "None" only if the
+    // frontend and API live on different sites; "Lax" is right for same-site deployments.
+    @Value("${app.cookie.secure:true}")
+    private boolean cookieSecure;
+
+    @Value("${app.cookie.same-site:Lax}")
+    private String cookieSameSite;
 
     @Operation(summary = "Register a new user", description = "Creates a new user account (Donor, Hospital, or Requester) and returns JWT tokens.")
     @PostMapping("/register")
@@ -64,8 +75,17 @@ public class AuthController {
         if (isValid) {
             return ResponseEntity.ok(ApiResponse.success(null, "OTP verified successfully"));
         } else {
-            throw new RuntimeException("Invalid or expired OTP");
+            throw ApiException.badRequest("Invalid or expired OTP");
         }
+    }
+
+    @Operation(summary = "Reset password", description = "Sets a new password for the account behind a phone number verified via OTP, and signs out all devices.")
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody com.suwasarana.api.auth.dto.ResetPasswordDto dto,
+            HttpServletRequest request) {
+        authService.resetPassword(dto, getClientIp(request));
+        return ResponseEntity.ok(ApiResponse.success(null, "Password updated. Please sign in."));
     }
 
     @Operation(summary = "Refresh access token", description = "Generates a new access token using an httpOnly refresh token cookie.")
@@ -76,7 +96,7 @@ public class AuthController {
             HttpServletResponse response) {
         
         if (refreshToken == null || refreshToken.isEmpty()) {
-            throw new RuntimeException("Refresh Token is empty!");
+            throw ApiException.unauthorized("Not signed in.");
         }
 
         AuthResponse authResponse = authService.refreshToken(refreshToken, getClientIp(request));
@@ -90,25 +110,28 @@ public class AuthController {
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.suwasarana.api.security.UserDetailsImpl userDetails,
             HttpServletRequest request,
             HttpServletResponse response) {
-            
-        authService.logout(userDetails.getId(), getClientIp(request));
-        
-        Cookie cookie = new Cookie("refresh_token", null);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/api/auth");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+
+        // The endpoint is public so an expired session can still sign out; only revoke tokens when we know who it is.
+        if (userDetails != null) {
+            authService.logout(userDetails.getId(), getClientIp(request));
+        }
+        writeRefreshCookie(response, "", 0);
         return ResponseEntity.ok(ApiResponse.success(null, "Logged out successfully"));
     }
 
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        Cookie cookie = new Cookie("refresh_token", refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true); // Ensure HTTPS in production
-        cookie.setPath("/api/auth");
-        cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
-        response.addCookie(cookie);
+        writeRefreshCookie(response, refreshToken, 7 * 24 * 60 * 60);
+    }
+
+    private void writeRefreshCookie(HttpServletResponse response, String value, long maxAgeSeconds) {
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", value)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
+                .path("/api/auth")
+                .maxAge(maxAgeSeconds)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     /**

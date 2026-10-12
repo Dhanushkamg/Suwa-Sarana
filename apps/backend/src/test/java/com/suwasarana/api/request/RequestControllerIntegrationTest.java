@@ -49,6 +49,9 @@ public class RequestControllerIntegrationTest {
     @Autowired
     private com.suwasarana.api.auth.RefreshTokenRepository refreshTokenRepository;
 
+    @Autowired
+    private com.suwasarana.api.auth.otp.OtpVerificationRepository otpRepository;
+
     private String unverifiedToken;
     private String verifiedToken;
     private String otherVerifiedToken;
@@ -62,11 +65,24 @@ public class RequestControllerIntegrationTest {
         requestRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
+        otpRepository.deleteAll();
+
+        // Registration requires a verified phone number
+        for (String phone : new String[] {"0771000001", "0771000002", "0771000003"}) {
+            com.suwasarana.api.auth.otp.OtpVerification otp = new com.suwasarana.api.auth.otp.OtpVerification();
+            otp.setPhoneNumber(phone);
+            otp.setOtpCode("123456");
+            otp.setVerified(true);
+            otp.setExpiresAt(java.time.LocalDateTime.now().plusMinutes(30));
+            otpRepository.save(otp);
+        }
 
         // 1. Unverified Requester
         RegisterDto unverifiedDto = new RegisterDto();
         unverifiedDto.setEmail("unverified_" + UUID.randomUUID() + "@test.com");
         unverifiedDto.setPhoneNumber("0771000001");
+        unverifiedDto.setFirstName("Test");
+        unverifiedDto.setLastName("User");
         unverifiedDto.setPassword("password12");
         unverifiedDto.setRole(Role.REQUESTER);
         AuthResponse unverifiedAuth = authService.register(unverifiedDto, "127.0.0.1");
@@ -76,6 +92,8 @@ public class RequestControllerIntegrationTest {
         RegisterDto verifiedDto = new RegisterDto();
         verifiedDto.setEmail("verified_" + UUID.randomUUID() + "@test.com");
         verifiedDto.setPhoneNumber("0771000002");
+        verifiedDto.setFirstName("Test");
+        verifiedDto.setLastName("User");
         verifiedDto.setPassword("password12");
         verifiedDto.setRole(Role.REQUESTER);
         AuthResponse verifiedAuth = authService.register(verifiedDto, "127.0.0.1");
@@ -91,6 +109,8 @@ public class RequestControllerIntegrationTest {
         RegisterDto otherDto = new RegisterDto();
         otherDto.setEmail("other_" + UUID.randomUUID() + "@test.com");
         otherDto.setPhoneNumber("0771000003");
+        otherDto.setFirstName("Test");
+        otherDto.setLastName("User");
         otherDto.setPassword("password12");
         otherDto.setRole(Role.REQUESTER);
         AuthResponse otherAuth = authService.register(otherDto, "127.0.0.1");

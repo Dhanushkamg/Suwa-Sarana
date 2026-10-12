@@ -2,6 +2,7 @@ package com.suwasarana.api.slot;
 
 import com.suwasarana.api.camp.DonationCamp;
 import com.suwasarana.api.camp.DonationCampRepository;
+import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.donor.DeferralService;
 import com.suwasarana.api.donor.DonorProfile;
 import com.suwasarana.api.donor.DonorRepository;
@@ -16,6 +17,7 @@ import com.suwasarana.api.slot.dto.BulkCreateSlotDto;
 import com.suwasarana.api.slot.dto.CreateSlotDto;
 import com.suwasarana.api.slot.dto.DonationSlotDto;
 import com.suwasarana.api.slot.dto.SlotBookingDto;
+import com.suwasarana.api.user.Role;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import org.slf4j.Logger;
@@ -24,6 +26,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,6 +38,7 @@ import java.util.stream.Collectors;
 public class SlotBookingService {
 
     private static final Logger log = LoggerFactory.getLogger(SlotBookingService.class);
+    private static final int MAX_BULK_SLOTS = 200;
 
     @Autowired private DonationSlotRepository slotRepository;
     @Autowired private SlotBookingRepository bookingRepository;
@@ -48,42 +53,86 @@ public class SlotBookingService {
     // -------------------------------------------------------------------------
 
     @Transactional
-    public DonationSlotDto createCampSlot(Long campId, CreateSlotDto dto) {
-        DonationCamp camp = campRepository.findById(campId)
-                .orElseThrow(() -> new RuntimeException("Camp not found: " + campId));
+    public DonationSlotDto createCampSlot(Long campId, CreateSlotDto dto, Long callerId) {
+        DonationCamp camp = loadManagedCamp(campId, callerId);
         DonationSlot slot = buildSlot(dto.getStartTime(), dto.getEndTime(), dto.getCapacity());
         slot.setCamp(camp);
         return mapSlotToDto(slotRepository.save(slot));
     }
 
     @Transactional
-    public List<DonationSlotDto> bulkCreateCampSlots(Long campId, BulkCreateSlotDto dto) {
-        DonationCamp camp = campRepository.findById(campId)
-                .orElseThrow(() -> new RuntimeException("Camp not found: " + campId));
+    public List<DonationSlotDto> bulkCreateCampSlots(Long campId, BulkCreateSlotDto dto, Long callerId) {
+        DonationCamp camp = loadManagedCamp(campId, callerId);
         List<DonationSlot> slots = generateSlots(dto);
         slots.forEach(s -> s.setCamp(camp));
         return slotRepository.saveAll(slots).stream().map(this::mapSlotToDto).collect(Collectors.toList());
     }
 
     @Transactional
-    public DonationSlotDto createHospitalSlot(Long hospitalUserId, CreateSlotDto dto) {
-        User hospitalUser = userRepository.findById(hospitalUserId)
-                .orElseThrow(() -> new RuntimeException("Hospital user not found: " + hospitalUserId));
+    public DonationSlotDto createHospitalSlot(Long hospitalUserId, CreateSlotDto dto, Long callerId) {
+        User hospitalUser = loadManagedHospital(hospitalUserId, callerId);
         DonationSlot slot = buildSlot(dto.getStartTime(), dto.getEndTime(), dto.getCapacity());
         slot.setHospitalUser(hospitalUser);
         return mapSlotToDto(slotRepository.save(slot));
     }
 
     @Transactional
-    public List<DonationSlotDto> bulkCreateHospitalSlots(Long hospitalUserId, BulkCreateSlotDto dto) {
-        User hospitalUser = userRepository.findById(hospitalUserId)
-                .orElseThrow(() -> new RuntimeException("Hospital user not found: " + hospitalUserId));
+    public List<DonationSlotDto> bulkCreateHospitalSlots(Long hospitalUserId, BulkCreateSlotDto dto, Long callerId) {
+        User hospitalUser = loadManagedHospital(hospitalUserId, callerId);
         List<DonationSlot> slots = generateSlots(dto);
         slots.forEach(s -> s.setHospitalUser(hospitalUser));
         return slotRepository.saveAll(slots).stream().map(this::mapSlotToDto).collect(Collectors.toList());
     }
 
+    // -------------------------------------------------------------------------
+    // Ownership checks (ADMIN may manage anything)
+    // -------------------------------------------------------------------------
+
+    private User loadCaller(Long callerId) {
+        return userRepository.findById(callerId)
+                .orElseThrow(() -> ApiException.unauthorized("User not found"));
+    }
+
+    /** Camp must exist and the caller must be its organizer (or ADMIN). */
+    private DonationCamp loadManagedCamp(Long campId, Long callerId) {
+        User caller = loadCaller(callerId);
+        DonationCamp camp = campRepository.findById(campId)
+                .orElseThrow(() -> ApiException.notFound("Camp not found: " + campId));
+        if (caller.getRole() != Role.ADMIN && !camp.getOrganizer().getId().equals(caller.getId())) {
+            throw ApiException.forbidden("You can only manage slots for your own camps");
+        }
+        return camp;
+    }
+
+    /** Target must be a hospital / blood bank user and the caller must be that user (or ADMIN). */
+    private User loadManagedHospital(Long hospitalUserId, Long callerId) {
+        User caller = loadCaller(callerId);
+        if (caller.getRole() != Role.ADMIN && !caller.getId().equals(hospitalUserId)) {
+            throw ApiException.forbidden("You can only manage your own slots");
+        }
+        User hospitalUser = userRepository.findById(hospitalUserId)
+                .orElseThrow(() -> ApiException.notFound("Hospital user not found: " + hospitalUserId));
+        if (hospitalUser.getRole() != Role.HOSPITAL_REQUESTER && hospitalUser.getRole() != Role.BLOOD_BANK_REQUESTER) {
+            throw ApiException.badRequest("User is not a hospital or blood bank");
+        }
+        return hospitalUser;
+    }
+
+    /** The slot's owner (camp organizer or hospital user) must be the caller, unless ADMIN. */
+    private void assertCanManageSlot(DonationSlot slot, User caller) {
+        if (caller.getRole() == Role.ADMIN) return;
+        Long ownerId = slot.getCamp() != null
+                ? slot.getCamp().getOrganizer().getId()
+                : (slot.getHospitalUser() != null ? slot.getHospitalUser().getId() : null);
+        if (ownerId == null || !ownerId.equals(caller.getId())) {
+            throw ApiException.forbidden("You can only manage bookings for your own slots");
+        }
+    }
+
     private DonationSlot buildSlot(LocalDateTime start, LocalDateTime end, int capacity) {
+        if (!end.isAfter(start)) {
+            throw ApiException.badRequest("End time must be after start time");
+        }
         DonationSlot slot = new DonationSlot();
         slot.setStartTime(start);
         slot.setEndTime(end);
@@ -92,6 +141,20 @@ public class SlotBookingService {
     }
 
     private List<DonationSlot> generateSlots(BulkCreateSlotDto dto) {
+        if (!dto.getOverallEndTime().isAfter(dto.getOverallStartTime())) {
+            throw ApiException.badRequest("Overall end time must be after overall start time");
+        }
+        if (dto.getIntervalMinutes() <= 0) {
+            throw ApiException.badRequest("Interval must be greater than 0 minutes");
+        }
+        long count = Duration.between(dto.getOverallStartTime(), dto.getOverallEndTime()).toMinutes()
+                / dto.getIntervalMinutes();
+        if (count < 1) {
+            throw ApiException.badRequest("Interval is longer than the overall time window");
+        }
+        if (count > MAX_BULK_SLOTS) {
+            throw ApiException.badRequest("Cannot generate more than " + MAX_BULK_SLOTS + " slots at once");
+        }
         List<DonationSlot> slots = new ArrayList<>();
         LocalDateTime cursor = dto.getOverallStartTime();
         while (cursor.plusMinutes(dto.getIntervalMinutes()).compareTo(dto.getOverallEndTime()) <= 0) {
@@ -144,8 +207,10 @@ public class SlotBookingService {
             throw new SlotFullException();
         }
 
-        // 4. Duplicate booking guard (before the DB unique constraint fires)
-        if (bookingRepository.findBySlotIdAndDonorId(slotId, donor.getId()).isPresent()) {
+        // 4. Duplicate booking guard (before the DB unique constraint fires).
+        //    A CANCELLED booking is not a duplicate: its row is reused below, because of UNIQUE(slot_id, donor_id).
+        SlotBooking existing = bookingRepository.findBySlotIdAndDonorId(slotId, donor.getId()).orElse(null);
+        if (existing != null && existing.getStatus() != BookingStatus.CANCELLED) {
             throw new DuplicateBookingException();
         }
 
@@ -155,11 +220,13 @@ public class SlotBookingService {
             throw new DonorIneligibleException(eligibility.getReasons());
         }
 
-        // 6. Create booking record
-        SlotBooking booking = new SlotBooking();
+        // 6. Create the booking record, or revive the donor's cancelled one
+        SlotBooking booking = existing != null ? existing : new SlotBooking();
         booking.setSlot(slot);
         booking.setDonor(donor);
         booking.setStatus(BookingStatus.BOOKED);
+        booking.setBookedAt(Instant.now());
+        booking.setCheckedInAt(null);
         booking.setEligibleAsOf(LocalDate.now());
         SlotBooking saved = bookingRepository.save(booking);
 
@@ -196,17 +263,23 @@ public class SlotBookingService {
     @Transactional
     public SlotBookingDto cancelBooking(Long slotId, Long userId) {
         DonorProfile donor = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Donor profile not found for user: " + userId));
+                .orElseThrow(() -> ApiException.notFound("Donor profile not found for user: " + userId));
+
+        // Lock the slot first so two concurrent cancels cannot both release capacity
+        DonationSlot slot = slotRepository.findByIdForUpdate(slotId)
+                .orElseThrow(() -> new SlotNotFoundException(slotId));
 
         SlotBooking booking = bookingRepository.findBySlotIdAndDonorId(slotId, donor.getId())
-                .orElseThrow(() -> new RuntimeException("Booking not found for slot " + slotId + " and donor " + donor.getId()));
+                .orElseThrow(() -> ApiException.notFound("Booking not found for slot " + slotId));
+
+        if (booking.getStatus() != BookingStatus.BOOKED) {
+            throw ApiException.conflict("Only a booked slot can be cancelled (current status: " + booking.getStatus() + ")");
+        }
 
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
 
         // Release capacity back to the slot
-        DonationSlot slot = slotRepository.findByIdForUpdate(slotId)
-                .orElseThrow(() -> new SlotNotFoundException(slotId));
         if (slot.getBookedCount() > 0) {
             slot.setBookedCount(slot.getBookedCount() - 1);
         }
@@ -224,15 +297,17 @@ public class SlotBookingService {
     // -------------------------------------------------------------------------
 
     @Transactional
-    public SlotBookingDto checkIn(Long slotId, Long bookingId) {
+    public SlotBookingDto checkIn(Long slotId, Long bookingId, Long callerId) {
+        User caller = loadCaller(callerId);
         SlotBooking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+                .orElseThrow(() -> ApiException.notFound("Booking not found: " + bookingId));
 
         if (!booking.getSlot().getId().equals(slotId)) {
-            throw new RuntimeException("Booking does not belong to slot " + slotId);
+            throw ApiException.badRequest("Booking does not belong to slot " + slotId);
         }
+        assertCanManageSlot(booking.getSlot(), caller);
         if (booking.getStatus() != BookingStatus.BOOKED) {
-            throw new RuntimeException("Cannot check in a booking with status: " + booking.getStatus());
+            throw ApiException.conflict("Cannot check in a booking with status: " + booking.getStatus());
         }
 
         booking.setStatus(BookingStatus.CHECKED_IN);

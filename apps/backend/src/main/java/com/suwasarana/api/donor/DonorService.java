@@ -1,14 +1,18 @@
 package com.suwasarana.api.donor;
 
+import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.donor.dto.AvailabilityDto;
 import com.suwasarana.api.donor.dto.DonorProfileDto;
+import com.suwasarana.api.donor.dto.MatchDto;
 import com.suwasarana.api.donor.dto.UpdateDonorProfileDto;
 import com.suwasarana.api.matching.RequestMatch;
 import com.suwasarana.api.matching.RequestMatchRepository;
+import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -26,13 +30,13 @@ public class DonorService {
 
     public DonorProfileDto getDonorProfile(Long userId) {
         DonorProfile profile = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Donor profile not found"));
+                .orElseThrow(() -> ApiException.notFound("Donor profile not found"));
         return mapToDto(profile);
     }
 
     public DonorProfileDto upsertDonorProfile(Long userId, UpdateDonorProfileDto updateDto) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
 
         DonorProfile profile = donorRepository.findByUserId(userId).orElse(new DonorProfile());
         
@@ -57,7 +61,7 @@ public class DonorService {
 
     public DonorProfileDto updateAvailability(Long userId, AvailabilityDto availabilityDto) {
         DonorProfile profile = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Donor profile not found"));
+                .orElseThrow(() -> ApiException.notFound("Donor profile not found"));
         
         profile.setAvailable(availabilityDto.getIsAvailable());
         DonorProfile savedProfile = donorRepository.save(profile);
@@ -98,9 +102,36 @@ public class DonorService {
         return dto;
     }
 
-    public java.util.List<RequestMatch> getMyMatches(Long userId) {
+    @Transactional(readOnly = true)
+    public java.util.List<MatchDto> getMyMatches(Long userId) {
         DonorProfile profile = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Donor profile not found"));
-        return requestMatchRepository.findByDonorId(profile.getId());
+                .orElseThrow(() -> ApiException.notFound("Donor profile not found"));
+        return requestMatchRepository.findByDonorId(profile.getId()).stream()
+                .map(this::mapToMatchDto)
+                .toList();
+    }
+
+    private MatchDto mapToMatchDto(RequestMatch match) {
+        BloodRequest request = match.getRequest();
+        MatchDto.RequestSummary summary = new MatchDto.RequestSummary();
+        summary.setId(request.getId());
+        summary.setPatientBloodType(request.getPatientBloodType());
+        summary.setUrgency(request.getUrgency());
+        summary.setHospitalName(request.getHospitalName());
+        summary.setDistrict(request.getDistrict());
+        summary.setUnitsNeeded(request.getUnitsNeeded());
+        summary.setStatus(request.getStatus());
+        summary.setExpiresAt(request.getExpiresAt());
+        summary.setLatitude(request.getLatitude());
+        summary.setLongitude(request.getLongitude());
+        summary.setCurrentRadiusKm(request.getCurrentRadiusKm());
+
+        MatchDto dto = new MatchDto();
+        dto.setId(match.getId());
+        dto.setStatus(match.getStatus());
+        dto.setCreatedAt(match.getCreatedAt());
+        dto.setRespondedAt(match.getRespondedAt());
+        dto.setRequest(summary);
+        return dto;
     }
 }

@@ -5,10 +5,9 @@ spring:
     password: ${DB_PASSWORD:postgres123}
   jpa:
     hibernate:
-      # 'validate' ensures Hibernate checks the schema against entities but never
-      # auto-modifies it. Flyway owns all schema changes.
-      # Never use 'update' or 'create' in production.
-      ddl-auto: update
+      # Flyway owns all schema changes; Hibernate must never modify the schema.
+      # Override with JPA_DDL_AUTO=validate to have Hibernate check entities against the schema at startup.
+      ddl-auto: ${JPA_DDL_AUTO:none}
     properties:
       hibernate:
         format_sql: true
@@ -38,6 +37,11 @@ cors:
   allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
 
 app:
+  # Refresh-token cookie. Keep secure=true in production (HTTPS). Use SameSite=None only when the
+  # frontend and API are on different sites.
+  cookie:
+    secure: ${COOKIE_SECURE:true}
+    same-site: ${COOKIE_SAME_SITE:Lax}
   sms:
     provider-api-key: ${SMS_PROVIDER_API_KEY:mock_key}
     cascade-timeout-seconds: ${SMS_CASCADE_TIMEOUT_SECONDS:180}

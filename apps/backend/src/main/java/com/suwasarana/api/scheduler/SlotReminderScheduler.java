@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +38,7 @@ public class SlotReminderScheduler {
      * Runs every hour; targets slots starting 23h–25h from now to avoid double-sending.
      */
     @Scheduled(cron = "0 0 * * * *")
+    @Transactional(readOnly = true) // keeps the session open for lazy camp/donor access
     public void send24HourReminders() {
         LocalDateTime from = LocalDateTime.now().plusHours(23);
         LocalDateTime to   = LocalDateTime.now().plusHours(25);
@@ -48,6 +50,7 @@ public class SlotReminderScheduler {
      * Runs every 15 minutes; targets slots starting 1h45m–2h15m from now.
      */
     @Scheduled(cron = "0 0/15 * * * *")
+    @Transactional(readOnly = true)
     public void send2HourReminders() {
         LocalDateTime from = LocalDateTime.now().plusMinutes(105);
         LocalDateTime to   = LocalDateTime.now().plusMinutes(135);
@@ -63,16 +66,16 @@ public class SlotReminderScheduler {
         for (DonationSlot slot : upcomingSlots) {
             List<SlotBooking> bookings = bookingRepository.findBySlotIdAndStatus(slot.getId(), BookingStatus.BOOKED);
             for (SlotBooking booking : bookings) {
-                DonorProfile donor = booking.getDonor();
-                NotificationMessage msg = new NotificationMessage(
-                        "Donation Reminder — " + windowLabel,
-                        "Your blood donation slot at " + slot.resolveHostName()
-                                + " starts at " + slot.getStartTime()
-                                + ". Please bring your ID. Thank you!",
-                        "SLOT_REMINDER",
-                        booking.getId()
-                );
                 try {
+                    DonorProfile donor = booking.getDonor();
+                    NotificationMessage msg = new NotificationMessage(
+                            "Donation Reminder — " + windowLabel,
+                            "Your blood donation slot at " + slot.resolveHostName()
+                                    + " starts at " + slot.getStartTime()
+                                    + ". Please bring your ID. Thank you!",
+                            "SLOT_REMINDER",
+                            booking.getId()
+                    );
                     notificationService.notify(donor, msg);
                 } catch (Exception e) {
                     log.warn("Failed to send {} reminder for booking {}: {}", windowLabel, booking.getId(), e.getMessage());

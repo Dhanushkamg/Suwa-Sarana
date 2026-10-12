@@ -1,5 +1,6 @@
 package com.suwasarana.api.donor;
 
+import com.suwasarana.api.common.ApiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +21,7 @@ public class ReliabilityScoreService {
     @Transactional
     public void recordSuccessfulDonation(Long donorId) {
         DonorProfile profile = donorRepository.findById(donorId)
-                .orElseThrow(() -> new RuntimeException("Donor not found"));
+                .orElseThrow(() -> ApiException.notFound("Donor not found"));
 
         BigDecimal newScore = profile.getReliabilityScore().add(SUCCESSFUL_DONATION_REWARD);
         if (newScore.compareTo(MAX_SCORE) > 0) {
@@ -34,7 +35,7 @@ public class ReliabilityScoreService {
     @Transactional
     public void recordNoShow(Long donorId) {
         DonorProfile profile = donorRepository.findById(donorId)
-                .orElseThrow(() -> new RuntimeException("Donor not found"));
+                .orElseThrow(() -> ApiException.notFound("Donor not found"));
 
         BigDecimal newScore = profile.getReliabilityScore().subtract(NO_SHOW_PENALTY);
         if (newScore.compareTo(MIN_SCORE) < 0) {

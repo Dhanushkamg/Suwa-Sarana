@@ -4,6 +4,5 @@ public enum MatchStatus {
     PENDING,
     ACCEPTED,
     DECLINED,
-    EXPIRED,
-    COMPLETED
+    NO_RESPONSE
 }

@@ -1,5 +1,6 @@
 package com.suwasarana.api.matching;
 
+import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.donor.DeferralService;
 import com.suwasarana.api.donor.DonorProfile;
 import com.suwasarana.api.notification.NotificationCascadeService;
@@ -37,7 +38,7 @@ public class MatchingEngine {
     @Transactional
     public void runMatchingForRequest(Long requestId) {
         BloodRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+                .orElseThrow(() -> ApiException.notFound("Request not found"));
 
         // Fetch top 20 candidates within radius
         List<DonorProfile> candidates = matchingEngineRepository.findEligibleDonorsWithinRadius(

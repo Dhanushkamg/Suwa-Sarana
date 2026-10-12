@@ -39,7 +39,9 @@ public class MatchController {
             @RequestParam boolean donated,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
             
-        matchService.markMatchDonated(id, userDetails.getId(), donated);
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        matchService.markMatchDonated(id, userDetails.getId(), isAdmin, donated);
         return ResponseEntity.ok(ApiResponse.success(null, "Donation status marked successfully"));
     }
 }

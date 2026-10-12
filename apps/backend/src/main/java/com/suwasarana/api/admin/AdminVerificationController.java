@@ -1,5 +1,6 @@
 package com.suwasarana.api.admin;
 
+import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import com.suwasarana.api.user.VerificationStatus;
@@ -36,7 +37,7 @@ public class AdminVerificationController {
     @PutMapping("/{userId}/approve")
     public ResponseEntity<Void> approveUser(@PathVariable Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
         user.setVerificationStatus(VerificationStatus.VERIFIED);
         userRepository.save(user);
         return ResponseEntity.ok().build();
@@ -46,7 +47,7 @@ public class AdminVerificationController {
     @PutMapping("/{userId}/reject")
     public ResponseEntity<Void> rejectUser(@PathVariable Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
         user.setVerificationStatus(VerificationStatus.REJECTED);
         userRepository.save(user);
         return ResponseEntity.ok().build();

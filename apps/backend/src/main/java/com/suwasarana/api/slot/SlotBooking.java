@@ -32,7 +32,8 @@ public class SlotBooking {
     @Column(nullable = false, length = 20)
     private BookingStatus status = BookingStatus.BOOKED;
 
-    @Column(name = "booked_at", nullable = false, updatable = false)
+    // Updatable: a cancelled booking row is reused (and re-stamped) when the donor rebooks.
+    @Column(name = "booked_at", nullable = false)
     private Instant bookedAt = Instant.now();
 
     @Column(name = "checked_in_at")

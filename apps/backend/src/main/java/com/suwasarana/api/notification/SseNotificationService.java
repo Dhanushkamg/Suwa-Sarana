@@ -21,11 +21,19 @@ public class SseNotificationService {
         // Timeout 30 minutes. The client should reconnect automatically.
         SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
         
-        emitters.put(userId, emitter);
+        SseEmitter previous = emitters.put(userId, emitter);
+        if (previous != null) {
+            try {
+                previous.complete();
+            } catch (Exception ignored) {
+                // old connection is already gone
+            }
+        }
 
-        emitter.onCompletion(() -> emitters.remove(userId));
-        emitter.onTimeout(() -> emitters.remove(userId));
-        emitter.onError((e) -> emitters.remove(userId));
+        // remove(key, value) so a stale emitter never removes the newer connection
+        emitter.onCompletion(() -> emitters.remove(userId, emitter));
+        emitter.onTimeout(() -> emitters.remove(userId, emitter));
+        emitter.onError((e) -> emitters.remove(userId, emitter));
 
         log.info("User {} subscribed to SSE notifications", userId);
         return emitter;
@@ -46,7 +54,7 @@ public class SseNotificationService {
                 return true;
             } catch (IOException e) {
                 log.error("Error sending SSE notification to user {}. Removing emitter.", userId);
-                emitters.remove(userId);
+                emitters.remove(userId, emitter);
             }
         }
         return false;

@@ -2,6 +2,7 @@ package com.suwasarana.api.camp;
 
 import com.suwasarana.api.camp.dto.CreateCampDto;
 import com.suwasarana.api.camp.dto.DonationCampDto;
+import com.suwasarana.api.common.ApiException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +60,7 @@ public class DonationCampController {
             Authentication auth) {
         String status = body.get("status");
         if (status == null || status.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            throw ApiException.badRequest("Status is required");
         }
         return ResponseEntity.ok(campService.updateCampStatus(id, status, auth.getName()));
     }

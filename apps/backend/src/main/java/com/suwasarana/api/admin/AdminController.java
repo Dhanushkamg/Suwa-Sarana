@@ -1,12 +1,14 @@
 package com.suwasarana.api.admin;
 
 import com.suwasarana.api.admin.dto.DistrictSummaryDto;
+import com.suwasarana.api.admin.dto.ReportDto;
+import com.suwasarana.api.admin.dto.TriageReviewDto;
 import com.suwasarana.api.common.ApiResponse;
 import com.suwasarana.api.request.BloodRequest;
-import com.suwasarana.api.request.RequestReport;
 import com.suwasarana.api.request.dto.RequestResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,7 +35,7 @@ public class AdminController {
 
     @Operation(summary = "Get flagged reports", description = "Retrieves abuse reports and flagged items submitted by community users.")
     @GetMapping("/reports")
-    public ResponseEntity<ApiResponse<List<RequestReport>>> getReports() {
+    public ResponseEntity<ApiResponse<List<ReportDto>>> getReports() {
         return ResponseEntity.ok(ApiResponse.success(adminService.getReports()));
     }
 
@@ -61,8 +63,8 @@ public class AdminController {
     @PutMapping("/triage/{id}/review")
     public ResponseEntity<ApiResponse<Void>> reviewTriage(
             @PathVariable Long id,
-            @RequestBody(required = false) Map<String, String> body) {
-        String notes = body != null ? body.get("notes") : null;
+            @Valid @RequestBody(required = false) TriageReviewDto body) {
+        String notes = body != null ? body.getNotes() : null;
         adminService.reviewTriageRequest(id, notes);
         return ResponseEntity.ok(ApiResponse.success(null, "Triage review recorded successfully"));
     }
