@@ -1,14 +1,21 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Heart, MapPin, Activity, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw, Droplets } from 'lucide-react';
-import Link from 'next/link';
+import { Heart, MapPin, Activity, CheckCircle2, XCircle, Clock, AlertCircle, Droplets } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SkeletonList } from '@/components/ui/Skeleton';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ButtonLink } from '@/components/dash/ButtonLink';
+import { BloodTypeTile } from '@/components/dash/IconTile';
+import { Meta } from '@/components/dash/Meta';
+import { Notice } from '@/components/dash/Notice';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { RefreshButton } from '@/components/dash/RefreshButton';
+import { Rise } from '@/components/dash/Rise';
+import { RowsSkeleton } from '@/components/dash/Skeletons';
+import { UrgencyBadge } from '@/components/dash/UrgencyBadge';
 
 interface MatchRequest {
   id: number;
@@ -90,39 +97,22 @@ export default function DonorMatchesPage() {
   const requestStatusLabel = (s: string) => t('request.status' + s.charAt(0) + s.slice(1).toLowerCase());
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            {t('common.back')}
-          </Link>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Heart className="w-8 h-8 text-red-500 fill-red-500" />
-            {t('common.myMatches')}
-          </h1>
-          <p className="text-gray-400 mt-1">{t('dashboard.myMatchesDesc')}</p>
-        </div>
-
-        <button
-          onClick={() => loadMatches()}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-medium self-start sm:self-auto transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          {t('common.refresh')}
-        </button>
-      </div>
+    <div className="max-w-4xl">
+      <PageHeader
+        eyebrow={t('dashUi.eyebrow.matches')}
+        title={t('common.myMatches')}
+        description={t('dashboard.myMatchesDesc')}
+        actions={<RefreshButton onClick={() => loadMatches()} loading={loading} />}
+      />
 
       {actionError && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 animate-in fade-in duration-200">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{actionError}</span>
-        </div>
+        <Notice tone="error" className="mb-6">
+          {actionError}
+        </Notice>
       )}
 
       {loading ? (
-        <SkeletonList rows={3} />
+        <RowsSkeleton rows={3} />
       ) : error !== null ? (
         <EmptyState
           icon={<AlertCircle className="w-10 h-10 text-red-400" />}
@@ -135,94 +125,95 @@ export default function DonorMatchesPage() {
           title={t('common.noActiveMatches')}
           description={t('dashboard.noActiveMatchesDesc')}
           action={
-            <Link
-              href="/dashboard/donor"
-              className="inline-flex items-center gap-2 text-xs text-red-400 hover:text-red-300 font-medium px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 transition-colors"
-            >
+            <ButtonLink href="/dashboard/donor" variant="secondary">
               {t('dashboard.updateDonorProfile')}
-            </Link>
+            </ButtonLink>
           }
         />
       ) : (
-        <div className="space-y-4">
-          {matches.map((match) => {
-            const req = match.request as MatchRequest;
-            const requestActive = req.status === 'OPEN' || req.status === 'ESCALATING';
-            return (
-              <div
-                key={match.id}
-                className="glass-card rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-red-500/20 transition-all duration-200"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-600/20 border border-red-500/30 flex items-center justify-center text-xl font-black text-red-400 flex-shrink-0">
-                      {req.patientBloodType}
+        <Rise delay={0.05}>
+          <ul className="glass-card divide-y divide-line overflow-hidden rounded-2xl">
+            {matches.map((match) => {
+              const req = match.request as MatchRequest;
+              const requestActive = req.status === 'OPEN' || req.status === 'ESCALATING';
+              return (
+                <li key={match.id} className="p-5 sm:p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+                    <div className="flex min-w-0 items-center gap-4">
+                      <BloodTypeTile type={req.patientBloodType} size="md" />
+                      <div className="min-w-0">
+                        <h2 className="break-words text-base font-medium text-foreground">{req.hospitalName}</h2>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <Meta icon={<MapPin />}>{req.district}</Meta>
+                          <Meta icon={<Droplets />}>{t('dash.unitsCount', { n: req.unitsNeeded })}</Meta>
+                        </div>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h2 className="font-bold text-white text-lg break-words">{req.hospitalName}</h2>
-                      <p className="text-sm text-gray-400 flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                        <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {req.district}</span>
-                        <span className="inline-flex items-center gap-1"><Droplets className="w-3.5 h-3.5 text-red-400" /> {t('dash.unitsCount', { n: req.unitsNeeded })}</span>
-                      </p>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <UrgencyBadge urgency={req.urgency} />
+                      {!requestActive && <StatusBadge value={req.status} label={requestStatusLabel(req.status)} />}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <StatusBadge value={req.urgency} label={t(`dash.urgency.${req.urgency}`)} />
-                    {!requestActive && <StatusBadge value={req.status} label={requestStatusLabel(req.status)} />}
-                  </div>
-                </div>
+                  <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                      <dt>{t('common.received')}:</dt>
+                      <dd className="font-mono text-gray-300">{new Date(match.createdAt).toLocaleString()}</dd>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                      <dt>{t('bloodRequests.expires')}:</dt>
+                      <dd className="font-mono text-gray-300">{new Date(req.expiresAt).toLocaleString()}</dd>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+                      <dt>{t('bloodRequests.status')}:</dt>
+                      <dd className="font-medium text-foreground">{t(`dash.matchStatus.${match.status}`)}</dd>
+                    </div>
+                  </dl>
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mb-5">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" />
-                    {t('common.received')}: {new Date(match.createdAt).toLocaleString()}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" />
-                    {t('bloodRequests.expires')}: {new Date(req.expiresAt).toLocaleString()}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5" />
-                    {t('bloodRequests.status')}: <span className="font-medium text-white">{t(`dash.matchStatus.${match.status}`)}</span>
-                  </span>
-                </div>
+                  {match.status === 'PENDING' && requestActive && (
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => respond(match.id, 'ACCEPTED')}
+                        disabled={respondingId === match.id}
+                        className="flex-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/20"
+                      >
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                        {t('dashboard.acceptAndDonate')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => respond(match.id, 'DECLINED')}
+                        disabled={respondingId === match.id}
+                        className="flex-1 text-gray-300"
+                      >
+                        <XCircle className="h-4 w-4" aria-hidden="true" />
+                        {t('dashboard.decline')}
+                      </Button>
+                    </div>
+                  )}
 
-                {match.status === 'PENDING' && requestActive && (
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={() => respond(match.id, 'ACCEPTED')}
-                      disabled={respondingId === match.id}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors font-medium text-sm disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      {t('dashboard.acceptAndDonate')}
-                    </button>
-                    <button
-                      onClick={() => respond(match.id, 'DECLINED')}
-                      disabled={respondingId === match.id}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors font-medium text-sm disabled:opacity-50"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      {t('dashboard.decline')}
-                    </button>
-                  </div>
-                )}
-
-                {match.status === 'ACCEPTED' && (
-                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
-                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> {t('dashboard.youAccepted')}
-                  </div>
-                )}
-                {match.status === 'DECLINED' && (
-                  <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <XCircle className="w-5 h-5 flex-shrink-0" /> {t('dashboard.youDeclined')}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  {match.status === 'ACCEPTED' && (
+                    <p className="mt-5 flex items-start gap-2 text-sm font-medium text-emerald-400">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {t('dashboard.youAccepted')}
+                    </p>
+                  )}
+                  {match.status === 'DECLINED' && (
+                    <p className="mt-5 flex items-start gap-2 text-sm text-gray-500">
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {t('dashboard.youDeclined')}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Rise>
       )}
     </div>
   );

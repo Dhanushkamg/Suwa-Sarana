@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { OG, OgCanvas, OgEyebrow, OgLogoMark } from './ogParts';
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk';
 
@@ -18,42 +19,39 @@ export function siteHost(): string {
 export function genericOgImage(size: { width: number; height: number }) {
   return new ImageResponse(
     (
-      <div
-        style={{
-          height: '100%',
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '24px',
-          backgroundColor: '#0a0005',
-          color: '#ffffff',
-          fontFamily: 'sans-serif',
-        }}
-      >
+      <OgCanvas>
         <div
           style={{
-            width: '120px',
-            height: '120px',
-            borderRadius: '32px',
-            background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+            flex: 1,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '64px',
+            gap: 36,
+            padding: 80,
           }}
         >
-          🩸
+          <OgLogoMark size={176} />
+          <div style={{ display: 'flex', fontSize: 120, fontWeight: 700, letterSpacing: -4, color: OG.bone }}>
+            <span>Suwa&nbsp;</span>
+            <span style={{ color: 'rgba(244, 238, 228, 0.6)' }}>Sarana</span>
+          </div>
+          <div style={{ display: 'flex', width: 120, height: 3, backgroundColor: OG.ember }} />
+          <OgEyebrow size={30}>Blood donation platform</OgEyebrow>
         </div>
-        <div style={{ display: 'flex', fontSize: '72px', fontWeight: 900 }}>Suwa Sarana</div>
-        <div style={{ display: 'flex', fontSize: '32px', color: '#9ca3af' }}>
-          Blood donation platform
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '36px 72px',
+            borderTop: `2px solid ${OG.line}`,
+          }}
+        >
+          <OgEyebrow size={22}>Sri Lanka</OgEyebrow>
+          <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: OG.ember, letterSpacing: 1 }}>{siteHost()}</div>
         </div>
-        <div style={{ display: 'flex', fontSize: '24px', color: '#ef4444', fontWeight: 700 }}>
-          {siteHost()}
-        </div>
-      </div>
+      </OgCanvas>
     ),
     { ...size }
   );

@@ -1,11 +1,12 @@
 'use client';
 
-import { Building2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import CampManagerDashboard from '@/components/camps/CampManagerDashboard';
 import { useI18n } from '@/lib/i18n';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { VerificationBadge } from '@/components/dash/VerificationBadge';
+import { Reveal } from '@/components/motion/Reveal';
 
 export default function BloodBankDashboardPage() {
   const { user } = useAuthStore();
@@ -13,49 +14,27 @@ export default function BloodBankDashboardPage() {
 
   if (!user) {
     return (
-      <div className="max-w-6xl mx-auto space-y-8" role="status" aria-label={t('common.loading')}>
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div role="status" aria-label={t('common.loading')}>
+        <Skeleton className="mb-3 h-3 w-40" />
+        <Skeleton className="mb-8 h-12 w-3/5 rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Blood Bank Banner */}
-      <div className="relative glass-card rounded-3xl p-8 border border-red-500/20 overflow-hidden bg-gradient-to-r from-red-950/40 via-rose-950/20 to-neutral-900/50">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-xl shadow-red-500/30 flex-shrink-0">
-              <Building2 className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30 uppercase tracking-wider">
-                  {t('dashboard.bloodBankPortal')}
-                </span>
-                {user.verificationStatus === 'VERIFIED' ? (
-                  <StatusBadge value="VERIFIED" label={t('dashboard.verifiedOrg')} />
-                ) : (
-                  <StatusBadge
-                    value={user.verificationStatus ?? 'PENDING'}
-                    label={user.verificationStatus === 'REJECTED' ? t('dash.rejectedVerification') : t('dash.pendingVerification')}
-                  />
-                )}
-              </div>
-              <h1 className="text-3xl font-bold text-white">{t('dashboard.bloodBankCommandCenter')}</h1>
-              <p className="text-gray-400 text-sm mt-1 max-w-xl">
-                {t('dashboard.bloodBankCommandCenterDesc')}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow={t('dashboard.bloodBankPortal')}
+        badges={<VerificationBadge status={user.verificationStatus} verifiedLabel={t('dashboard.verifiedOrg')} />}
+        title={t('dashboard.bloodBankCommandCenter')}
+        description={t('dashboard.bloodBankCommandCenterDesc')}
+      />
 
-      {/* Donation Camp Management */}
-      <CampManagerDashboard />
+      {/* Donation camp management */}
+      <Reveal y={12}>
+        <CampManagerDashboard />
+      </Reveal>
     </div>
   );
 }

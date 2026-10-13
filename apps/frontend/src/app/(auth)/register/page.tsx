@@ -3,11 +3,18 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Mail, Lock, Phone, Eye, EyeOff, User as UserIcon, CreditCard, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Phone, User as UserIcon, CreditCard, ArrowLeft } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { GoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Alert } from '@/components/pub/Alert';
+import { AuthDivider } from '@/components/pub/AuthDivider';
+import { AuthHeading } from '@/components/pub/AuthHeading';
+import { PasswordField } from '@/components/pub/PasswordField';
+import { StepIndicator } from '@/components/pub/StepIndicator';
+import { OTP_INPUT_CLASS } from '@/components/pub/otp';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
@@ -39,6 +46,7 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
+  const reduce = useReducedMotion();
   const login = useAuthStore((s) => s.login);
 
   const roleParam = searchParams.get('role');
@@ -80,10 +88,10 @@ function RegisterForm() {
   }, [resendIn]);
 
   const roleOptions = [
-    { value: 'DONOR', label: t('auth.roleDonor') },
-    { value: 'REQUESTER', label: t('auth.roleRequester') },
-    { value: 'HOSPITAL_REQUESTER', label: t('authFlow.roleHospital') },
-    { value: 'BLOOD_BANK_REQUESTER', label: t('authFlow.roleBloodBank') },
+    { value: 'DONOR', label: t('pub.roleDonor') },
+    { value: 'REQUESTER', label: t('pub.roleRequester') },
+    { value: 'HOSPITAL_REQUESTER', label: t('pub.roleHospital') },
+    { value: 'BLOOD_BANK_REQUESTER', label: t('pub.roleBloodBank') },
   ];
 
   const set = (field: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -188,166 +196,172 @@ function RegisterForm() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white">{t('auth.registerTitle')}</h2>
-        <p className="text-gray-400 mt-2">{isGoogle ? t('authGoogle.completeProfile') : t('auth.registerSubtitle')}</p>
-      </div>
+      <AuthHeading
+        eyebrow={t('pub.eyebrowRegister')}
+        title={t('auth.registerTitle')}
+        subtitle={isGoogle ? t('authGoogle.completeProfile') : t('auth.registerSubtitle')}
+      />
 
-      {serverError && (
-        <div role="alert" className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          {serverError}
-        </div>
-      )}
+      <StepIndicator current={step === 'info' ? 1 : 2} labels={[t('pub.stepDetails'), t('pub.stepVerify')]} />
 
-      <div className="space-y-4">
-        {step === 'info' ? (
-          <>
-            <Select id="reg-role" label={t('auth.roleLabel')} options={roleOptions} value={form.role} onChange={set('role')} />
+      {serverError && <Alert className="mb-6">{serverError}</Alert>}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Input
-                id="reg-first-name"
-                label={t('authFlow.firstName')}
-                value={form.firstName}
-                onChange={set('firstName')}
-                error={errors.firstName}
-                icon={<UserIcon className="w-4 h-4" />}
-                autoComplete="given-name"
-              />
-              <Input
-                id="reg-last-name"
-                label={t('authFlow.lastName')}
-                value={form.lastName}
-                onChange={set('lastName')}
-                error={errors.lastName}
-                icon={<UserIcon className="w-4 h-4" />}
-                autoComplete="family-name"
-              />
-            </div>
-
-            {!isGoogle && (
-              <Input
-                id="reg-email"
-                type="email"
-                label={t('auth.email')}
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={set('email')}
-                error={errors.email}
-                icon={<Mail className="w-4 h-4" />}
-                autoComplete="email"
-              />
-            )}
-
-            <Input
-              id="reg-phone"
-              type="tel"
-              label={t('auth.phone')}
-              placeholder="07XXXXXXXX"
-              value={form.phoneNumber}
-              onChange={set('phoneNumber')}
-              error={errors.phoneNumber}
-              icon={<Phone className="w-4 h-4" />}
-              autoComplete="tel"
-            />
-
-            <Input
-              id="reg-nic"
-              label={t('authFlow.nicOptional')}
-              placeholder="1995XXXXXXXX / XXXXXXXXXV"
-              value={form.nicNumber}
-              onChange={set('nicNumber')}
-              error={errors.nicNumber}
-              icon={<CreditCard className="w-4 h-4" />}
-            />
-
-            {!isGoogle && (
+      <div className="space-y-5">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={step}
+            className="space-y-5"
+            initial={reduce ? false : { opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {step === 'info' ? (
               <>
-                <div className="relative">
+                <Select id="reg-role" label={t('auth.roleLabel')} options={roleOptions} value={form.role} onChange={set('role')} />
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <Input
-                    id="reg-password"
-                    type={showPassword ? 'text' : 'password'}
-                    label={t('auth.password')}
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={set('password')}
-                    error={errors.password}
-                    icon={<Lock className="w-4 h-4" />}
-                    autoComplete="new-password"
-                    className="pr-11"
+                    id="reg-first-name"
+                    label={t('authFlow.firstName')}
+                    value={form.firstName}
+                    onChange={set('firstName')}
+                    error={errors.firstName}
+                    icon={<UserIcon className="h-4 w-4" />}
+                    autoComplete="given-name"
                   />
+                  <Input
+                    id="reg-last-name"
+                    label={t('authFlow.lastName')}
+                    value={form.lastName}
+                    onChange={set('lastName')}
+                    error={errors.lastName}
+                    icon={<UserIcon className="h-4 w-4" />}
+                    autoComplete="family-name"
+                  />
+                </div>
+
+                {!isGoogle && (
+                  <Input
+                    id="reg-email"
+                    type="email"
+                    label={t('auth.email')}
+                    placeholder="you@example.com"
+                    value={form.email}
+                    onChange={set('email')}
+                    error={errors.email}
+                    icon={<Mail className="h-4 w-4" />}
+                    autoComplete="email"
+                  />
+                )}
+
+                <Input
+                  id="reg-phone"
+                  type="tel"
+                  label={t('auth.phone')}
+                  placeholder="07XXXXXXXX"
+                  value={form.phoneNumber}
+                  onChange={set('phoneNumber')}
+                  error={errors.phoneNumber}
+                  icon={<Phone className="h-4 w-4" />}
+                  autoComplete="tel"
+                />
+
+                <Input
+                  id="reg-nic"
+                  label={t('authFlow.nicOptional')}
+                  placeholder="1995XXXXXXXX / XXXXXXXXXV"
+                  value={form.nicNumber}
+                  onChange={set('nicNumber')}
+                  error={errors.nicNumber}
+                  icon={<CreditCard className="h-4 w-4" />}
+                />
+
+                {!isGoogle && (
+                  <>
+                    <PasswordField
+                      id="reg-password"
+                      label={t('auth.password')}
+                      placeholder="••••••••"
+                      value={form.password}
+                      onChange={set('password')}
+                      error={errors.password}
+                      autoComplete="new-password"
+                      visible={showPassword}
+                      onVisibleChange={setShowPassword}
+                    />
+                    <Input
+                      id="reg-confirm-password"
+                      type={showPassword ? 'text' : 'password'}
+                      label={t('auth.confirmPassword')}
+                      placeholder="••••••••"
+                      value={form.confirmPassword}
+                      onChange={set('confirmPassword')}
+                      error={errors.confirmPassword}
+                      icon={<Lock className="h-4 w-4" />}
+                      autoComplete="new-password"
+                    />
+                  </>
+                )}
+
+                <div className="pt-3">
+                  <Button type="button" size="lg" className="w-full" loading={loading} onClick={handleContinue}>
+                    {t('authFlow.sendOtp')}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="rounded-xl border border-line bg-foreground/[0.03] px-4 py-3 text-sm leading-relaxed text-gray-300">
+                  {t('authFlow.otpSent', { phone: normalizePhone(form.phoneNumber) })}
+                </p>
+                <Input
+                  id="reg-otp"
+                  label={t('authFlow.otpLabel')}
+                  placeholder="······"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  value={form.otpCode}
+                  onChange={set('otpCode')}
+                  error={errors.otpCode}
+                  className={OTP_INPUT_CLASS}
+                />
+                <div className="pt-3">
+                  <Button type="button" size="lg" className="w-full" loading={loading} onClick={handleVerifyAndRegister}>
+                    {t('authFlow.verifyCreate')}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between gap-4 text-sm">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-[2.5rem] text-gray-500 hover:text-gray-300 transition-colors"
-                    aria-label={showPassword ? t('authFlow.hidePassword') : t('authFlow.showPassword')}
+                    onClick={() => setStep('info')}
+                    className="group inline-flex items-center gap-2 text-gray-400 transition-colors hover:text-foreground"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-0.5" aria-hidden="true" />
+                    {t('authFlow.backToInfo')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={sendOtp}
+                    disabled={resendIn > 0 || loading}
+                    className="text-right text-ember underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:cursor-not-allowed disabled:text-gray-600 disabled:no-underline"
+                  >
+                    {resendIn > 0 ? t('authFlow.resendIn', { seconds: resendIn }) : t('authFlow.resend')}
                   </button>
                 </div>
-                <Input
-                  id="reg-confirm-password"
-                  type={showPassword ? 'text' : 'password'}
-                  label={t('auth.confirmPassword')}
-                  placeholder="••••••••"
-                  value={form.confirmPassword}
-                  onChange={set('confirmPassword')}
-                  error={errors.confirmPassword}
-                  icon={<Lock className="w-4 h-4" />}
-                  autoComplete="new-password"
-                />
               </>
             )}
+          </motion.div>
+        </AnimatePresence>
 
-            <div className="pt-2">
-              <Button type="button" size="lg" className="w-full" loading={loading} onClick={handleContinue}>
-                {t('authFlow.sendOtp')}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-gray-400">{t('authFlow.otpSent', { phone: normalizePhone(form.phoneNumber) })}</p>
-            <Input
-              id="reg-otp"
-              label={t('authFlow.otpLabel')}
-              placeholder="123456"
-              inputMode="numeric"
-              maxLength={6}
-              autoComplete="one-time-code"
-              value={form.otpCode}
-              onChange={set('otpCode')}
-              error={errors.otpCode}
-              icon={<CheckCircle className="w-4 h-4" />}
-            />
-            <div className="pt-2">
-              <Button type="button" size="lg" className="w-full" loading={loading} onClick={handleVerifyAndRegister}>
-                {t('authFlow.verifyCreate')}
-              </Button>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <button type="button" onClick={() => setStep('info')} className="text-gray-400 hover:text-white transition-colors">
-                {t('authFlow.backToInfo')}
-              </button>
-              <button
-                type="button"
-                onClick={sendOtp}
-                disabled={resendIn > 0 || loading}
-                className="text-red-400 hover:text-red-300 transition-colors disabled:cursor-not-allowed disabled:text-gray-600"
-              >
-                {resendIn > 0 ? t('authFlow.resendIn', { seconds: resendIn }) : t('authFlow.resend')}
-              </button>
-            </div>
-          </>
-        )}
-
-        <p className="text-center text-xs text-gray-600 leading-relaxed mt-4">
+        <p className="pt-2 text-center text-xs leading-relaxed text-gray-600">
           {t('auth.termsNote')}{' '}
-          <Link href="/terms" className="text-gray-400 hover:text-white transition-colors underline underline-offset-2">
+          <Link href="/terms" className="text-gray-400 underline underline-offset-4 transition-colors hover:text-foreground">
             {t('auth.termsLink')}
           </Link>{' '}
           {t('auth.andText')}{' '}
-          <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors underline underline-offset-2">
+          <Link href="/privacy" className="text-gray-400 underline underline-offset-4 transition-colors hover:text-foreground">
             {t('auth.privacyLink')}
           </Link>
           .
@@ -356,12 +370,8 @@ function RegisterForm() {
 
       {!isGoogle && step === 'info' && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
         <>
-          <div className="mt-6 flex items-center justify-center">
-            <div className="h-px w-full bg-white/10" />
-            <span className="px-4 text-sm text-gray-500">{t('authFlow.or')}</span>
-            <div className="h-px w-full bg-white/10" />
-          </div>
-          <div className="mt-6 flex justify-center">
+          <AuthDivider label={t('authFlow.or')} />
+          <div className="flex justify-center">
             <GoogleLogin
               onSuccess={(credentialResponse) => {
                 if (credentialResponse.credential) handleGoogleSignIn(credentialResponse.credential);
@@ -372,21 +382,19 @@ function RegisterForm() {
         </>
       )}
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500">
-          {t('auth.haveAccount')}{' '}
-          <Link href="/login" className="font-medium text-red-400 hover:text-red-300 transition-colors">
-            {t('auth.signInLink')}
-          </Link>
-        </p>
-      </div>
+      <p className="mt-10 border-t border-line pt-6 text-center text-sm text-gray-500">
+        {t('auth.haveAccount')}{' '}
+        <Link href="/login" className="font-medium text-ember underline-offset-4 transition-colors hover:text-foreground hover:underline">
+          {t('auth.signInLink')}
+        </Link>
+      </p>
     </div>
   );
 }
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="text-gray-400 text-sm">…</div>}>
+    <Suspense fallback={<div className="text-sm text-gray-400">…</div>}>
       <RegisterForm />
     </Suspense>
   );

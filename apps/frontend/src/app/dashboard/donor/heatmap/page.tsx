@@ -8,6 +8,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useI18n } from '@/lib/i18n';
 import { Activity, Users, AlertTriangle } from 'lucide-react';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { RefreshButton } from '@/components/dash/RefreshButton';
+import { Rise } from '@/components/dash/Rise';
+import { Stat } from '@/components/dash/Stat';
+import { StatsSkeleton } from '@/components/dash/Skeletons';
 
 interface ApiBody<T> {
   data?: T;
@@ -43,22 +48,18 @@ export default function HeatmapPage() {
   const criticalDistricts = districts.filter(d => d.shortageLevel === 'CRITICAL').length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-2">{t('dash.heatmapTitle')}</h1>
-          <p className="text-gray-400 text-sm max-w-xl">{t('dash.heatmapDesc')}</p>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow={t('dashUi.eyebrow.heatmap')}
+        title={t('dash.heatmapTitle')}
+        description={t('dash.heatmapDesc')}
+        actions={<RefreshButton onClick={fetchAnalytics} loading={loading} />}
+      />
 
       {loading ? (
-        <div className="space-y-4" role="status" aria-label={t('dash.loadingIntel')}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-          </div>
-          <Skeleton className="h-[420px] w-full" />
+        <div className="space-y-6" role="status" aria-label={t('dash.loadingIntel')}>
+          <StatsSkeleton count={3} className="md:grid-cols-3" />
+          <Skeleton className="h-[420px] w-full rounded-2xl" />
         </div>
       ) : error !== null ? (
         <EmptyState
@@ -70,43 +71,23 @@ export default function HeatmapPage() {
       ) : districts.length === 0 ? (
         <EmptyState icon={<Activity className="w-10 h-10" />} title={t('adminDashboard.noData')} />
       ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="glass-card p-6 rounded-2xl border border-white/5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-300">{t('dash.criticalZones')}</h3>
-              </div>
-              <p className="text-3xl font-black text-white">{criticalDistricts}</p>
-            </div>
-            
-            <div className="glass-card p-6 rounded-2xl border border-white/5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400">
-                  <Activity className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-300">{t('adminDashboard.activeRequests')}</h3>
-              </div>
-              <p className="text-3xl font-black text-white">{totalRequests}</p>
-            </div>
-
-            <div className="glass-card p-6 rounded-2xl border border-white/5">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                  <Users className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-300">{t('adminDashboard.availableDonors')}</h3>
-              </div>
-              <p className="text-3xl font-black text-white">{totalDonors}</p>
-            </div>
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Rise delay={0.04}>
+              <Stat label={t('dash.criticalZones')} value={criticalDistricts} tone="ember" icon={<AlertTriangle />} className="h-full" />
+            </Rise>
+            <Rise delay={0.08}>
+              <Stat label={t('adminDashboard.activeRequests')} value={totalRequests} tone="saffron" icon={<Activity />} className="h-full" />
+            </Rise>
+            <Rise delay={0.12}>
+              <Stat label={t('adminDashboard.availableDonors')} value={totalDonors} tone="sage" icon={<Users />} className="h-full" />
+            </Rise>
           </div>
 
-          <div className="w-full">
+          <Rise delay={0.16}>
             <SriLankaHeatmap districts={districts} />
-          </div>
-        </>
+          </Rise>
+        </div>
       )}
     </div>
   );

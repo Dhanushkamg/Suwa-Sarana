@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Droplets, Shield, MapPin, CheckCircle, ArrowLeft, Award, Users, Wifi, WifiOff, AlertCircle, CalendarCheck, LocateFixed } from 'lucide-react';
-import Link from 'next/link';
+import { Droplets, Shield, MapPin, Award, Users, Wifi, WifiOff, AlertCircle, LocateFixed, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -12,6 +11,15 @@ import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { DISTRICTS, districtCenter } from '@/lib/districts';
 import MyBookings from '@/components/slots/MyBookings';
+import { Reveal } from '@/components/motion/Reveal';
+import { ButtonLink } from '@/components/dash/ButtonLink';
+import { Notice } from '@/components/dash/Notice';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { Panel, SectionHeader, SectionLabel } from '@/components/dash/Panel';
+import { Rise } from '@/components/dash/Rise';
+import { SettingRow } from '@/components/dash/Switch';
+import { Stat } from '@/components/dash/Stat';
+import { StatsSkeleton } from '@/components/dash/Skeletons';
 
 interface DonorProfile {
   bloodType: string;
@@ -229,12 +237,7 @@ export default function DonorProfilePage() {
   };
 
   const reliabilityScore = Number(profile?.reliabilityScore ?? 50);
-  const reliabilityColor =
-    reliabilityScore >= 80 ? 'text-emerald-400' :
-    reliabilityScore >= 60 ? 'text-amber-400' : 'text-red-400';
-  const reliabilityBg =
-    reliabilityScore >= 80 ? 'from-emerald-500 to-teal-600' :
-    reliabilityScore >= 60 ? 'from-amber-500 to-orange-600' : 'from-red-500 to-rose-600';
+  const reliabilityTone = reliabilityScore >= 80 ? 'sage' : reliabilityScore >= 60 ? 'saffron' : 'ember';
   const reliabilityLabel =
     reliabilityScore >= 80 ? t('donorDashboard.excellentStanding') :
     reliabilityScore >= 60 ? t('donorDashboard.goodStanding') : t('donorDashboard.needsImprovement');
@@ -245,37 +248,30 @@ export default function DonorProfilePage() {
     t('dash.locationDistrict', { district });
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4">
-          <ArrowLeft className="w-4 h-4" />
-          {t('common.back')}
-        </Link>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-          <Droplets className="w-8 h-8 text-red-500" />
-          {t('common.myProfile')}
-        </h1>
-        <p className="text-gray-400 mt-2">{t('dashboard.donorProfileDesc')}</p>
+    <div>
+      <PageHeader
+        eyebrow={t('dashUi.eyebrow.profile')}
+        title={t('common.myProfile')}
+        description={t('dashboard.donorProfileDesc')}
+        actions={
+          profile ? (
+            <ButtonLink href="/dashboard/donor/matches" variant="secondary">
+              {t('donorDashboard.viewMyMatches')}
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            </ButtonLink>
+          ) : undefined
+        }
+      />
+
+      <div className="mb-6 space-y-4 empty:hidden">
+        {saved && <Notice tone="success">{t('donorDashboard.profileSaved')}</Notice>}
+        {errorMessage && <Notice tone="error">{errorMessage}</Notice>}
       </div>
 
-      {saved && (
-        <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center gap-3 text-emerald-400">
-          <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{t('donorDashboard.profileSaved')}</span>
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{errorMessage}</span>
-        </div>
-      )}
-
       {initialLoading ? (
-        <div className="space-y-4" role="status" aria-label={t('common.loading')}>
-          <Skeleton className="h-36 w-full" />
-          <Skeleton className="h-96 w-full" />
+        <div className="space-y-6">
+          <StatsSkeleton count={3} className="sm:grid-cols-3" />
+          <Skeleton className="h-96 w-full rounded-2xl" />
         </div>
       ) : loadFailed ? (
         <EmptyState
@@ -286,193 +282,141 @@ export default function DonorProfilePage() {
       ) : (
         <>
           {!profile && (
-            <div className="mb-6 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4 flex items-center gap-3 text-blue-300">
-              <Droplets className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm">{t('dash.newProfile')}</span>
-            </div>
+            <Notice tone="info" icon={<Droplets />} className="mb-6">
+              {t('dash.newProfile')}
+            </Notice>
           )}
 
-          {/* Gamification Stats (hidden in Low-Data Mode) */}
+          {/* Donor stats (hidden in Low-Data Mode) */}
           {!lowDataMode && profile && (
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-              <div className="glass-card rounded-2xl p-3 sm:p-5 border border-white/5 text-center">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${reliabilityBg} flex items-center justify-center shadow-lg mx-auto mb-3`}>
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
-                <div className={`text-2xl font-bold ${reliabilityColor}`}>{reliabilityScore}</div>
-                <div className="text-xs text-gray-500 mt-1">{t('features.reliability')}</div>
-                <span className={`text-xs px-2 py-1 rounded-full mt-2 inline-block bg-white/5 font-medium ${reliabilityColor}`}>
-                  {reliabilityLabel}
-                </span>
-              </div>
-
-              <div className="glass-card rounded-2xl p-3 sm:p-5 border border-white/5 text-center">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/20 mx-auto mb-3">
-                  <Award className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-white">{profile.totalDonations ?? 0}</div>
-                <div className="text-xs text-gray-500 mt-1">{t('donorDashboard.donationsMade')}</div>
-              </div>
-
-              <div className="glass-card rounded-2xl p-3 sm:p-5 border border-white/5 text-center">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/20 mx-auto mb-3">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-white">{profile.livesHelpedEstimate ?? 0}</div>
-                <div className="text-xs text-gray-500 mt-1">{t('donorDashboard.livesHelped')}</div>
-              </div>
+            <div className="mb-6 grid gap-4 sm:grid-cols-3">
+              <Rise delay={0.05}>
+                <Stat
+                  label={t('features.reliability')}
+                  value={reliabilityScore}
+                  tone={reliabilityTone}
+                  meter={reliabilityScore}
+                  icon={<Shield />}
+                  hint={reliabilityLabel}
+                  className="h-full"
+                />
+              </Rise>
+              <Rise delay={0.1}>
+                <Stat label={t('donorDashboard.donationsMade')} value={profile.totalDonations ?? 0} icon={<Award />} className="h-full" />
+              </Rise>
+              <Rise delay={0.15}>
+                <Stat label={t('donorDashboard.livesHelped')} value={profile.livesHelpedEstimate ?? 0} tone="ember" icon={<Users />} className="h-full" />
+              </Rise>
             </div>
           )}
 
-          <form onSubmit={handleSave} noValidate className="glass-card rounded-2xl p-5 sm:p-8 space-y-6">
-            <Select
-              id="donor-blood-type"
-              label={t('dash.yourBloodType')}
-              options={bloodTypeOptions}
-              value={bloodType}
-              onChange={(e) => setBloodType(e.target.value)}
-            />
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
+            <Rise delay={0.1}>
+              <form onSubmit={handleSave} noValidate className="glass-card space-y-9 rounded-2xl p-5 sm:p-8">
+                <section className="space-y-5">
+                  <SectionLabel>{t('dashUi.section.health')}</SectionLabel>
+                  <Select
+                    id="donor-blood-type"
+                    label={t('dash.yourBloodType')}
+                    options={bloodTypeOptions}
+                    value={bloodType}
+                    onChange={(e) => setBloodType(e.target.value)}
+                  />
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <Input
-                  id="donor-dob"
-                  type="date"
-                  label={t('dash.dob')}
-                  value={dateOfBirth}
-                  min={yearsAgo(MAX_AGE + 1)}
-                  max={yearsAgo(MIN_AGE)}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  error={fieldErrors.dob}
-                />
-                {!fieldErrors.dob && <p className="mt-1.5 text-xs text-gray-500">{t('dash.dobHint')}</p>}
-              </div>
-              <div>
-                <Input
-                  id="donor-weight"
-                  type="number"
-                  step="0.1"
-                  min="30"
-                  max="300"
-                  inputMode="decimal"
-                  label={t('dash.weight')}
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(e.target.value)}
-                  error={fieldErrors.weight}
-                />
-                {!fieldErrors.weight && <p className="mt-1.5 text-xs text-gray-500">{t('dash.weightHint')}</p>}
-              </div>
-            </div>
-
-            <Select
-              id="donor-district"
-              label={t('request.district')}
-              options={districtOptions}
-              value={district}
-              onChange={(e) => handleDistrictChange(e.target.value)}
-            />
-
-            <div className="rounded-xl bg-white/4 p-4 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
-                <MapPin className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-gray-400 min-w-0">
-                  <p>{locationText}</p>
-                  {locationNote && <p className="mt-1 text-amber-400">{locationNote}</p>}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={detectLocation}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-red-300 transition-colors flex-shrink-0"
-              >
-                <LocateFixed className="w-3.5 h-3.5" />
-                {t('dash.useMyLocation')}
-              </button>
-            </div>
-
-            {/* Availability Toggle */}
-            <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white/4 border border-white/5">
-              <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-red-400" />
-                <div>
-                  <div className="text-sm font-medium text-white">{t('dashboard.updateAvailability')}</div>
-                  <div className="text-xs text-gray-500">{t('dashboard.updateAvailabilityDesc')}</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isAvailable}
-                aria-label={t('dashboard.updateAvailability')}
-                onClick={toggleAvailability}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-                  isAvailable ? 'bg-red-500' : 'bg-gray-700'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    isAvailable ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Low-Data Mode Toggle */}
-            <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white/4 border border-white/5">
-              <div className="flex items-center gap-3">
-                {lowDataMode ? (
-                  <WifiOff className="w-5 h-5 text-amber-400" />
-                ) : (
-                  <Wifi className="w-5 h-5 text-blue-400" />
-                )}
-                <div>
-                  <div className="text-sm font-medium text-white">{t('donorDashboard.lowDataMode')}</div>
-                  <div className="text-xs text-gray-500">
-                    {lowDataMode ? t('donorDashboard.lowDataModeOn') : t('donorDashboard.lowDataModeOff')}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Input
+                        id="donor-dob"
+                        type="date"
+                        label={t('dash.dob')}
+                        value={dateOfBirth}
+                        min={yearsAgo(MAX_AGE + 1)}
+                        max={yearsAgo(MIN_AGE)}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        error={fieldErrors.dob}
+                      />
+                      {!fieldErrors.dob && <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{t('dash.dobHint')}</p>}
+                    </div>
+                    <div>
+                      <Input
+                        id="donor-weight"
+                        type="number"
+                        step="0.1"
+                        min="30"
+                        max="300"
+                        inputMode="decimal"
+                        label={t('dash.weight')}
+                        value={weightKg}
+                        onChange={(e) => setWeightKg(e.target.value)}
+                        error={fieldErrors.weight}
+                      />
+                      {!fieldErrors.weight && <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{t('dash.weightHint')}</p>}
+                    </div>
                   </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={lowDataMode}
-                aria-label={t('donorDashboard.lowDataMode')}
-                onClick={toggleLowDataMode}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-                  lowDataMode ? 'bg-amber-500' : 'bg-gray-700'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    lowDataMode ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
+                </section>
 
-            <div className="pt-2">
-              <Button type="submit" size="lg" className="w-full" loading={saving}>
-                {t('common.save')}
-              </Button>
-            </div>
-          </form>
+                <section className="space-y-5">
+                  <SectionLabel>{t('dashUi.section.location')}</SectionLabel>
+                  <Select
+                    id="donor-district"
+                    label={t('request.district')}
+                    options={districtOptions}
+                    value={district}
+                    onChange={(e) => handleDistrictChange(e.target.value)}
+                  />
+
+                  <div className="flex flex-col justify-between gap-3 rounded-xl border border-line bg-foreground/[0.03] p-4 sm:flex-row sm:items-center">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ember" aria-hidden="true" />
+                      <div className="min-w-0 text-xs leading-relaxed text-gray-400">
+                        <p>{locationText}</p>
+                        {locationNote && <p className="mt-1 text-saffron">{locationNote}</p>}
+                      </div>
+                    </div>
+                    <Button type="button" variant="secondary" size="sm" onClick={detectLocation} className="shrink-0">
+                      <LocateFixed className="h-3.5 w-3.5" aria-hidden="true" />
+                      {t('dash.useMyLocation')}
+                    </Button>
+                  </div>
+                </section>
+
+                {/* Save bar: pinned to the bottom of the screen on mobile */}
+                <div className="sticky bottom-3 z-20 rounded-2xl border border-foreground/[0.16] bg-surface-raised p-2 shadow-2xl shadow-black/50 sm:static sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+                  <Button type="submit" size="lg" className="w-full" loading={saving}>
+                    {t('common.save')}
+                  </Button>
+                </div>
+              </form>
+            </Rise>
+
+            <Rise delay={0.15}>
+              <Panel>
+                <SectionLabel>{t('dashUi.section.preferences')}</SectionLabel>
+                <div className="mt-2 divide-y divide-line">
+                  <SettingRow
+                    icon={<Droplets />}
+                    title={t('dashboard.updateAvailability')}
+                    description={t('dashboard.updateAvailabilityDesc')}
+                    checked={isAvailable}
+                    onChange={toggleAvailability}
+                  />
+                  <SettingRow
+                    icon={lowDataMode ? <WifiOff /> : <Wifi />}
+                    title={t('donorDashboard.lowDataMode')}
+                    description={lowDataMode ? t('donorDashboard.lowDataModeOn') : t('donorDashboard.lowDataModeOff')}
+                    checked={lowDataMode}
+                    onChange={toggleLowDataMode}
+                  />
+                </div>
+              </Panel>
+            </Rise>
+          </div>
 
           {profile && (
-            <>
-              <div className="mt-8 pt-8 border-t border-white/10">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2 mb-6">
-                  <CalendarCheck className="w-6 h-6 text-emerald-500" />
-                  {t('slot.myBookings')}
-                </h2>
-                <MyBookings />
-              </div>
-
-              <div className="mt-8 text-center">
-                <Link href="/dashboard/donor/matches" className="text-sm text-red-400 hover:text-red-300 transition-colors font-medium">
-                  {t('donorDashboard.viewMyMatches')} →
-                </Link>
-              </div>
-            </>
+            <Reveal y={12} className="mt-12">
+              <SectionHeader eyebrow={t('dashUi.section.schedule')} title={t('slot.myBookings')} />
+              <MyBookings />
+            </Reveal>
           )}
         </>
       )}

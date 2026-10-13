@@ -30,8 +30,8 @@ export function Input({ label, error, icon, className, id, ...props }: InputProp
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           className={cn(
-            'w-full rounded-xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-200',
-            'border-white/10 focus:border-red-500/60 focus:bg-white/8 focus:outline-none focus:ring-2 focus:ring-red-500/20',
+            'w-full rounded-xl border bg-foreground/[0.035] px-4 py-3 text-sm text-foreground placeholder-gray-600 transition-[border-color,background-color,box-shadow] duration-300',
+            'border-line-strong hover:border-foreground/25 focus:border-ember focus:bg-foreground/[0.06] focus:outline-none focus:ring-4 focus:ring-ember/15',
             error && 'border-red-500/50 focus:border-red-500 focus:ring-red-500/30',
             icon && 'pl-10',
             className

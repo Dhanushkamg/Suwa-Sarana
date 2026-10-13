@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 
 /** Pulsing placeholder block shown while data loads. Size it with className (e.g. "h-24 w-full"). */
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={cn('animate-pulse rounded-xl bg-white/5', className)} />;
+  return <div aria-hidden="true" className={cn('animate-pulse rounded-xl bg-foreground/[0.05]', className)} />;
 }
 
 /** A few stacked card-shaped skeletons for list pages. */

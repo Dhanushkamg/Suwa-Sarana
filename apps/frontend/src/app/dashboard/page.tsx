@@ -5,8 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import { homeForRole } from '@/lib/auth';
-import { Heart, Droplets, Bell, ArrowRight, Plus, ListOrdered } from 'lucide-react';
+import { Bell, ArrowUpRight, Plus, ListOrdered } from 'lucide-react';
 import Link from 'next/link';
+import { SriLankaMap } from '@/components/brand/SriLankaMap';
+import { Reveal } from '@/components/motion/Reveal';
+import { IconTile } from '@/components/dash/IconTile';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { Rise } from '@/components/dash/Rise';
+import { ButtonLink } from '@/components/dash/ButtonLink';
+import { EYEBROW } from '@/components/dash/styles';
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -19,85 +27,86 @@ export default function DashboardPage() {
     if (user && home !== '/dashboard') router.replace(home);
   }, [user, router]);
 
+  const actions = [
+    {
+      href: '/dashboard/requests/new',
+      icon: Plus,
+      title: t('dashboard.newBloodRequest'),
+      desc: t('dashboard.newBloodRequestDesc'),
+      primary: true,
+    },
+    {
+      href: '/dashboard/requests',
+      icon: ListOrdered,
+      title: t('dashboard.activeRequests'),
+      desc: t('dashboard.activeRequestsDesc'),
+    },
+    {
+      href: '/dashboard/notifications',
+      icon: Bell,
+      title: t('dashboard.notifications'),
+      desc: t('dashboard.notificationsDesc'),
+    },
+  ];
+
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">
-          {t('dashboard.welcome')}
-          <span className="gradient-text ml-2">👋</span>
-        </h1>
-        <p className="text-gray-400 mt-2">
-          {t('dashboard.requesterSubtitle')}
-        </p>
+      <PageHeader
+        eyebrow={t('dashUi.eyebrow.overview')}
+        title={t('dashboard.welcome')}
+        description={t('dashboard.requesterSubtitle')}
+      />
+
+      {/* Quick actions */}
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
+        {actions.map((a, i) => (
+          <Rise key={a.href} delay={0.05 + i * 0.06}>
+            <Link
+              href={a.href}
+              className={cn(
+                'glass-card group flex h-full flex-col justify-between gap-10 rounded-2xl p-6 transition-colors duration-300',
+                a.primary && 'border-ember/30 hover:border-ember/60'
+              )}
+            >
+              <div className="flex items-start justify-between">
+                <IconTile size="md" tone={a.primary ? 'ember' : 'muted'}>
+                  <a.icon />
+                </IconTile>
+                <span
+                  aria-hidden="true"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-gray-500 transition-[transform,color,border-color] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-ember/50 group-hover:text-ember"
+                >
+                  <ArrowUpRight className="h-4 w-4" />
+                </span>
+              </div>
+              <div>
+                <h2 className="font-display text-2xl text-foreground">{a.title}</h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-400">{a.desc}</p>
+              </div>
+            </Link>
+          </Rise>
+        ))}
       </div>
 
-      {/* Quick actions for Requester */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <Link
-          href="/dashboard/requests/new"
-          className="glass-card rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:border-red-500/20 group"
-        >
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <Plus className="w-5 h-5 text-white" />
+      {/* Platform note */}
+      <Reveal y={12} delay={0.05}>
+        <div className="glass-card relative overflow-hidden rounded-2xl p-6 sm:p-8">
+          <div className="relative z-10 flex flex-col gap-6 md:max-w-[65%]">
+            <p className={EYEBROW}>{t('dashUi.platform')}</p>
+            <h2 className="font-display text-3xl text-foreground">{t('dashboard.platformStatus')}</h2>
+            <p className="text-sm leading-relaxed text-gray-400">{t('dashboard.platformDesc')}</p>
+            <div>
+              <ButtonLink href="/dashboard/requests/new" variant="primary">
+                {t('dashboard.newRequest')}
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </ButtonLink>
+            </div>
           </div>
-          <div>
-            <div className="font-semibold text-white mb-1">{t('dashboard.newBloodRequest')}</div>
-            <div className="text-sm text-gray-500">{t('dashboard.newBloodRequestDesc')}</div>
+          <div aria-hidden="true" className="pointer-events-none absolute -right-4 top-1/2 hidden w-44 -translate-y-1/2 opacity-60 md:block">
+            <SriLankaMap />
           </div>
-        </Link>
-
-        <Link
-          href="/dashboard/requests"
-          className="glass-card rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:border-red-500/20 group"
-        >
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <ListOrdered className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="font-semibold text-white mb-1">{t('dashboard.activeRequests')}</div>
-            <div className="text-sm text-gray-500">{t('dashboard.activeRequestsDesc')}</div>
-          </div>
-        </Link>
-
-        <Link
-          href="/dashboard/notifications"
-          className="glass-card rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:border-red-500/20 group"
-        >
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <Bell className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="font-semibold text-white mb-1">{t('dashboard.notifications')}</div>
-            <div className="text-sm text-gray-500">{t('dashboard.notificationsDesc')}</div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Info card */}
-      <div className="glass-card rounded-2xl p-6 border-red-500/10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-red-500/5 rounded-full blur-2xl pointer-events-none" />
-        <div className="relative flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/25 flex-shrink-0">
-            <Heart className="w-6 h-6 text-white fill-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-white mb-1">
-              {t('dashboard.platformStatus')}
-            </h3>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              {t('dashboard.platformDesc')}
-            </p>
-          </div>
-          <Link
-            href="/dashboard/requests/new"
-            className="flex-shrink-0 flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
-          >
-            {t('dashboard.newRequest')}
-            <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }

@@ -1,11 +1,24 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, ShieldCheck, ShieldAlert, BarChart3, Users, AlertTriangle, CheckCircle2, Flag, UserCheck, RefreshCw } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, BarChart3, CheckCircle2, Flag, UserCheck, MapPin, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'motion/react';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Reveal } from '@/components/motion/Reveal';
+import { IconTile } from '@/components/dash/IconTile';
+import { Notice } from '@/components/dash/Notice';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { Panel, SectionHeader } from '@/components/dash/Panel';
+import { RefreshButton } from '@/components/dash/RefreshButton';
+import { Rise } from '@/components/dash/Rise';
+import { StatsSkeleton } from '@/components/dash/Skeletons';
+import { Stat } from '@/components/dash/Stat';
+import { EASE } from '@/components/dash/styles';
 
 interface ApiBody<T> {
   data?: T;
@@ -21,6 +34,7 @@ type Report = {
 
 export default function AdminDashboardPage() {
   const { t } = useI18n();
+  const reduce = useReducedMotion();
   const [analytics, setAnalytics] = useState<AnalyticsData>({});
   const [reports, setReports] = useState<Report[]>([]);
   const [verifyUserId, setVerifyUserId] = useState('');
@@ -67,206 +81,210 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const totalRequests = Object.values(analytics).reduce((sum, v) => sum + (Number(v) || 0), 0);
+
+  const hubLinks = [
+    { href: '/dashboard/admin/triage', icon: ShieldAlert, title: t('adminDashboard.triage'), desc: t('adminDashboard.triageDesc') },
+    { href: '/dashboard/admin/verifications', icon: UserCheck, title: t('adminDashboard.verifications'), desc: t('adminDashboard.verificationsDesc') },
+    { href: '/dashboard/admin/analytics', icon: BarChart3, title: t('adminDashboard.analytics'), desc: t('adminDashboard.heatmapDesc') },
+    { href: '/dashboard/admin/camps', icon: MapPin, title: t('layout.campsMapView'), desc: t('adminDashboard.geospatialTrackingDesc') },
+  ];
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            {t('common.back')}
-          </Link>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <ShieldCheck className="w-8 h-8 text-purple-500" />
-            {t('adminDashboard.overview')}
-          </h1>
-          <p className="text-gray-400 mt-1">{t('adminDashboard.overviewDesc')}</p>
-        </div>
+    <div>
+      <PageHeader
+        eyebrow={t('dashUi.eyebrow.admin')}
+        title={t('adminDashboard.overview')}
+        description={t('adminDashboard.overviewDesc')}
+        actions={<RefreshButton onClick={loadAdminData} loading={loading} />}
+      />
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={loadAdminData}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-medium transition-colors"
+      <div className="space-y-12">
+        {error !== null && (
+          <Notice
+            tone="error"
+            action={
+              <Button type="button" variant="secondary" size="sm" onClick={loadAdminData}>
+                {t('dash.retry')}
+              </Button>
+            }
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            {t('common.refresh')}
-          </button>
-          <Link
-            href="/dashboard/admin/triage"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-purple-600/25 transition-all"
-          >
-            <ShieldAlert className="w-4 h-4" />
-            {t('adminDashboard.triage')}
-          </Link>
-          <Link
-            href="/dashboard/admin/analytics"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-blue-600/25 transition-all"
-          >
-            <BarChart3 className="w-4 h-4" />
-            {t('adminDashboard.analytics')}
-          </Link>
-          <Link
-            href="/dashboard/admin/verifications"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-red-500/25 transition-all"
-          >
-            <UserCheck className="w-4 h-4" />
-            {t('adminDashboard.verifications')}
-          </Link>
-        </div>
-      </div>
+            {error || t('dash.loadFailed')}
+          </Notice>
+        )}
 
-      {error !== null && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex flex-wrap items-center gap-3 text-red-400 animate-in fade-in duration-200">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium flex-1">{error || t('dash.loadFailed')}</span>
-          <button
-            onClick={loadAdminData}
-            className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-semibold transition-colors"
-          >
-            {t('dash.retry')}
-          </button>
-        </div>
-      )}
-
-      {/* Interactive Map Banner */}
-      <div className="glass-card p-6 rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/30 via-neutral-900/40 to-neutral-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-cyan-400" />
-            {t('adminDashboard.mapTitle')}
-          </h2>
-          <p className="text-sm text-gray-300 mt-1">
-            {t('adminDashboard.mapDesc')}
-          </p>
-        </div>
-        <Link
-          href="/dashboard/admin/analytics"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all flex-shrink-0 self-start sm:self-auto"
-        >
-          {t('adminDashboard.openMap')}
-        </Link>
-      </div>
-
-      {/* Analytics Heatmap */}
-      <section className="glass-card rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center gap-3">
-            <BarChart3 className="w-6 h-6 text-blue-400" />
-            {t('adminDashboard.distributionTitle')}
-          </h2>
-          <Link
-            href="/dashboard/admin/analytics"
-            className="text-xs text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1"
-          >
-            {t('adminDashboard.viewMap')}
-          </Link>
-        </div>
-
+        {/* KPIs */}
         {loading ? (
-          <div className="space-y-3" role="status" aria-label={t('common.loading')}>
-            <Skeleton className="h-7 w-full" />
-            <Skeleton className="h-7 w-5/6" />
-            <Skeleton className="h-7 w-2/3" />
-          </div>
-        ) : Object.keys(analytics).length === 0 ? (
-          <p className="text-gray-500 text-center py-6">{t('adminDashboard.noData')}</p>
+          <StatsSkeleton count={3} className="sm:grid-cols-3" />
         ) : (
-          <div className="space-y-3">
-            {Object.entries(analytics)
-              .sort(([, a], [, b]) => Number(b) - Number(a))
-              .map(([district, count]) => {
-                const numCount = Number(count) || 0;
-                const pct = Math.round((numCount / maxCount) * 100);
-                const color =
-                  pct > 70 ? 'bg-red-500' : pct > 40 ? 'bg-amber-500' : 'bg-emerald-500';
-                return (
-                  <div key={district} className="flex items-center gap-4">
-                    <div className="w-20 sm:w-28 text-xs sm:text-sm text-gray-300 text-right flex-shrink-0 truncate" title={district}>{district}</div>
-                    <div className="flex-1 h-7 rounded-lg bg-white/5 overflow-hidden relative">
-                      <div
-                        className={`h-full ${color} opacity-80 rounded-lg transition-all duration-700`}
-                        style={{ width: `${Math.max(pct, 5)}%` }}
-                      />
-                      <span className="absolute inset-0 flex items-center pl-3 text-xs font-semibold text-white">
-                        {numCount} {t('common.requests')}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Rise delay={0.04}>
+              <Stat label={t('adminDashboard.distributionTitle')} value={totalRequests} icon={<BarChart3 />} hint={t('common.requests')} className="h-full" />
+            </Rise>
+            <Rise delay={0.08}>
+              <Stat label={t('dash.district')} value={Object.keys(analytics).length} tone="saffron" icon={<MapPin />} className="h-full" />
+            </Rise>
+            <Rise delay={0.12}>
+              <Stat label={t('adminDashboard.flaggedReports')} value={reports.length} tone={reports.length > 0 ? 'ember' : 'sage'} icon={<Flag />} className="h-full" />
+            </Rise>
           </div>
         )}
-      </section>
 
-      {/* Quick User Verification */}
-      <section className="glass-card rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white flex items-center gap-3">
-            <Users className="w-6 h-6 text-emerald-400" />
-            {t('adminDashboard.quickVerification')}
-          </h2>
-          <Link
-            href="/dashboard/admin/verifications"
-            className="text-xs text-red-400 hover:text-red-300 font-medium inline-flex items-center gap-1"
-          >
-            {t('adminDashboard.openQueue')}
-          </Link>
-        </div>
-        <p className="text-xs text-gray-400 mb-4">
-          {t('adminDashboard.quickVerifyDesc')}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="number"
-            placeholder={t('adminDashboard.enterUserId')}
-            value={verifyUserId}
-            onChange={(e) => setVerifyUserId(e.target.value)}
-            className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
-          />
-          <button
-            onClick={handleVerify}
-            disabled={verifyStatus === 'loading'}
-            className="px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors font-medium text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {verifyStatus === 'loading' ? (
-              <span>{t('adminDashboard.verifying')}</span>
-            ) : verifyStatus === 'success' ? (
-              <><CheckCircle2 className="w-4 h-4" /> {t('adminDashboard.verified')}</>
-            ) : (
-              <><ShieldCheck className="w-4 h-4" /> {t('adminDashboard.verifyUser')}</>
-            )}
-          </button>
-        </div>
-        {verifyStatus === 'error' && (
-          <p className="text-red-400 text-sm mt-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" /> {t('adminDashboard.verifyFailed')}
-          </p>
-        )}
-      </section>
-
-      {/* Abuse & Moderation Reports */}
-      <section className="glass-card rounded-2xl p-6 border border-white/10">
-        <h2 className="text-xl font-bold text-white flex items-center gap-3 mb-6">
-          <Flag className="w-6 h-6 text-red-400" />
-          {t('adminDashboard.flaggedReports')} ({reports.length})
-        </h2>
-        {reports.length === 0 ? (
-          <p className="text-gray-500 text-center py-6">{t('adminDashboard.noReports')}</p>
-        ) : (
-          <div className="space-y-3">
-            {reports.map((report) => (
-              <div key={report.id} className="flex items-start gap-4 p-4 rounded-xl bg-red-500/5 border border-red-500/10">
-                <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm text-white font-medium">{t('common.request')} #{report.requestId}</p>
-                  <p className="text-sm text-gray-400 mt-0.5">{report.reason}</p>
-                  <p className="text-xs text-gray-600 mt-1">{new Date(report.createdAt).toLocaleString()}</p>
+        {/* Hub links */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {hubLinks.map((l, i) => (
+            <Rise key={l.href} delay={0.1 + i * 0.05}>
+              <Link href={l.href} className="glass-card group flex h-full flex-col justify-between gap-8 rounded-2xl p-5">
+                <div className="flex items-start justify-between">
+                  <IconTile size="md">
+                    <l.icon />
+                  </IconTile>
+                  <span
+                    aria-hidden="true"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-gray-500 transition-[transform,color,border-color] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-ember/50 group-hover:text-ember"
+                  >
+                    <ArrowUpRight className="h-4 w-4" />
+                  </span>
                 </div>
+                <div>
+                  <h2 className="font-display text-2xl text-foreground">{l.title}</h2>
+                  <p className="mt-1.5 text-sm leading-relaxed text-gray-400">{l.desc}</p>
+                </div>
+              </Link>
+            </Rise>
+          ))}
+        </div>
+
+        {/* Requests by district */}
+        <Reveal y={12}>
+          <section>
+            <SectionHeader
+              eyebrow={t('dashUi.section.distribution')}
+              title={t('adminDashboard.distributionTitle')}
+              action={
+                <Link href="/dashboard/admin/analytics" className="inline-flex items-center gap-1.5 text-sm text-ember transition-colors hover:text-foreground">
+                  {t('adminDashboard.viewMap')} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              }
+            />
+            <Panel>
+              {loading ? (
+                <div className="space-y-4" role="status" aria-label={t('common.loading')}>
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-5/6" />
+                  <Skeleton className="h-6 w-2/3" />
+                </div>
+              ) : Object.keys(analytics).length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-500">{t('adminDashboard.noData')}</p>
+              ) : (
+                <ul className="space-y-3.5">
+                  {Object.entries(analytics)
+                    .sort(([, a], [, b]) => Number(b) - Number(a))
+                    .map(([district, count], i) => {
+                      const numCount = Number(count) || 0;
+                      const pct = Math.round((numCount / maxCount) * 100);
+                      const color = pct > 70 ? 'bg-ember' : pct > 40 ? 'bg-saffron' : 'bg-emerald-400';
+                      return (
+                        <li key={district} className="grid grid-cols-[6.5rem_minmax(0,1fr)_auto] items-center gap-x-4 sm:grid-cols-[9rem_minmax(0,1fr)_auto]">
+                          <span className="break-words text-right text-sm leading-snug text-gray-300">{district}</span>
+                          <span aria-hidden="true" className="block h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
+                            <motion.span
+                              className={`block h-full w-full origin-left rounded-full ${color}`}
+                              initial={reduce ? false : { scaleX: 0 }}
+                              animate={{ scaleX: Math.max(pct, 3) / 100 }}
+                              transition={{ duration: 0.8, ease: EASE, delay: 0.1 + i * 0.03 }}
+                            />
+                          </span>
+                          <span className="min-w-12 text-right font-mono text-xs tabular-nums text-foreground">
+                            {numCount}
+                            <span className="ml-1 hidden text-gray-500 sm:inline">{t('common.requests')}</span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
+            </Panel>
+          </section>
+        </Reveal>
+
+        <div className="grid items-start gap-6 lg:grid-cols-2">
+          {/* Quick verification */}
+          <Reveal y={12}>
+            <Panel>
+              <SectionHeader
+                eyebrow={t('dashUi.section.verification')}
+                title={t('adminDashboard.quickVerification')}
+                description={t('adminDashboard.quickVerifyDesc')}
+                action={
+                  <Link href="/dashboard/admin/verifications" className="inline-flex items-center gap-1.5 text-sm text-ember transition-colors hover:text-foreground">
+                    {t('adminDashboard.openQueue')} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                }
+              />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="min-w-0 flex-1">
+                  <Input
+                    type="number"
+                    placeholder={t('adminDashboard.enterUserId')}
+                    aria-label={t('adminDashboard.enterUserId')}
+                    value={verifyUserId}
+                    onChange={(e) => setVerifyUserId(e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleVerify}
+                  disabled={verifyStatus === 'loading'}
+                  className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/20"
+                >
+                  {verifyStatus === 'loading' ? (
+                    <span>{t('adminDashboard.verifying')}</span>
+                  ) : verifyStatus === 'success' ? (
+                    <><CheckCircle2 className="h-4 w-4" aria-hidden="true" /> {t('adminDashboard.verified')}</>
+                  ) : (
+                    <><ShieldCheck className="h-4 w-4" aria-hidden="true" /> {t('adminDashboard.verifyUser')}</>
+                  )}
+                </Button>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              {verifyStatus === 'error' && (
+                <Notice tone="error" className="mt-3">
+                  {t('adminDashboard.verifyFailed')}
+                </Notice>
+              )}
+            </Panel>
+          </Reveal>
+
+          {/* Abuse and moderation reports */}
+          <Reveal y={12}>
+            <Panel>
+              <SectionHeader
+                eyebrow={t('dashUi.section.moderation')}
+                title={`${t('adminDashboard.flaggedReports')} (${reports.length})`}
+              />
+              {reports.length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-500">{t('adminDashboard.noReports')}</p>
+              ) : (
+                <ul className="-mx-5 divide-y divide-line border-t border-line sm:-mx-6">
+                  {reports.map((report) => (
+                    <li key={report.id} className="flex items-start gap-3 px-5 py-4 sm:px-6">
+                      <Flag className="mt-0.5 h-4 w-4 shrink-0 text-ember" aria-hidden="true" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          {t('common.request')} <span className="font-mono">#{report.requestId}</span>
+                        </p>
+                        <p className="mt-0.5 break-words text-sm leading-relaxed text-gray-400">{report.reason}</p>
+                        <p className="mt-1 font-mono text-xs text-gray-500">{new Date(report.createdAt).toLocaleString()}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          </Reveal>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,11 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, ShieldCheck, ShieldX, UserCheck, AlertCircle, CheckCircle2, Hospital, User, Phone, Mail } from 'lucide-react';
+import { ShieldCheck, ShieldX, AlertCircle, Hospital, User, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SkeletonList } from '@/components/ui/Skeleton';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ButtonLink } from '@/components/dash/ButtonLink';
+import { IconTile } from '@/components/dash/IconTile';
+import { Notice } from '@/components/dash/Notice';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { RefreshButton } from '@/components/dash/RefreshButton';
+import { Rise } from '@/components/dash/Rise';
+import { RowsSkeleton } from '@/components/dash/Skeletons';
+import { ROW_HOVER, TH } from '@/components/dash/styles';
+import { PulseDot } from '@/components/dash/UrgencyBadge';
+import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
@@ -84,66 +93,39 @@ export default function AdminVerificationsPage() {
 
   if (!user || user.role !== 'ADMIN') {
     return (
-      <div className="max-w-2xl mx-auto py-16 text-center">
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-8 text-red-400">
-          <ShieldX className="w-12 h-12 mx-auto mb-4 text-red-400" />
-          <h2 className="text-xl font-bold text-white mb-2">{t('adminDashboard.accessDenied')}</h2>
-          <p className="text-sm text-gray-300">
-            {t('adminDashboard.accessDeniedDesc')}
-          </p>
-          <Link href="/dashboard" className="mt-6 inline-block">
-            <Button variant="secondary" size="sm">
+      <div className="mx-auto max-w-xl py-12">
+        <EmptyState
+          icon={<ShieldX className="w-12 h-12 text-red-400" />}
+          title={t('adminDashboard.accessDenied')}
+          description={t('adminDashboard.accessDeniedDesc')}
+          action={
+            <ButtonLink href="/dashboard" variant="secondary">
               {t('common.back')}
-            </Button>
-          </Link>
-        </div>
+            </ButtonLink>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t('common.back')}
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <UserCheck className="w-8 h-8 text-red-500" />
-              {t('adminDashboard.verificationsTitle')}
-            </h1>
-            <p className="text-gray-400 mt-1">
-              {t('adminDashboard.verificationsDesc')}
-            </p>
-          </div>
-          <Button variant="secondary" size="sm" onClick={fetchPendingUsers} loading={loading} className="self-start sm:self-auto">
-            {t('common.refresh')}
-          </Button>
-        </div>
+    <div>
+      <PageHeader
+        eyebrow={t('dashUi.eyebrow.verifications')}
+        title={t('adminDashboard.verificationsTitle')}
+        description={t('adminDashboard.verificationsDesc')}
+        backHref="/dashboard/admin"
+        actions={<RefreshButton onClick={fetchPendingUsers} loading={loading} />}
+      />
+
+      <div className="mb-6 space-y-3 empty:hidden">
+        {actionSuccess && <Notice tone="success">{actionSuccess}</Notice>}
+        {error && <Notice tone="error">{error}</Notice>}
       </div>
-
-      {actionSuccess && (
-        <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center gap-3 text-emerald-400 animate-in fade-in duration-200">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <p className="text-sm font-medium">{actionSuccess}</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400 animate-in fade-in duration-200">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <p className="text-sm font-medium">{error}</p>
-        </div>
-      )}
 
       {loading ? (
         <div role="status" aria-label={t('adminDashboard.loadingPending')}>
-          <SkeletonList rows={3} />
+          <RowsSkeleton rows={3} />
         </div>
       ) : loadError !== null ? (
         <EmptyState
@@ -158,94 +140,92 @@ export default function AdminVerificationsPage() {
           description={t('adminDashboard.noPendingAccounts')}
         />
       ) : (
-        <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-300">
-              <thead className="bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-400">
-                <tr>
-                  <th className="px-6 py-4">{t('adminDashboard.accountDetails')}</th>
-                  <th className="px-6 py-4">{t('publicPages.contact')}</th>
-                  <th className="px-6 py-4">{t('adminDashboard.roleScope')}</th>
-                  <th className="px-6 py-4">{t('bloodRequests.status')}</th>
-                  <th className="px-6 py-4 text-right">{t('common.actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {pendingUsers.map((u) => {
-                  const isHospital = u.role === 'HOSPITAL_REQUESTER';
-                  const isProcessing = processingId === u.id;
+        <Rise delay={0.04}>
+          <div className="glass-card overflow-hidden rounded-2xl">
+            {/* The table scrolls inside this container, never the page */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[56rem] text-left text-sm text-gray-300">
+                <caption className="sr-only">{t('adminDashboard.verificationsTitle')}</caption>
+                <thead className="border-b border-line">
+                  <tr>
+                    <th scope="col" className={TH}>{t('adminDashboard.accountDetails')}</th>
+                    <th scope="col" className={TH}>{t('publicPages.contact')}</th>
+                    <th scope="col" className={TH}>{t('adminDashboard.roleScope')}</th>
+                    <th scope="col" className={TH}>{t('bloodRequests.status')}</th>
+                    <th scope="col" className={cn(TH, 'text-right')}>{t('common.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {pendingUsers.map((u) => {
+                    const isHospital = u.role === 'HOSPITAL_REQUESTER';
+                    const isProcessing = processingId === u.id;
 
-                  return (
-                    <tr key={u.id} className="hover:bg-white/2 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            isHospital ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                          }`}>
-                            {isHospital ? <Hospital className="w-5 h-5" /> : <User className="w-5 h-5" />}
-                          </div>
-                          <div>
-                            <div className="font-medium text-white flex items-center gap-2">
-                              {u.email}
+                    return (
+                      <tr key={u.id} className={ROW_HOVER}>
+                        <td className="whitespace-nowrap px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <IconTile size="md" tone={isHospital ? 'saffron' : 'muted'}>
+                              {isHospital ? <Hospital /> : <User />}
+                            </IconTile>
+                            <div>
+                              <div className="font-medium text-foreground">{u.email}</div>
+                              <div className="font-mono text-xs text-gray-500">ID #{u.id}</div>
                             </div>
-                            <div className="text-xs text-gray-400">ID: #{u.id}</div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 text-xs text-gray-300">
-                          <Phone className="w-3.5 h-3.5 text-gray-400" />
-                          {u.phoneNumber || t('dash.notAvailable')}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1">
-                          <Mail className="w-3.5 h-3.5 text-gray-400" />
-                          {u.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          isHospital
-                            ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
-                            : 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
-                        }`}>
-                          {u.role.replace(/_/g, ' ')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                          {u.verificationStatus}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30"
-                          disabled={isProcessing}
-                          onClick={() => handleApprove(u.id, u.email)}
-                        >
-                          <ShieldCheck className="w-4 h-4 mr-1.5" />
-                          {t('common.approve')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border-red-500/30"
-                          disabled={isProcessing}
-                          onClick={() => handleReject(u.id, u.email)}
-                        >
-                          <ShieldX className="w-4 h-4 mr-1.5" />
-                          {t('common.reject')}
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="whitespace-nowrap px-5 py-4">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-300">
+                            <Phone className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
+                            {u.phoneNumber || t('dash.notAvailable')}
+                          </div>
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
+                            <Mail className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
+                            {u.email}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-5 py-4">
+                          <span className="inline-flex items-center rounded-full border border-foreground/[0.16] px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wide text-gray-300">
+                            {u.role.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-5 py-4">
+                          <span className="inline-flex items-center gap-2">
+                            <PulseDot tone="saffron" />
+                            <StatusBadge value={u.verificationStatus} label={t(`dashUi.verification.${u.verificationStatus}`)} />
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-5 py-4 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/20"
+                              disabled={isProcessing}
+                              onClick={() => handleApprove(u.id, u.email)}
+                            >
+                              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                              {t('common.approve')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="border-red-500/30 bg-red-500/10 text-red-300 hover:border-red-500/50 hover:bg-red-500/20"
+                              disabled={isProcessing}
+                              onClick={() => handleReject(u.id, u.email)}
+                            >
+                              <ShieldX className="h-4 w-4" aria-hidden="true" />
+                              {t('common.reject')}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </Rise>
       )}
     </div>
   );

@@ -3,7 +3,9 @@
 import { useEffect, useRef, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { DISTRICT_COORDS } from '@/lib/districts';
+import { useI18n } from '@/lib/i18n';
 import { escapeHtml } from './escapeHtml';
+import { captionHtml, resolvedTone, titleHtml } from './mapStyles';
 
 interface Props {
   hospitalName: string;
@@ -20,6 +22,7 @@ export default function RequestDistanceMap({
   latitude,
   longitude,
 }: Props) {
+  const { t } = useI18n();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -62,12 +65,12 @@ export default function RequestDistanceMap({
         circleLayerRef.current.clearLayers();
         mapInstanceRef.current.setView(coords, radiusKm > 30 ? 9 : radiusKm > 15 ? 10 : 11);
 
-        // Hospital Marker Icon
+        // Hospital marker: ember disc with a plain cross
         const hospitalIcon = L.divIcon({
           className: 'hospital-marker',
           html: `
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: #ef4444; border: 3px solid #ffffff; box-shadow: 0 0 20px rgba(239,68,68,0.8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">
-              🏥
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--ember);border:2px solid var(--foreground);display:flex;align-items:center;justify-content:center;">
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5v11M1.5 7h11" stroke="var(--foreground)" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
             </div>
           `,
           iconSize: [32, 32],
@@ -77,22 +80,23 @@ export default function RequestDistanceMap({
 
         const marker = L.marker(coords, { icon: hospitalIcon });
         marker.bindPopup(`
-          <div style="padding: 12px; font-family: inherit;">
-            <div style="font-weight: 800; color: #ffffff; font-size: 13px;">${escapeHtml(hospitalName)}</div>
-            <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">${escapeHtml(district)} District</div>
-            <div style="margin-top: 8px; font-size: 10px; font-weight: 700; color: #34d399;">Active Radius: ${escapeHtml(radiusKm)} km</div>
+          <div style="padding:14px 16px;min-width:180px;font-family:inherit;">
+            ${titleHtml(escapeHtml(hospitalName))}
+            ${captionHtml(escapeHtml(`${district} ${t('pub.mapDistrictSuffix')}`), '6px 0 0 0')}
+            <div style="margin-top:10px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;color:var(--sage);">${escapeHtml(t('pub.mapActiveRadius'))}: ${escapeHtml(radiusKm)} km</div>
           </div>
         `);
         marker.addTo(circleLayerRef.current);
 
         // Search Radius Circle
         const radiusMeters = radiusKm * 1000;
+        const sage = resolvedTone('sage');
         const circle = L.circle(coords, {
           radius: radiusMeters,
-          color: '#10b981',
-          fillColor: '#10b981',
-          fillOpacity: 0.12,
-          weight: 2,
+          color: sage,
+          fillColor: sage,
+          fillOpacity: 0.1,
+          weight: 1.5,
           dashArray: '6, 6',
         });
         circle.addTo(circleLayerRef.current);
@@ -104,14 +108,17 @@ export default function RequestDistanceMap({
     return () => {
       isMounted = false;
     };
-  }, [coords, hospitalName, district, radiusKm]);
+  }, [coords, hospitalName, district, radiusKm, t]);
 
   return (
-    <div className="relative w-full h-64 rounded-xl overflow-hidden border border-white/10 bg-[#09090e]">
-      <div ref={mapContainerRef} className="w-full h-full" />
-      <div className="absolute top-3 right-3 z-[400] glass-card px-3 py-1.5 rounded-lg border border-white/10 text-xs font-semibold text-emerald-400 flex items-center gap-1.5 shadow-lg">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        <span>Scanning {radiusKm} km Perimeter</span>
+    <div className="relative h-64 w-full overflow-hidden rounded-xl border border-line bg-background">
+      <div ref={mapContainerRef} className="h-full w-full" />
+      <div className="absolute right-3 top-3 z-[400] flex max-w-[calc(100%-1.5rem)] items-center gap-2 rounded-full border border-line-strong bg-surface/95 px-3 py-1.5 font-mono text-[11px] tracking-wide text-emerald-400">
+        <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+          <span className="dot-ping absolute inset-0 rounded-full bg-emerald-400" />
+          <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+        </span>
+        <span>{t('pub.mapScanning', { radius: radiusKm })}</span>
       </div>
     </div>
   );

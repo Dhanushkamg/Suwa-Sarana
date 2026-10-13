@@ -3,10 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Alert } from '@/components/pub/Alert';
+import { AuthDivider } from '@/components/pub/AuthDivider';
+import { AuthHeading } from '@/components/pub/AuthHeading';
+import { PasswordField } from '@/components/pub/PasswordField';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
@@ -82,18 +86,11 @@ export default function LoginPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white">{t('auth.loginTitle')}</h2>
-        <p className="text-gray-400 mt-2">{t('auth.loginSubtitle')}</p>
-      </div>
+      <AuthHeading eyebrow={t('pub.eyebrowSignIn')} title={t('auth.loginTitle')} subtitle={t('auth.loginSubtitle')} />
 
-      {error && (
-        <div role="alert" className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
+      {error && <Alert className="mb-6">{error}</Alert>}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <Input
           id="email"
           type="email"
@@ -101,46 +98,29 @@ export default function LoginPage() {
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          icon={<Mail className="w-4 h-4" />}
+          icon={<Mail className="h-4 w-4" />}
           autoComplete="email"
           required
         />
 
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-sm font-medium text-gray-300">
-              {t('auth.password')}
-            </label>
-            <Link href="/forgot-password" className="text-xs text-red-400 hover:text-red-300 transition-colors">
+        <PasswordField
+          id="password"
+          label={t('auth.password')}
+          labelAction={
+            <Link href="/forgot-password" className="text-xs text-ember underline-offset-4 transition-colors hover:text-foreground hover:underline">
               {t('auth.forgotPassword')}
             </Link>
-          </div>
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
-              <Lock className="w-4 h-4" />
-            </div>
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              required
-              className="w-full rounded-xl border border-white/10 bg-white/5 pl-10 pr-11 py-3 text-sm text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-200 focus:border-red-500/60 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-500 hover:text-gray-300 transition-colors"
-              aria-label={showPassword ? t('authFlow.hidePassword') : t('authFlow.showPassword')}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
+          }
+          visible={showPassword}
+          onVisibleChange={setShowPassword}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          autoComplete="current-password"
+          required
+        />
 
-        <div className="pt-2">
+        <div className="pt-3">
           <Button type="submit" size="lg" className="w-full" loading={loading}>
             {t('auth.signIn')}
           </Button>
@@ -149,13 +129,8 @@ export default function LoginPage() {
 
       {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
         <>
-          <div className="mt-6 flex items-center justify-center">
-            <div className="h-px w-full bg-white/10" />
-            <span className="px-4 text-sm text-gray-500">{t('authFlow.or')}</span>
-            <div className="h-px w-full bg-white/10" />
-          </div>
-
-          <div className="mt-6 flex justify-center">
+          <AuthDivider label={t('authFlow.or')} />
+          <div className="flex justify-center">
             <GoogleLogin
               onSuccess={(credentialResponse) => {
                 if (credentialResponse.credential) handleGoogle(credentialResponse.credential);
@@ -166,14 +141,12 @@ export default function LoginPage() {
         </>
       )}
 
-      <div className="mt-8 text-center">
-        <p className="text-sm text-gray-500">
-          {t('auth.noAccount')}{' '}
-          <Link href="/register" className="font-medium text-red-400 hover:text-red-300 transition-colors">
-            {t('auth.registerNow')}
-          </Link>
-        </p>
-      </div>
+      <p className="mt-10 border-t border-line pt-6 text-center text-sm text-gray-500">
+        {t('auth.noAccount')}{' '}
+        <Link href="/register" className="font-medium text-ember underline-offset-4 transition-colors hover:text-foreground hover:underline">
+          {t('auth.registerNow')}
+        </Link>
+      </p>
     </div>
   );
 }

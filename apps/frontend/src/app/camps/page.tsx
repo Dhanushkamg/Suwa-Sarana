@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { Clock, MapPin, ChevronDown, AlertCircle, CalendarX2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import apiClient from '@/lib/apiClient';
-import { Calendar, MapPin, Clock, Heart, ArrowLeft, Droplets, AlertCircle } from 'lucide-react';
 import SlotPicker from '@/components/slots/SlotPicker';
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Reveal } from '@/components/motion/Reveal';
+import { PageHeading } from '@/components/pub/PageHeading';
+import { PubFooter } from '@/components/pub/PubFooter';
+import { PubHeader } from '@/components/pub/PubHeader';
+import { cn } from '@/lib/utils';
 
 interface Camp {
   id: number;
@@ -21,6 +26,104 @@ interface Camp {
   endTime: string;
   organizerName: string;
   requiredBloodGroups: string;
+  status?: string;
+}
+
+/** Splits an ISO date ("2026-10-14") into the pieces for the mono date block; null when it cannot be parsed. */
+function dateParts(iso: string, locale: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  const tag = locale === 'en' ? 'en-GB' : locale;
+  return {
+    month: d.toLocaleDateString(tag, { month: 'short' }),
+    day: d.toLocaleDateString(tag, { day: '2-digit' }),
+    year: d.toLocaleDateString(tag, { year: 'numeric' }),
+  };
+}
+
+function CampCard({ camp, expanded, onToggle }: { camp: Camp; expanded: boolean; onToggle: () => void }) {
+  const { t, locale } = useI18n();
+  const parts = dateParts(camp.scheduledDate, locale);
+  const groups = camp.requiredBloodGroups
+    ? camp.requiredBloodGroups.split(',').map((g) => g.trim()).filter(Boolean)
+    : [];
+
+  return (
+    <article className="glass-card flex flex-col rounded-2xl p-6">
+      <div className="flex items-start gap-5">
+        {/* Date block */}
+        <div className="w-[4.25rem] shrink-0 rounded-xl border border-line-strong bg-surface-raised py-2.5 text-center font-mono">
+          {parts ? (
+            <>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-ember">{parts.month}</div>
+              <div className="my-0.5 text-2xl leading-none text-foreground">{parts.day}</div>
+              <div className="text-[10px] tracking-wider text-gray-500">{parts.year}</div>
+            </>
+          ) : (
+            <div className="px-1 text-[11px] leading-tight text-gray-300">{camp.scheduledDate}</div>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <p className="eyebrow">{camp.district}</p>
+            {camp.status && <StatusBadge value={camp.status} />}
+          </div>
+          <h2 className="mt-2 font-display break-words text-2xl text-foreground sm:text-[1.65rem]">{camp.name}</h2>
+        </div>
+      </div>
+
+      <dl className="mt-6 space-y-3 text-sm text-gray-300">
+        <div className="flex items-start gap-3">
+          <dt className="shrink-0">
+            <Clock className="mt-0.5 h-4 w-4 text-gray-500" aria-hidden="true" />
+            <span className="sr-only">{t('publicPages.time')}</span>
+          </dt>
+          <dd className="font-mono text-[13px] tracking-wide">
+            {camp.startTime} – {camp.endTime}
+          </dd>
+        </div>
+        <div className="flex items-start gap-3">
+          <dt className="shrink-0">
+            <MapPin className="mt-0.5 h-4 w-4 text-gray-500" aria-hidden="true" />
+            <span className="sr-only">{t('pub.venue')}</span>
+          </dt>
+          <dd className="min-w-0 break-words">{camp.location}</dd>
+        </div>
+      </dl>
+
+      {groups.length > 0 && (
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <span className="eyebrow mr-1">{t('camps.requires')}</span>
+          {groups.map((g) => (
+            <span
+              key={g}
+              className="rounded-full border border-ember/30 bg-ember/10 px-2.5 py-0.5 font-mono text-xs font-medium text-ember"
+            >
+              {g}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Slot booking toggle */}
+      <div className="mt-6 border-t border-line pt-4">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={onToggle}
+          className="group flex w-full items-center justify-between gap-3 text-left text-sm font-medium text-foreground transition-colors hover:text-ember"
+        >
+          <span>{expanded ? t('camps.hideSlots') : t('camps.showSlots')}</span>
+          <ChevronDown
+            className={cn('h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 group-hover:text-ember', expanded && 'rotate-180')}
+            aria-hidden="true"
+          />
+        </button>
+        {expanded && <SlotPicker hostType="camp" hostId={camp.id} />}
+      </div>
+    </article>
+  );
 }
 
 export default function CampsPage() {
@@ -54,125 +157,61 @@ export default function CampsPage() {
   }, [fetchCamps]);
 
   return (
-    <div className="min-h-screen bg-[#0d0d14] text-white">
-      {/* Header */}
-      <header className="border-b border-white/5 bg-[#0d0d14]/80 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <LanguageSwitcher />
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors whitespace-nowrap"
-            >
-              <ArrowLeft className="w-4 h-4" /> {t('common.backToHome')}
-            </Link>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30">
-              <Heart className="w-4 h-4 text-white fill-white" />
+    <div className="min-h-screen bg-background text-foreground">
+      <PubHeader />
+
+      <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-20">
+        <PageHeading
+          eyebrow={t('camps.communityDrives')}
+          title={role === 'DONOR' ? t('camps.recommendedCamps') : t('camps.upcomingCamps')}
+          description={role === 'DONOR' ? t('camps.recommendedDesc') : t('camps.upcomingDesc')}
+          aside={!loading && !error && camps.length > 0 ? t('pub.campsCount', { count: camps.length }) : undefined}
+        />
+
+        <div className="mt-10 sm:mt-14">
+          {loading ? (
+            <div role="status" className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-72 rounded-2xl" />
+              ))}
+              <span className="sr-only">{t('camps.loadingCamps')}</span>
             </div>
-            <span className="font-bold text-white hidden sm:inline">Suwa Sarana</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <div className="mb-10 text-center max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold mb-4">
-            <Calendar className="w-3.5 h-3.5" />
-            {t('camps.communityDrives')}
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
-            {user?.role === 'DONOR' ? t('camps.recommendedCamps') : t('camps.upcomingCamps')}
-          </h1>
-          <p className="text-gray-400 text-sm md:text-base">
-            {user?.role === 'DONOR' 
-              ? t('camps.recommendedDesc')
-              : t('camps.upcomingDesc')}
-          </p>
-        </div>
-
-
-        {loading ? (
-          <div className="flex justify-center items-center py-20 text-gray-400">
-            <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mr-3" />
-            {t('camps.loadingCamps')}
-          </div>
-        ) : error ? (
-          <div role="alert">
+          ) : error ? (
+            <div role="alert">
+              <EmptyState
+                icon={<AlertCircle className="h-10 w-10 text-ember" />}
+                title={t('camps.loadFailed')}
+                description={t('camps.loadFailedDesc')}
+                action={
+                  <Button variant="secondary" onClick={fetchCamps}>
+                    {t('common.refresh')}
+                  </Button>
+                }
+              />
+            </div>
+          ) : camps.length === 0 ? (
             <EmptyState
-              icon={<AlertCircle className="w-12 h-12 text-red-400" />}
-              title={t('camps.loadFailed')}
-              description={t('camps.loadFailedDesc')}
-              action={<Button variant="secondary" onClick={fetchCamps}>{t('common.refresh')}</Button>}
+              icon={<CalendarX2 className="h-10 w-10" />}
+              title={t('camps.noScheduledCamps')}
+              description={t('camps.noScheduledCampsDesc')}
             />
-          </div>
-        ) : camps.length === 0 ? (
-          <div className="text-center py-20 border border-white/5 rounded-2xl bg-white/[0.02]">
-            <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold text-white mb-2">{t('camps.noScheduledCamps')}</h3>
-            <p className="text-gray-400 text-sm max-w-md mx-auto">
-              {t('camps.noScheduledCampsDesc')}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {camps.map((camp) => (
-              <div
-                key={camp.id}
-                className="bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-red-500/30 rounded-2xl p-6 transition-all duration-300 flex flex-col"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <h3 className="text-xl font-bold text-white min-w-0 break-words">
-                      {camp.name}
-                    </h3>
-                    <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 shrink-0">
-                      {camp.district}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 mb-4 text-sm text-gray-300">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-4 h-4 text-red-400 flex-shrink-0" />
-                      <span>{camp.scheduledDate}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                      <span>{camp.startTime} - {camp.endTime}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <MapPin className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                      <span className="min-w-0 break-words">{camp.location}</span>
-                    </div>
-                    {camp.requiredBloodGroups && (
-                      <div className="flex items-center gap-3">
-                        <Droplets className="w-4 h-4 text-rose-400 flex-shrink-0" />
-                        <span className="font-semibold text-rose-300">{t('camps.requires')} {camp.requiredBloodGroups}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Slot booking toggle */}
-                <button
-                  type="button"
-                  aria-expanded={expandedCampId === camp.id}
-                  className="text-xs text-red-400 hover:text-red-300 transition-colors text-left mb-2 font-medium"
-                  onClick={() => setExpandedCampId(expandedCampId === camp.id ? null : camp.id)}
-                >
-                  {expandedCampId === camp.id ? `▲ ${t('camps.hideSlots')}` : `▼ ${t('camps.showSlots')}`}
-                </button>
-
-                {expandedCampId === camp.id && (
-                  <SlotPicker hostType="camp" hostId={camp.id} />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+          ) : (
+            <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {camps.map((camp, i) => (
+                <Reveal key={camp.id} delay={(i % 3) * 0.08} y={24}>
+                  <CampCard
+                    camp={camp}
+                    expanded={expandedCampId === camp.id}
+                    onToggle={() => setExpandedCampId(expandedCampId === camp.id ? null : camp.id)}
+                  />
+                </Reveal>
+              ))}
+            </div>
+          )}
+        </div>
       </main>
+
+      <PubFooter />
     </div>
   );
 }

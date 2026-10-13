@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import apiClient from '@/lib/apiClient';
-import { Activity } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+import landing from '@/components/landing/landing.module.css';
 
 interface StockSignal {
   hospitalName: string;
@@ -11,7 +13,9 @@ interface StockSignal {
   status: 'LOW' | 'CRITICAL';
 }
 
-export function StockTicker() {
+/** Live blood-stock shortages from the public inventory endpoint, as a slow ticker. Renders nothing when there are none. */
+export function StockTicker({ className }: { className?: string }) {
+  const { t } = useI18n();
   const [signals, setSignals] = useState<StockSignal[]>([]);
 
   useEffect(() => {
@@ -24,7 +28,7 @@ export function StockTicker() {
       }
     };
     fetchSignals();
-    
+
     // Refresh every 5 minutes
     const interval = setInterval(fetchSignals, 300000);
     return () => clearInterval(interval);
@@ -32,23 +36,42 @@ export function StockTicker() {
 
   if (signals.length === 0) return null;
 
-  // Duplicate signals to create a seamless loop
-  const loopSignals = [...signals, ...signals];
+  const renderItems = () =>
+    signals.map((sig, idx) => (
+      <div key={idx} className="flex shrink-0 items-center gap-2.5 pr-12 text-sm">
+        <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+          {sig.status === 'CRITICAL' && <span className="dot-ping absolute inset-0 rounded-full bg-ember" />}
+          <span className={cn('relative h-2 w-2 rounded-full', sig.status === 'CRITICAL' ? 'bg-ember' : 'bg-saffron')} />
+        </span>
+        <span className="text-foreground">
+          {sig.hospitalName} <span className="text-gray-500">({sig.district})</span>
+        </span>
+        <span className="font-display text-xl text-ember">{sig.bloodType}</span>
+        <span className="text-gray-500">{t('landing.stockNeeded')}</span>
+        <span
+          className={cn(
+            'rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] [:lang(si)_&]:normal-case [:lang(si)_&]:tracking-normal [:lang(ta)_&]:normal-case [:lang(ta)_&]:tracking-normal',
+            sig.status === 'CRITICAL' ? 'border-ember/40 text-ember' : 'border-saffron/40 text-saffron'
+          )}
+        >
+          {sig.status === 'CRITICAL' ? t('ui.urgency.CRITICAL') : t('landing.stockLow')}
+        </span>
+      </div>
+    ));
 
   return (
-    <div className="bg-red-950/30 border-y border-red-900/50 py-3 overflow-hidden flex whitespace-nowrap group">
-      <div className="flex w-max animate-marquee-horizontal gap-8 items-center px-4 group-hover:hover-pause shrink-0">
-        {loopSignals.map((sig, idx) => (
-          <div key={idx} className="flex items-center gap-2 text-sm shrink-0">
-            <Activity className="w-4 h-4 text-red-500 animate-pulse shrink-0" />
-            <span className="font-semibold text-white">{sig.hospitalName} ({sig.district})</span>
-            <span className="text-gray-400">needs</span>
-            <span className="font-bold text-red-400">{sig.bloodType}</span>
-            <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
-              {sig.status}
-            </span>
+    <div role="region" aria-label={t('landing.stockLabel')} className={cn('flex items-center bg-ember/[0.05]', className)}>
+      <span className={cn('eyebrow shrink-0 border-r border-line px-4 py-3.5 sm:px-6', landing.scriptFix)}>
+        <span className="text-ember">{t('landing.stockLabel')}</span>
+      </span>
+      <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap [mask-image:linear-gradient(90deg,transparent,#000_6%,#000_94%,transparent)]">
+        {/* Two copies make the loop seamless; the second is hidden from assistive tech and from reduced-motion users */}
+        <div className="hover-pause animate-marquee-horizontal flex w-max items-center py-3.5 motion-reduce:w-auto motion-reduce:flex-wrap motion-reduce:gap-y-2">
+          <div className="flex shrink-0 items-center motion-reduce:flex-wrap">{renderItems()}</div>
+          <div className="flex shrink-0 items-center motion-reduce:hidden" aria-hidden="true">
+            {renderItems()}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );

@@ -1,18 +1,24 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  ArrowLeft, ShieldAlert, Bot, AlertTriangle, CheckCircle2,
-  RefreshCw, Check, Eye, MapPin, Droplets, Activity
-} from 'lucide-react';
-import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { Bot, AlertTriangle, CheckCircle2, Check, Eye, MapPin, Droplets } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
 import { BloodRequest } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SkeletonList } from '@/components/ui/Skeleton';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ButtonLink } from '@/components/dash/ButtonLink';
+import { BloodTypeTile } from '@/components/dash/IconTile';
+import { Meta } from '@/components/dash/Meta';
+import { Notice } from '@/components/dash/Notice';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { RefreshButton } from '@/components/dash/RefreshButton';
+import { Rise } from '@/components/dash/Rise';
+import { RowsSkeleton } from '@/components/dash/Skeletons';
+import { EYEBROW } from '@/components/dash/styles';
+import { PulseDot, UrgencyBadge } from '@/components/dash/UrgencyBadge';
+import { cn } from '@/lib/utils';
 
 interface ApiBody<T> {
   data?: T;
@@ -80,124 +86,62 @@ export default function AdminTriageQueuePage() {
     return true;
   });
 
+  const tiles: { value: typeof filter; label: string; count: number; dot: ReactNode; tone: string }[] = [
+    { value: 'ALL', label: t('adminDashboard.totalTriaged'), count: requests.length, dot: null, tone: 'text-foreground' },
+    { value: 'HIGH', label: t('adminDashboard.highRisk'), count: highRiskCount, dot: <PulseDot />, tone: 'text-ember' },
+    { value: 'MODERATE', label: t('adminDashboard.moderateRisk'), count: moderateRiskCount, dot: <PulseDot tone="saffron" still />, tone: 'text-saffron' },
+    { value: 'LOW', label: t('adminDashboard.lowRisk'), count: lowRiskCount, dot: <PulseDot tone="sage" still />, tone: 'text-emerald-400' },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <Link
-            href="/dashboard/admin"
-            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t('common.back')}
-          </Link>
-          <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <ShieldAlert className="w-6 h-6" />
-            </div>
-            {t('adminDashboard.triageTitle')}
-          </h1>
-          <p className="text-gray-400 mt-1">
-            {t('adminDashboard.triageDesc')}
-          </p>
+    <div>
+      <PageHeader
+        eyebrow={t('dashUi.eyebrow.triage')}
+        title={t('adminDashboard.triageTitle')}
+        description={t('adminDashboard.triageDesc')}
+        backHref="/dashboard/admin"
+        actions={<RefreshButton onClick={loadTriageQueue} loading={loading} label={t('adminDashboard.refreshQueue')} />}
+      />
+
+      <div className="space-y-6">
+        {/* Advisory */}
+        <Notice tone="info" icon={<Bot />}>
+          <strong className="mb-0.5 block font-medium text-foreground">{t('adminDashboard.aiPrioritization')}</strong>
+          <span className="text-gray-400">{t('adminDashboard.aiPrioritizationDesc')}</span>
+        </Notice>
+
+        {actionError && <Notice tone="error">{actionError}</Notice>}
+
+        {/* Risk counters double as filters */}
+        <div role="group" aria-label={t('adminDashboard.riskScore')} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {tiles.map((tile, i) => {
+            const active = filter === tile.value;
+            return (
+              <Rise key={tile.value} delay={0.04 + i * 0.04}>
+                <button
+                  type="button"
+                  onClick={() => setFilter(tile.value)}
+                  aria-pressed={active}
+                  className={cn(
+                    'glass-card block h-full w-full rounded-2xl p-4 text-left transition-colors duration-200 sm:p-5',
+                    active && 'border-ember/50 bg-ember/[0.05]'
+                  )}
+                >
+                  <span className={cn(EYEBROW, 'flex items-center gap-2')}>
+                    {tile.dot}
+                    {tile.label}
+                  </span>
+                  <span className={cn('mt-4 block font-display text-5xl tabular-nums', tile.tone)}>{tile.count}</span>
+                </button>
+              </Rise>
+            );
+          })}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={loadTriageQueue}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-semibold transition-colors"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            {t('adminDashboard.refreshQueue')}
-          </button>
-        </div>
-      </div>
-
-      {/* Advisory Banner */}
-      <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4 flex items-start gap-3 text-blue-300 text-xs">
-        <Bot className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-        <div>
-          <strong className="text-white block mb-0.5">{t('adminDashboard.aiPrioritization')}</strong>
-          <span>
-            {t('adminDashboard.aiPrioritizationDesc')}
-          </span>
-        </div>
-      </div>
-
-      {actionError && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{actionError}</span>
-        </div>
-      )}
-
-      {/* Metrics Counters */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <button
-          onClick={() => setFilter('ALL')}
-          className={`p-4 rounded-2xl border text-left transition-all ${
-            filter === 'ALL'
-              ? 'bg-white/10 border-white/20'
-              : 'glass-card border-white/5 hover:bg-white/5'
-          }`}
-        >
-          <span className="text-xs text-gray-400">{t('adminDashboard.totalTriaged')}</span>
-          <p className="text-2xl font-bold text-white mt-1">{requests.length}</p>
-        </button>
-
-        <button
-          onClick={() => setFilter('HIGH')}
-          className={`p-4 rounded-2xl border text-left transition-all ${
-            filter === 'HIGH'
-              ? 'bg-red-500/20 border-red-500/40'
-              : 'glass-card border-red-500/10 hover:bg-red-500/5'
-          }`}
-        >
-          <span className="text-xs text-red-400 font-semibold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-            {t('adminDashboard.highRisk')}
-          </span>
-          <p className="text-2xl font-bold text-red-400 mt-1">{highRiskCount}</p>
-        </button>
-
-        <button
-          onClick={() => setFilter('MODERATE')}
-          className={`p-4 rounded-2xl border text-left transition-all ${
-            filter === 'MODERATE'
-              ? 'bg-amber-500/20 border-amber-500/40'
-              : 'glass-card border-amber-500/10 hover:bg-amber-500/5'
-          }`}
-        >
-          <span className="text-xs text-amber-400 font-semibold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            {t('adminDashboard.moderateRisk')}
-          </span>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{moderateRiskCount}</p>
-        </button>
-
-        <button
-          onClick={() => setFilter('LOW')}
-          className={`p-4 rounded-2xl border text-left transition-all ${
-            filter === 'LOW'
-              ? 'bg-emerald-500/20 border-emerald-500/40'
-              : 'glass-card border-emerald-500/10 hover:bg-emerald-500/5'
-          }`}
-        >
-          <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            {t('adminDashboard.lowRisk')}
-          </span>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{lowRiskCount}</p>
-        </button>
-      </div>
-
-      {/* Triage List */}
-      <div className="space-y-4">
+        {/* Triage list */}
         {loading ? (
-          <div className="space-y-2" role="status" aria-label={t('adminDashboard.evaluatingQueue')}>
-            <SkeletonList rows={3} />
+          <div role="status" aria-label={t('adminDashboard.evaluatingQueue')}>
+            <RowsSkeleton rows={3} />
           </div>
         ) : error !== null ? (
           <EmptyState
@@ -212,85 +156,83 @@ export default function AdminTriageQueuePage() {
             description={t('adminDashboard.noThreshold')}
           />
         ) : (
-          filtered.map((req) => {
-            const score = req.fraudRiskScore || 0;
-            const isHigh = score >= 70;
-            const isMod = score >= 40 && score < 70;
+          <Rise delay={0.1}>
+            <ul className="glass-card divide-y divide-line overflow-hidden rounded-2xl">
+              {filtered.map((req) => {
+                const score = req.fraudRiskScore || 0;
+                const isHigh = score >= 70;
+                const isMod = score >= 40 && score < 70;
+                const scoreTone = isHigh ? 'text-ember' : isMod ? 'text-saffron' : 'text-emerald-400';
+                const scoreBar = isHigh ? 'bg-ember' : isMod ? 'bg-saffron' : 'bg-emerald-400';
 
-            const badgeBg = isHigh
-              ? 'bg-red-500/20 text-red-400 border-red-500/30'
-              : isMod
-              ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-              : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-
-            return (
-              <div
-                key={req.id}
-                className={`glass-card p-6 rounded-2xl border transition-all ${
-                  isHigh ? 'border-red-500/30 bg-red-950/10' : 'border-white/10'
-                }`}
-              >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-600/20 border border-red-500/30 flex items-center justify-center text-2xl font-black text-red-400 flex-shrink-0">
-                      {req.patientBloodType}
-                    </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-bold text-white break-words">{req.hospitalName}</h3>
-                        <span className="text-xs text-gray-500 font-mono">#{req.id}</span>
+                return (
+                  <li key={req.id} className={cn('relative p-5 sm:p-6', isHigh && 'bg-ember/[0.04]')}>
+                    {isHigh && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-ember" />}
+                    <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <BloodTypeTile type={req.patientBloodType} size="md" />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                            <h2 className="break-words text-base font-medium text-foreground">{req.hospitalName}</h2>
+                            <span className="font-mono text-xs text-gray-500">#{req.id}</span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                            <Meta icon={<MapPin />}>{req.district}</Meta>
+                            <Meta icon={<Droplets />}>{t('dash.unitsCount', { n: req.unitsNeeded ?? 0 })}</Meta>
+                            <UrgencyBadge urgency={req.urgency} />
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-400 flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-                        <MapPin className="w-3.5 h-3.5 text-gray-500" /> {req.district}
-                        <span className="text-gray-600">·</span>
-                        <Droplets className="w-3.5 h-3.5 text-red-400" /> {t('dash.unitsCount', { n: req.unitsNeeded ?? 0 })}
-                        <span className="text-gray-600">·</span>
-                        <Activity className="w-3.5 h-3.5 text-blue-400" />
-                        <StatusBadge value={req.urgency} label={t(`dash.urgency.${req.urgency}`)} />
-                      </p>
+
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                        <div className="min-w-[7.5rem]">
+                          <p className="flex items-baseline justify-between gap-3">
+                            <span className={EYEBROW}>{t('adminDashboard.riskScore')}</span>
+                            <span className={cn('font-mono text-sm tabular-nums', scoreTone)}>{score}/100</span>
+                          </p>
+                          <span aria-hidden="true" className="mt-2 block h-px bg-line">
+                            <span className={cn('block h-px origin-left', scoreBar)} style={{ width: `${Math.min(score, 100)}%` }} />
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <ButtonLink href={`/dashboard/requests/${req.id}`} variant="secondary">
+                            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                            {t('common.view')}
+                          </ButtonLink>
+
+                          {score > 0 && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleResolve(req.id)}
+                              disabled={resolvingId === req.id}
+                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/20"
+                            >
+                              <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                              {resolvingId === req.id ? t('common.loading') : t('adminDashboard.dismissFlag')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
-                    <div className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 ${badgeBg}`}>
-                      <span>{t('adminDashboard.riskScore')}:</span>
-                      <span className="font-mono text-sm">{score}/100</span>
-                    </div>
-
-                    <Link
-                      href={`/dashboard/requests/${req.id}`}
-                      className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white text-xs font-medium inline-flex items-center gap-1.5 transition-colors"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      {t('common.view')}
-                    </Link>
-
-                    {score > 0 && (
-                      <button
-                        onClick={() => handleResolve(req.id)}
-                        disabled={resolvingId === req.id}
-                        className="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-medium inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        {resolvingId === req.id ? t('common.loading') : t('adminDashboard.dismissFlag')}
-                      </button>
+                    {/* AI explainable flag reason */}
+                    {req.aiFlagReason && (
+                      <div className="mt-5 flex items-start gap-3 border-l border-ember/50 pl-4 text-xs">
+                        <Bot className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+                        <div className="min-w-0">
+                          <span className={EYEBROW}>{t('adminDashboard.aiDiagnosticHint')}</span>
+                          <p className="mt-1.5 break-words text-sm leading-relaxed text-gray-300">{req.aiFlagReason}</p>
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
-
-                {/* AI Explainable Flag Reason */}
-                {req.aiFlagReason && (
-                  <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 flex items-start gap-2.5 text-xs">
-                    <Bot className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-semibold text-purple-300">{t('adminDashboard.aiDiagnosticHint')}</span>
-                      <p className="text-gray-300 mt-0.5">{req.aiFlagReason}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })
+                  </li>
+                );
+              })}
+            </ul>
+          </Rise>
         )}
       </div>
     </div>

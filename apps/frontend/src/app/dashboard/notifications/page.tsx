@@ -1,13 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Zap, Radio, ArrowLeft, Heart } from 'lucide-react';
-import Link from 'next/link';
+import { Bell, Zap, Heart } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useI18n } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/lib/constants';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
+import { IconTile } from '@/components/dash/IconTile';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { EASE } from '@/components/dash/styles';
+import { PulseDot } from '@/components/dash/UrgencyBadge';
 
 type NotificationType = 'MATCH' | 'ESCALATION' | 'DONATION' | 'SYSTEM';
 
@@ -33,6 +37,7 @@ const RETRY_MS = 3000;
 
 export default function NotificationsPage() {
   const { t } = useI18n();
+  const reduce = useReducedMotion();
   // Only the *presence* of a token matters here: a refreshed token must not restart the stream.
   const hasToken = useAuthStore((s) => !!s.accessToken);
   const [connected, setConnected] = useState(false);
@@ -129,87 +134,79 @@ export default function NotificationsPage() {
     n.message ||
     (n.type === 'MATCH' ? t('dash.matchDispatched') : n.type === 'ESCALATION' ? t('dash.radiusExpanded') : '');
 
+  const TYPE_STYLE: Record<NotificationType, { tone: 'ember' | 'saffron' | 'sage' | 'muted'; Icon: typeof Bell }> = {
+    MATCH: { tone: 'ember', Icon: Heart },
+    ESCALATION: { tone: 'saffron', Icon: Zap },
+    DONATION: { tone: 'sage', Icon: Bell },
+    SYSTEM: { tone: 'muted', Icon: Bell },
+  };
+
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
+    <div className="max-w-3xl">
+      <PageHeader
+        eyebrow={t('dashUi.eyebrow.notifications')}
+        title={t('common.notifications')}
+        description={t('dashboard.notificationsDesc')}
+        actions={
+          /* Live SSE status */
+          <span
+            role="status"
+            className="inline-flex items-center gap-2.5 rounded-full border border-line px-3.5 py-1.5 text-xs"
           >
-            <ArrowLeft className="w-4 h-4" />
-            {t('common.back')}
-          </Link>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Bell className="w-8 h-8 text-red-500" />
-            {t('common.notifications')}
-          </h1>
-          <p className="text-gray-400 mt-1">{t('dashboard.notificationsDesc')}</p>
-        </div>
-
-        {/* Live SSE status indicator */}
-        <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/5 border border-white/10 text-xs self-start sm:self-auto">
-          <Radio className={`w-3.5 h-3.5 ${connected ? 'text-emerald-400 animate-pulse' : 'text-amber-400'}`} />
-          <span className={connected ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium'}>
-            {connected ? t('notifications.liveConnected') : t('notifications.disconnected')}
+            <PulseDot tone={connected ? 'sage' : 'saffron'} still={!connected} />
+            <span className={connected ? 'font-medium text-emerald-300' : 'font-medium text-saffron'}>
+              {connected ? t('notifications.liveConnected') : t('notifications.disconnected')}
+            </span>
           </span>
+        }
+      />
+
+      {notifications.length > 0 && (
+        <ol className="relative mb-6 space-y-3 before:absolute before:bottom-4 before:left-[1.35rem] before:top-4 before:w-px before:bg-line" aria-live="polite">
+          {notifications.map((notif) => {
+            const { tone, Icon } = TYPE_STYLE[notif.type];
+            return (
+              <motion.li
+                key={notif.id}
+                initial={reduce ? false : { opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: EASE }}
+                className="glass-card relative flex items-start gap-4 rounded-2xl p-4 sm:p-5"
+              >
+                <IconTile size="md" tone={tone} className="relative bg-surface-raised">
+                  <Icon />
+                </IconTile>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <span className="text-sm font-medium text-foreground">{titleFor(notif)}</span>
+                    <span className="font-mono text-xs tabular-nums text-gray-500">{notif.timestamp}</span>
+                  </div>
+                  <p className="mt-1 break-words text-sm leading-relaxed text-gray-400">{messageFor(notif)}</p>
+                </div>
+              </motion.li>
+            );
+          })}
+        </ol>
+      )}
+
+      {/* Static intro card: always shown, never part of the live list so language switches cannot reset anything. */}
+      {notifications.length === 0 ? (
+        <EmptyState
+          icon={<Bell className="w-10 h-10" />}
+          title={t('notifications.streamInit')}
+          description={t('notifications.streamInitDesc')}
+        />
+      ) : (
+        <div className="flex items-start gap-4 rounded-2xl border border-dashed border-foreground/[0.16] p-4 sm:p-5">
+          <IconTile size="sm" tone="muted">
+            <Bell />
+          </IconTile>
+          <div className="min-w-0 flex-1">
+            <span className="text-sm font-medium text-foreground">{t('notifications.streamInit')}</span>
+            <p className="mt-1 text-sm leading-relaxed text-gray-400">{t('notifications.streamInitDesc')}</p>
+          </div>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        {notifications.map((notif) => (
-          <div
-            key={notif.id}
-            className="glass-card rounded-2xl p-4 sm:p-5 flex items-start gap-4 border-white/5 hover:border-red-500/20 transition-all duration-200"
-          >
-            <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                notif.type === 'MATCH'
-                  ? 'bg-red-500/15 text-red-400'
-                  : notif.type === 'ESCALATION'
-                  ? 'bg-amber-500/15 text-amber-400'
-                  : notif.type === 'DONATION'
-                  ? 'bg-emerald-500/15 text-emerald-400'
-                  : 'bg-blue-500/15 text-blue-400'
-              }`}
-            >
-              {notif.type === 'MATCH' ? (
-                <Heart className="w-5 h-5 fill-current" />
-              ) : notif.type === 'ESCALATION' ? (
-                <Zap className="w-5 h-5" />
-              ) : (
-                <Bell className="w-5 h-5" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center justify-between gap-x-3 mb-1">
-                <span className="font-semibold text-white text-sm">{titleFor(notif)}</span>
-                <span className="text-xs text-gray-500 font-mono">{notif.timestamp}</span>
-              </div>
-              <p className="text-sm text-gray-400 leading-relaxed break-words">{messageFor(notif)}</p>
-            </div>
-          </div>
-        ))}
-
-        {/* Static intro card: always shown, never part of the live list so language switches cannot reset anything. */}
-        {notifications.length === 0 ? (
-          <EmptyState
-            icon={<Bell className="w-10 h-10" />}
-            title={t('notifications.streamInit')}
-            description={t('notifications.streamInitDesc')}
-          />
-        ) : (
-          <div className="glass-card rounded-2xl p-4 sm:p-5 flex items-start gap-4 border-white/5">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-500/15 text-blue-400">
-              <Bell className="w-5 h-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="font-semibold text-white text-sm">{t('notifications.streamInit')}</span>
-              <p className="text-sm text-gray-400 leading-relaxed mt-1">{t('notifications.streamInitDesc')}</p>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

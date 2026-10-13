@@ -1,11 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { Heart, ArrowLeft, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Reveal } from '@/components/motion/Reveal';
+import { Alert } from '@/components/pub/Alert';
+import { PubFooter } from '@/components/pub/PubFooter';
+import { PubHeader } from '@/components/pub/PubHeader';
+import { Textarea } from '@/components/pub/Textarea';
 
 export default function ContactPage() {
   const { t } = useI18n();
@@ -31,183 +36,140 @@ export default function ContactPage() {
       setLoading(false);
     }
   };
+
+  const channels = [
+    {
+      icon: Mail,
+      label: t('contact.email'),
+      value: 'support@suwasarana.lk',
+      href: 'mailto:support@suwasarana.lk',
+      note: t('pub.contactReply'),
+    },
+    {
+      icon: Phone,
+      label: t('contact.hotline'),
+      value: '+94 11 234 5678',
+      href: 'tel:+94112345678',
+      note: t('contact.hours'),
+    },
+    {
+      icon: MapPin,
+      label: t('contact.locationTitle'),
+      value: t('contact.locationDesc'),
+      note: undefined,
+      href: undefined,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#0d0d14] text-white">
-      {/* Nav */}
-      <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-[#0d0d14]/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:shadow-red-500/50 transition-all duration-300">
-              <Heart className="w-5 h-5 text-white fill-white" />
-            </div>
-            <span className="text-lg font-bold text-white hidden sm:inline">Suwa Sarana</span>
-          </Link>
-          <div className="flex items-center gap-3 sm:gap-4">
-            <LanguageSwitcher />
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors group whitespace-nowrap"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              {t('common.backToHome')}
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background text-foreground">
+      <PubHeader />
 
-      {/* Content */}
-      <main className="pt-28 pb-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 shadow-xl shadow-red-500/30 mb-6">
-              <Mail className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('contact.title')}</h1>
-            <p className="text-gray-400 max-w-xl mx-auto leading-relaxed">
-              {t('contact.subtitle')}
+      <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-20">
+        <div className="grid gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-20">
+          {/* Left: editorial intro + channels */}
+          <Reveal y={20}>
+            <p className="eyebrow mb-5 flex items-center gap-2.5">
+              <span aria-hidden="true" className="h-px w-8 bg-ember" />
+              {t('pub.contactEyebrow')}
             </p>
-          </div>
+            <h1 className="font-display break-words text-5xl text-foreground sm:text-6xl lg:text-7xl">{t('contact.title')}</h1>
+            <p className="mt-6 max-w-md text-base leading-relaxed text-gray-400 sm:text-lg">{t('contact.subtitle')}</p>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            {/* Email */}
-            <div className="bg-white/4 border border-white/8 rounded-2xl p-7 flex flex-col items-center text-center gap-4 hover:border-red-500/20 transition-all duration-300">
-              <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
-                <Mail className="w-6 h-6 text-red-400" />
-              </div>
-              <div>
-                <div className="font-semibold text-white mb-1">{t('contact.email')}</div>
-                <a
-                  href="mailto:support@suwasarana.lk"
-                  className="text-sm text-gray-400 hover:text-red-400 transition-colors"
-                >
-                  support@suwasarana.lk
-                </a>
-              </div>
-            </div>
+            <ul className="mt-12 border-t border-line">
+              {channels.map((item) => {
+                const Icon = item.icon;
+                const body = (
+                  <>
+                    <p className="eyebrow flex items-center gap-2.5">
+                      <Icon className="h-3.5 w-3.5 text-ember" aria-hidden="true" />
+                      {item.label}
+                    </p>
+                    <div className="mt-2 flex items-start justify-between gap-4">
+                      <span className="min-w-0 break-words font-display text-2xl text-foreground sm:text-3xl">{item.value}</span>
+                      {item.href && (
+                        <ArrowUpRight
+                          className="mt-1.5 h-5 w-5 shrink-0 text-gray-600 transition-[transform,color] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </div>
+                    {item.note && <p className="mt-1.5 text-sm text-gray-500">{item.note}</p>}
+                  </>
+                );
+                return (
+                  <li key={item.label} className="border-b border-line">
+                    {item.href ? (
+                      <a href={item.href} className="group block py-6 transition-colors hover:bg-foreground/[0.02]">
+                        {body}
+                      </a>
+                    ) : (
+                      <div className="py-6">{body}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </Reveal>
 
-            {/* Phone */}
-            <div className="bg-white/4 border border-white/8 rounded-2xl p-7 flex flex-col items-center text-center gap-4 hover:border-red-500/20 transition-all duration-300">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                <Phone className="w-6 h-6 text-orange-400" />
-              </div>
-              <div>
-                <div className="font-semibold text-white mb-1">{t('contact.hotline')}</div>
-                <a
-                  href="tel:+94112345678"
-                  className="text-sm text-gray-400 hover:text-orange-400 transition-colors"
-                >
-                  +94 11 234 5678
-                </a>
-                <p className="text-xs text-gray-600 mt-1">{t('contact.hours')}</p>
-              </div>
-            </div>
+          {/* Right: form */}
+          <Reveal y={28} delay={0.1}>
+            <div className="glass-card rounded-3xl p-6 sm:p-10">
+              <h2 className="font-display text-3xl text-foreground sm:text-4xl">{t('contact.formTitle')}</h2>
+              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                {submitStatus === 'success' && <Alert tone="success">{submitMessage}</Alert>}
+                {submitStatus === 'error' && <Alert>{submitMessage}</Alert>}
 
-            {/* Location */}
-            <div className="bg-white/4 border border-white/8 rounded-2xl p-7 flex flex-col items-center text-center gap-4 hover:border-red-500/20 transition-all duration-300">
-              <div className="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-rose-400" />
-              </div>
-              <div>
-                <div className="font-semibold text-white mb-1">{t('contact.locationTitle')}</div>
-                <p className="text-sm text-gray-400">
-                  {t('contact.locationDesc')}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Form */}
-          <div className="bg-white/4 border border-white/8 rounded-2xl p-5 sm:p-8">
-            <h2 className="text-xl font-semibold text-white mb-6">{t('contact.formTitle')}</h2>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {submitStatus === 'success' && (
-                <div role="status" className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
-                  {submitMessage}
-                </div>
-              )}
-              {submitStatus === 'error' && (
-                <div role="alert" className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                  {submitMessage}
-                </div>
-              )}
-              
-              <div className="grid sm:grid-cols-2 gap-5">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="contact-name" className="text-sm font-medium text-gray-300">{t('contact.nameLabel')}</label>
-                  <input
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Input
                     id="contact-name"
                     type="text"
                     required
+                    label={t('contact.nameLabel')}
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder={t('contact.namePlaceholder')}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                   />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="contact-email" className="text-sm font-medium text-gray-300">{t('contact.emailLabel')}</label>
-                  <input
+                  <Input
                     id="contact-email"
                     type="email"
                     required
+                    label={t('contact.emailLabel')}
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder={t('contact.emailPlaceholder')}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                   />
                 </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="contact-subject" className="text-sm font-medium text-gray-300">{t('contact.subjectLabel')}</label>
-                <input
+                <Input
                   id="contact-subject"
                   type="text"
                   required
+                  label={t('contact.subjectLabel')}
                   value={formData.subject}
-                  onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   placeholder={t('contact.subjectPlaceholder')}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all"
                 />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="contact-message" className="text-sm font-medium text-gray-300">{t('contact.messageLabel')}</label>
-                <textarea
+                <Textarea
                   id="contact-message"
-                  rows={5}
+                  rows={6}
                   required
+                  label={t('contact.messageLabel')}
                   value={formData.message}
-                  onChange={(e) => setFormData({...formData, message: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   placeholder={t('contact.messagePlaceholder')}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20 transition-all resize-none"
                 />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
-              >
-                {loading ? t('contact.sending') : t('contact.sendBtn')}
-              </button>
-            </form>
-          </div>
+                <div className="pt-2">
+                  <Button type="submit" size="lg" className="w-full sm:w-auto sm:min-w-48" loading={loading}>
+                    {loading ? t('contact.sending') : t('contact.sendBtn')}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </Reveal>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-8 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-            <span>{t('footer.rights')}</span>
-          </div>
-          <div className="flex gap-6">
-            <Link href="/privacy" className="hover:text-gray-400 transition-colors">{t('footer.privacy')}</Link>
-            <Link href="/terms" className="hover:text-gray-400 transition-colors">{t('footer.terms')}</Link>
-            <Link href="/contact" className="text-red-400">{t('footer.contact')}</Link>
-          </div>
-        </div>
-      </footer>
+      <PubFooter current="contact" />
     </div>
   );
 }

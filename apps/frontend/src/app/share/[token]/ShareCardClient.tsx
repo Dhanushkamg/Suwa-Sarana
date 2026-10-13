@@ -3,11 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Heart, MapPin, Activity, Droplets, Share2, Copy, Check,
-  MessageSquare, Send, AlertCircle, Clock, Smartphone, Download
+  MessageSquare, Send, AlertCircle, Clock, Smartphone, Download, Hospital
 } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/Button';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { Logo } from '@/components/brand/Logo';
+import { Reveal } from '@/components/motion/Reveal';
+import { UrgencyBadge } from '@/components/pub/UrgencyBadge';
+import { linkButtonClass } from '@/components/pub/linkButton';
 
 interface CircleInfo {
   inviteToken: string;
@@ -95,229 +102,200 @@ export default function ShareCardClient({ token, initialData }: Props) {
     setTimeout(() => setCopied(false), 3000);
   };
 
-  return (
-    <main className="min-h-screen bg-[#0a0005] text-gray-100 flex flex-col justify-between py-8 px-4 relative overflow-hidden">
-      {/* Background Ambient Glows */}
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-red-600/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-red-900/20 blur-[100px] pointer-events-none" />
-      
-      {/* Subtle Diagonal Red Accent */}
-      <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-red-600 to-red-900 pointer-events-none" />
+  const downloadImage = async () => {
+    try {
+      const res = await fetch(`/share/${token}/opengraph-image?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to fetch image');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `suwa-sarana-emergency.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert(t('share.downloadFailed'));
+    }
+  };
 
-      {/* Header */}
-      <header className="max-w-xl mx-auto w-full flex items-center justify-between pb-6 border-b border-white/5 relative z-10">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-center shadow-lg shadow-red-500/20 group-hover:shadow-red-500/40 transition-shadow">
-            <Heart className="w-5 h-5 text-white fill-white" />
-          </div>
-          <div className="flex flex-col">
-             <span className="text-lg font-black tracking-tight text-white leading-tight">Suwa Sarana</span>
-             <span className="text-[10px] text-gray-400 font-medium">{t('share.network')}</span>
-          </div>
-        </Link>
-        <Link
-          href={`/circle/${token}`}
-          className="inline-flex items-center gap-1.5 text-xs text-white font-medium px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 shadow-md shadow-red-600/20 transition-colors"
-        >
-          {t('share.volunteerForm')} →
-        </Link>
+  const channels = [
+    {
+      name: 'WhatsApp',
+      icon: MessageSquare,
+      href: `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + circleUrl)}`,
+    },
+    {
+      name: 'Facebook',
+      icon: Share2,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(circleUrl)}`,
+    },
+    {
+      name: 'Telegram',
+      icon: Send,
+      href: `https://t.me/share/url?url=${encodeURIComponent(circleUrl)}&text=${encodeURIComponent(shareText)}`,
+    },
+    {
+      name: 'Viber',
+      icon: Smartphone,
+      href: `viber://forward?text=${encodeURIComponent(shareText + ' ' + circleUrl)}`,
+    },
+  ];
+
+  const facts = info
+    ? [
+        { icon: Clock, label: t('share.timeLeft'), value: timeLeft || t('share.expired'), tone: 'text-foreground' },
+        { icon: MapPin, label: t('share.location'), value: info.district, tone: 'text-foreground' },
+        { icon: Droplets, label: t('share.required'), value: t('circle.unitsCount', { count: info.unitsNeeded }), tone: 'text-foreground' },
+        { icon: Activity, label: t('share.status'), value: t('share.accepting'), tone: 'text-emerald-400' },
+      ]
+    : [];
+
+  return (
+    <main className="flex min-h-screen flex-col bg-background text-foreground">
+      <header className="border-b border-line">
+        <div className="mx-auto flex h-16 w-full max-w-xl items-center justify-between gap-3 px-5">
+          <Logo />
+          <LanguageSwitcher />
+        </div>
       </header>
 
-      {/* Main Container */}
-      <div className="max-w-xl mx-auto w-full py-6 space-y-6 relative z-10">
+      <div className="mx-auto w-full max-w-xl flex-1 space-y-6 px-5 py-8 sm:py-12">
         {loading ? (
-          <div className="glass-card rounded-3xl p-12 text-center border border-white/5">
-            <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-gray-400">{t('share.loading')}</p>
+          <div role="status" className="glass-card rounded-3xl p-12 text-center">
+            <div className="mx-auto mb-5 h-7 w-7 animate-spin rounded-full border-2 border-line-strong border-t-ember" aria-hidden="true" />
+            <p className="text-sm text-gray-400">{t('share.loading')}</p>
           </div>
         ) : error || !info ? (
-          <div role="alert" className="glass-card rounded-3xl p-6 sm:p-10 text-center border-red-500/20 bg-red-950/10">
-            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">{t('share.cardUnavailable')}</h1>
-            <p className="text-gray-400 text-sm mb-6">{error}</p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm transition-colors border border-white/10"
-            >
+          <div role="alert" className="glass-card rounded-3xl p-8 text-center sm:p-12">
+            <AlertCircle className="mx-auto mb-5 h-9 w-9 text-ember" aria-hidden="true" />
+            <h1 className="font-display text-4xl text-foreground">{t('share.cardUnavailable')}</h1>
+            {error && <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-gray-400">{error}</p>}
+            <Link href="/" className={linkButtonClass('secondary', 'md', 'mt-8')}>
               {t('circle.goToHome')}
             </Link>
           </div>
         ) : (
           <>
-            {/* Dramatic Social Card Preview Container */}
-            <div className="rounded-[2rem] p-1 border border-red-500/30 bg-gradient-to-b from-red-500/20 to-transparent shadow-2xl shadow-red-900/30">
-              <div className="bg-[#0f0505] rounded-[1.8rem] p-4 sm:p-6 md:p-8 relative overflow-hidden">
-                {/* Card Internal Glow */}
-                 <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-[60px]" />
-                 
-                <div className="relative z-10">
-                  {/* Top Bar inside Card */}
-                  <div className="flex items-center justify-between gap-4 mb-8">
-                     <div className="flex items-center gap-2">
-                       <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                       <span className="text-[10px] font-bold uppercase tracking-widest text-red-400">
-                         {t('share.verifiedBroadcast')}
-                       </span>
-                     </div>
-                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                        info.urgency === 'CRITICAL' 
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                     }`}>
-                       🚨 {urgencyLabel(info.urgency)}
-                     </span>
-                  </div>
+            {/* The appeal */}
+            <Reveal y={20}>
+              <article className="glass-card overflow-hidden rounded-3xl">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4 sm:px-8">
+                  <span className="eyebrow flex items-center gap-2.5">
+                    <span className="relative flex h-2 w-2" aria-hidden="true">
+                      <span className="dot-ping absolute inset-0 rounded-full bg-ember" />
+                      <span className="relative h-2 w-2 rounded-full bg-ember" />
+                    </span>
+                    {t('share.verifiedBroadcast')}
+                  </span>
+                  <UrgencyBadge label={urgencyLabel(info.urgency)} critical={info.urgency === 'CRITICAL'} />
+                </div>
 
-                  {/* Hero Section */}
-                  <div className="flex items-center gap-6 mb-8">
-                     <div className="w-24 h-24 md:w-28 md:h-28 rounded-[2rem] bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-center text-4xl md:text-5xl font-black text-white shadow-xl shadow-red-600/40 border border-red-400/50 flex-shrink-0 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-white/10" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 30%, 0 60%)' }} />
-                        {info.patientBloodType}
-                     </div>
-                     <div className="flex flex-col justify-center min-w-0">
-                        <h2 className="text-xl md:text-2xl font-black text-white leading-tight mb-2 break-words">
-                          <span className="text-red-400">{t('circle.unitsCount', { count: info.unitsNeeded })}</span> {t('share.ofNeeded', { bloodType: info.patientBloodType })} <span className="bg-red-600 text-white px-2 py-0.5 rounded text-sm align-middle ml-1 shadow-md shadow-red-900/50">{t('share.urgently')}</span>
-                        </h2>
-                        <h3 className="text-sm md:text-base text-gray-300 font-medium break-words">
-                          {info.hospitalName}
-                        </h3>
-                     </div>
-                  </div>
-
-                  {/* Badges Row */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
-                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {t('share.timeLeft')}</div>
-                      <div className="text-white font-bold text-sm">{timeLeft || t('share.expired')}</div>
-                    </div>
-                    <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
-                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {t('share.location')}</div>
-                      <div className="text-white font-bold text-sm truncate">{info.district}</div>
-                    </div>
-                    <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
-                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Droplets className="w-3.5 h-3.5" /> {t('share.required')}</div>
-                      <div className="text-white font-bold text-sm">{t('circle.unitsCount', { count: info.unitsNeeded })}</div>
-                    </div>
-                    <div className="bg-red-950/30 border border-red-500/20 rounded-xl p-3 flex flex-col justify-center">
-                      <div className="text-red-400 text-xs font-semibold mb-1 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> {t('share.status')}</div>
-                      <div className="text-emerald-400 font-bold text-sm">{t('share.accepting')}</div>
-                    </div>
-                  </div>
-
-                  {/* Motivational Text */}
-                  <div className="text-center py-4 border-t border-white/5">
-                     <p className="text-sm text-gray-400 italic">{t('share.quote')}</p>
-                  </div>
-                  
-                  {/* CTA Button */}
-                  <Link
-                    href={`/circle/${token}`}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-bold text-base shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
+                <div className="px-6 pb-8 pt-8 sm:px-8 sm:pt-10">
+                  <p
+                    className="font-display text-[7.5rem] leading-[0.85] text-foreground sm:text-[10rem]"
+                    aria-label={info.patientBloodType}
                   >
-                    <Heart className="w-5 h-5 fill-white" /> {t('share.volunteerBtn')}
+                    {info.patientBloodType}
+                  </p>
+                  <h1 className="mt-6 font-display break-words text-3xl text-foreground sm:text-4xl">
+                    <span className="text-ember">{t('circle.unitsCount', { count: info.unitsNeeded })}</span>{' '}
+                    {t('share.ofNeeded', { bloodType: info.patientBloodType })}
+                  </h1>
+                  <p className="mt-3 flex items-start gap-2.5 break-words text-base text-gray-300">
+                    <Hospital className="mt-1 h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+                    {info.hospitalName}
+                  </p>
+                </div>
+
+                <dl className="grid grid-cols-2 border-t border-line">
+                  {facts.map((fact, i) => {
+                    const Icon = fact.icon;
+                    return (
+                      <div
+                        key={fact.label}
+                        className={cn('px-6 py-5 sm:px-8', i % 2 === 0 && 'border-r border-line', i < 2 && 'border-b border-line')}
+                      >
+                        <dt className="eyebrow flex items-center gap-2">
+                          <Icon className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden="true" />
+                          <span className="min-w-0">{fact.label}</span>
+                        </dt>
+                        <dd className={cn('mt-2 break-words font-mono text-sm', fact.tone)}>{fact.value}</dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+
+                <div className="border-t border-line px-6 pb-8 pt-7 sm:px-8">
+                  <p className="font-display text-xl italic leading-snug text-gray-400">{t('share.quote')}</p>
+                  <Link href={`/circle/${token}`} className={linkButtonClass('primary', 'lg', 'mt-7 w-full')}>
+                    <Heart className="h-4 w-4" aria-hidden="true" />
+                    {t('share.volunteerBtn')}
                   </Link>
                 </div>
-              </div>
-            </div>
+              </article>
+            </Reveal>
 
-            {/* Direct Social Broadcast Actions */}
-            <div className="glass-card rounded-3xl p-6 border border-white/10 space-y-5 bg-white/[0.02]">
-              <div className="text-center">
-                 <h2 className="text-lg font-bold text-white flex items-center justify-center gap-2 mb-1">
-                   <Share2 className="w-5 h-5 text-red-400" />
-                   {t('share.shareTitle')}
-                 </h2>
-                 <p className="text-xs text-gray-400">{t('share.shareDesc')}</p>
-              </div>
+            {/* Share actions */}
+            <Reveal y={20} delay={0.1}>
+              <section className="glass-card rounded-3xl p-6 sm:p-8" aria-labelledby="share-title">
+                <p className="eyebrow mb-3">{t('pub.shareEyebrow')}</p>
+                <h2 id="share-title" className="font-display text-3xl text-foreground">
+                  {t('share.shareTitle')}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-400">{t('share.shareDesc')}</p>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + circleUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
-                >
-                  <MessageSquare className="w-7 h-7" />
-                  <span className="font-semibold text-xs">WhatsApp</span>
-                </a>
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  {channels.map((c) => {
+                    const Icon = c.icon;
+                    return (
+                      <a
+                        key={c.name}
+                        href={c.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-3 rounded-2xl border border-line-strong px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-ember/50 hover:bg-ember/[0.05]"
+                      >
+                        <Icon className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-ember" aria-hidden="true" />
+                        {c.name}
+                      </a>
+                    );
+                  })}
+                </div>
 
-                <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(circleUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] hover:bg-[#1877F2]/20 transition-colors"
-                >
-                  <Share2 className="w-7 h-7" />
-                  <span className="font-semibold text-xs">Facebook</span>
-                </a>
-
-                <a
-                  href={`https://t.me/share/url?url=${encodeURIComponent(circleUrl)}&text=${encodeURIComponent(shareText)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl bg-[#0088cc]/10 border border-[#0088cc]/30 text-[#0088cc] hover:bg-[#0088cc]/20 transition-colors"
-                >
-                  <Send className="w-7 h-7" />
-                  <span className="font-semibold text-xs">Telegram</span>
-                </a>
-                
-                <a
-                  href={`viber://forward?text=${encodeURIComponent(shareText + ' ' + circleUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl bg-[#7360f2]/10 border border-[#7360f2]/30 text-[#7360f2] hover:bg-[#7360f2]/20 transition-colors"
-                >
-                  <Smartphone className="w-7 h-7" />
-                  <span className="font-semibold text-xs">Viber</span>
-                </a>
-              </div>
-              
-              <div className="pt-2 space-y-3">
-                 <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`/share/${token}/opengraph-image?t=${Date.now()}`, { cache: 'no-store' });
-                        if (!res.ok) throw new Error('Failed to fetch image');
-                        const blob = await res.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `suwa-sarana-emergency.png`;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        document.body.removeChild(a);
-                      } catch (err) {
-                        console.error('Download failed:', err);
-                        alert(t('share.downloadFailed'));
-                      }
-                    }}
-                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600 hover:bg-red-500 shadow-lg shadow-red-500/20 text-white transition-colors text-sm font-medium"
-                 >
-                    <Download className="w-4 h-4" />
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <Button type="button" variant="secondary" size="lg" onClick={downloadImage} className="w-full">
+                    <Download className="h-4 w-4" aria-hidden="true" />
                     {t('share.downloadImage')}
-                 </button>
-                 <button
-                    type="button"
-                    onClick={copyLink}
-                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors text-sm font-medium"
-                  >
-                    {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                  <Button type="button" variant="secondary" size="lg" onClick={copyLink} className="w-full">
+                    {copied ? <Check className="h-4 w-4 text-emerald-400" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
                     {copied ? t('share.copied') : t('share.copyLink')}
-                  </button>
-              </div>
-            </div>
+                  </Button>
+                </div>
+                <p className="sr-only" role="status">
+                  {copied ? t('share.copied') : ''}
+                </p>
+              </section>
+            </Reveal>
+
+            <p className="text-center">
+              <Link
+                href={`/circle/${token}`}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-foreground"
+              >
+                {t('share.volunteerForm')} <span aria-hidden="true">→</span>
+              </Link>
+            </p>
           </>
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="max-w-xl mx-auto w-full text-center py-6 border-t border-white/5 relative z-10 mt-4">
-        <div className="flex flex-col items-center gap-2">
-           <span className="text-sm font-bold text-gray-300">{(process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk').replace(/^https?:\/\//, '')}</span>
-           <span className="text-[10px] text-gray-500 uppercase tracking-widest">{t('share.network')}</span>
-        </div>
+      <footer className="border-t border-line px-5 py-6 text-center">
+        <p className="font-mono text-xs text-gray-400">{(process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk').replace(/^https?:\/\//, '')}</p>
+        <p className="eyebrow mt-1.5">{t('share.network')}</p>
       </footer>
     </main>
   );

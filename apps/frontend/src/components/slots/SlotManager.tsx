@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Users, Clock, AlertCircle, Loader2, RefreshCw, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { DonationSlot } from '@/types';
@@ -155,7 +157,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-lg font-bold text-white">{t('slotManager.slotManager')}</h2>
+        <h2 className="font-display text-2xl text-foreground">{t('slotManager.slotManager')}</h2>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={fetchSlots} aria-label={t('common.refresh')}>
             <RefreshCw className="w-3.5 h-3.5" />
@@ -173,25 +175,25 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
 
       {/* Global feedback */}
       {feedback && (
-        <div className="flex items-center gap-2 text-sm p-3 rounded-xl bg-white/5 border border-white/10 text-gray-300">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
+        <div role="status" className="flex items-start gap-2.5 rounded-xl border border-line bg-foreground/[0.03] p-3 text-sm text-gray-300">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-saffron" aria-hidden="true" />
           {feedback}
         </div>
       )}
 
       {/* Scanner Modal */}
       {showScanner && (
-        <div role="dialog" aria-modal="true" aria-label={t('slotManager.scanDonorQR')} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl p-6 w-full max-w-md">
+        <div role="dialog" aria-modal="true" aria-label={t('slotManager.scanDonorQR')} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-line-strong bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">{t('slotManager.scanDonorQR')}</h3>
+              <h3 className="font-display text-2xl text-foreground">{t('slotManager.scanDonorQR')}</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowScanner(false)}>{t('common.close')}</Button>
             </div>
             
             {/* The ID matches what html5-qrcode targets */}
-            <div id="qr-reader" className="w-full rounded-lg overflow-hidden border border-white/10 bg-black/50"></div>
+            <div id="qr-reader" className="w-full overflow-hidden rounded-lg border border-line bg-background"></div>
             
-            <p className="text-xs text-gray-400 mt-4 text-center">
+            <p className="mt-4 text-center text-xs text-gray-400">
               {t('slotManager.scanInstructions')}
             </p>
           </div>
@@ -200,53 +202,41 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
 
       {/* Bulk create form */}
       {showBulkForm && (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-white">{t('slotManager.bulkGenerate')}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="bulkStart" className="block text-xs text-gray-400 mb-1">{t('slotManager.overallStart')}</label>
-              <input
-                id="bulkStart"
-                type="datetime-local"
-                value={bulkForm.overallStartTime}
-                onChange={e => setBulkForm(f => ({ ...f, overallStartTime: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500/50"
-              />
-            </div>
-            <div>
-              <label htmlFor="bulkEnd" className="block text-xs text-gray-400 mb-1">{t('slotManager.overallEnd')}</label>
-              <input
-                id="bulkEnd"
-                type="datetime-local"
-                value={bulkForm.overallEndTime}
-                onChange={e => setBulkForm(f => ({ ...f, overallEndTime: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500/50"
-              />
-            </div>
-            <div>
-              <label htmlFor="bulkInterval" className="block text-xs text-gray-400 mb-1">{t('slotManager.intervalMinutes')}</label>
-              <input
-                id="bulkInterval"
-                type="number"
-                min={5}
-                value={bulkForm.intervalMinutes}
-                onChange={e => setBulkForm(f => ({ ...f, intervalMinutes: Number(e.target.value) }))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500/50"
-              />
-            </div>
-            <div>
-              <label htmlFor="bulkCapacity" className="block text-xs text-gray-400 mb-1">{t('slotManager.donorsPerSlot')}</label>
-              <input
-                id="bulkCapacity"
-                type="number"
-                min={1}
-                value={bulkForm.capacityPerSlot}
-                onChange={e => setBulkForm(f => ({ ...f, capacityPerSlot: Number(e.target.value) }))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500/50"
-              />
-            </div>
+        <div className="space-y-5 rounded-2xl border border-line-strong bg-foreground/[0.03] p-5">
+          <h3 className="eyebrow">{t('slotManager.bulkGenerate')}</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              id="bulkStart"
+              type="datetime-local"
+              label={t('slotManager.overallStart')}
+              value={bulkForm.overallStartTime}
+              onChange={e => setBulkForm(f => ({ ...f, overallStartTime: e.target.value }))}
+            />
+            <Input
+              id="bulkEnd"
+              type="datetime-local"
+              label={t('slotManager.overallEnd')}
+              value={bulkForm.overallEndTime}
+              onChange={e => setBulkForm(f => ({ ...f, overallEndTime: e.target.value }))}
+            />
+            <Input
+              id="bulkInterval"
+              type="number"
+              min={5}
+              label={t('slotManager.intervalMinutes')}
+              value={bulkForm.intervalMinutes}
+              onChange={e => setBulkForm(f => ({ ...f, intervalMinutes: Number(e.target.value) }))}
+            />
+            <Input
+              id="bulkCapacity"
+              type="number"
+              min={1}
+              label={t('slotManager.donorsPerSlot')}
+              value={bulkForm.capacityPerSlot}
+              onChange={e => setBulkForm(f => ({ ...f, capacityPerSlot: Number(e.target.value) }))}
+            />
           </div>
-          <div className="flex gap-2 justify-end">
+          <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setShowBulkForm(false)}>{t('common.cancel')}</Button>
             <Button variant="primary" size="sm" loading={creating} onClick={handleBulkCreate}>
               {t('slotManager.generateSlots')}
@@ -257,7 +247,7 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
 
       {/* Slot list */}
       {slots.length === 0 ? (
-        <div className="text-center py-10 border border-white/5 rounded-2xl bg-white/[0.02] text-gray-400 text-sm">
+        <div className="rounded-2xl border border-dashed border-line-strong bg-foreground/[0.02] px-6 py-10 text-center text-sm text-gray-400">
           {t('slotManager.noSlotsCreated')}
         </div>
       ) : (
@@ -268,35 +258,31 @@ export default function SlotManager({ hostType, hostId }: SlotManagerProps) {
             return (
               <div
                 key={slot.id}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden"
+                className="overflow-hidden rounded-2xl border border-line bg-foreground/[0.03]"
               >
                 {/* Slot header row */}
-                <div className="flex items-center justify-between gap-4 p-4 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Clock className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-sm font-semibold text-white">
+                <div className="flex flex-wrap items-center justify-between gap-4 p-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden="true" />
+                      <span className="font-mono text-[13px] text-foreground">
                         {formatDateTime(slot.startTime)} – {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        slot.status === 'OPEN'      ? 'bg-emerald-500/15 text-emerald-400' :
-                        slot.status === 'FULL'      ? 'bg-red-500/15 text-red-400' :
-                        slot.status === 'COMPLETED' ? 'bg-purple-500/15 text-purple-400' :
-                                                      'bg-gray-500/15 text-gray-400'
-                      }`}>
-                        {slot.status}
-                      </span>
+                      <StatusBadge
+                        value={slot.status}
+                        tone={slot.status === 'OPEN' ? 'green' : slot.status === 'FULL' ? 'red' : 'gray'}
+                      />
                     </div>
                     {/* Capacity bar */}
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <div className="mt-3 flex items-center gap-3">
+                      <div className="h-1 flex-1 overflow-hidden rounded-full bg-foreground/10" aria-hidden="true">
                         <div
-                          className={`h-full rounded-full transition-all ${slot.status === 'FULL' ? 'bg-red-500' : 'bg-emerald-500'}`}
-                          style={{ width: `${fillPct}%` }}
+                          className={`h-full w-full origin-left rounded-full transition-transform duration-500 ${slot.status === 'FULL' ? 'bg-ember' : 'bg-emerald-400'}`}
+                          style={{ transform: `scaleX(${fillPct / 100})` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-400 flex-shrink-0">
-                        <Users className="w-3 h-3 inline mr-1" />{slot.bookedCount}/{slot.capacity}
+                      <span className="flex-shrink-0 font-mono text-xs text-gray-400">
+                        <Users className="mr-1 inline h-3 w-3" aria-hidden="true" />{slot.bookedCount}/{slot.capacity}
                       </span>
                     </div>
                   </div>

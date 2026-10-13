@@ -5,6 +5,7 @@ import { X, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Alert } from '@/components/pub/Alert';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
 
@@ -79,23 +80,21 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="create-camp-title" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-[#0d0d14]/90 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
-          <h2 id="create-camp-title" className="text-xl font-bold text-white flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-rose-500" />
+    <div role="dialog" aria-modal="true" aria-labelledby="create-camp-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-line-strong bg-surface">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-line bg-surface p-6">
+          <h2 id="create-camp-title" className="flex items-center gap-3 font-display text-2xl text-foreground sm:text-3xl">
+            <Calendar className="h-5 w-5 shrink-0 text-ember" aria-hidden="true" />
             {t('modals.createCampTitle')}
           </h2>
-          <button type="button" onClick={onClose} aria-label={t('common.close')} className="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-400">
+          <button type="button" onClick={onClose} aria-label={t('common.close')} className="shrink-0 rounded-full p-2 text-gray-400 transition-colors hover:bg-foreground/[0.06] hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-4 sm:p-6">
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
-              {error}
-            </div>
+            <Alert className="mb-6">{error}</Alert>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -196,11 +195,11 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+            <div className="flex justify-end gap-3 border-t border-line pt-5">
               <Button type="button" variant="ghost" onClick={onClose}>
                 {t('common.cancel') || 'Cancel'}
               </Button>
-              <Button type="submit" loading={loading} className="bg-rose-600 hover:bg-rose-500 text-white">
+              <Button type="submit" loading={loading}>
                 {t('campManager.createCamp') || 'Create Camp'}
               </Button>
             </div>

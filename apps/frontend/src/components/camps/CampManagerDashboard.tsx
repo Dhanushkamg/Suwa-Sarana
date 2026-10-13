@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Plus, Clock, MapPin, Share2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Calendar, Plus, Clock, MapPin, Share2, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { Button } from '@/components/ui/Button';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Alert } from '@/components/pub/Alert';
 import SlotManager from '@/components/slots/SlotManager';
 import CampPostGenerator from './CampPostGenerator';
 import CreateCampModal from './CreateCampModal';
@@ -62,104 +64,88 @@ export default function CampManagerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-rose-500" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-3 font-display text-3xl text-foreground">
+          <Calendar className="h-5 w-5 shrink-0 text-ember" aria-hidden="true" />
           {t('campManager.managedCamps')}
         </h2>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={loadCamps}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium transition-colors border border-white/10"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="secondary" size="sm" onClick={loadCamps} disabled={loading}>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
             {t('campManager.refresh')}
-          </button>
-          <Button size="sm" className="bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-900/20" onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" /> {t('campManager.createCamp')}
+          </Button>
+          <Button size="sm" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="h-4 w-4" aria-hidden="true" /> {t('campManager.createCamp')}
           </Button>
         </div>
       </div>
 
-      {error && (
-        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3 text-red-400">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">{error}</span>
-        </div>
-      )}
+      {error && <Alert>{error}</Alert>}
 
       {loading ? (
-        <div className="glass-card rounded-2xl p-12 text-center text-gray-400">
-          <div className="inline-block w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p>{t('campManager.loadingCampaigns')}</p>
+        <div role="status" className="glass-card rounded-2xl p-12 text-center text-gray-400">
+          <div className="mx-auto mb-4 h-7 w-7 animate-spin rounded-full border-2 border-line-strong border-t-ember" aria-hidden="true" />
+          <p className="text-sm">{t('campManager.loadingCampaigns')}</p>
         </div>
       ) : camps.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center border-dashed border-white/10 space-y-3">
-          <Calendar className="w-12 h-12 text-gray-600 mx-auto" />
-          <p className="text-white font-medium">{t('campManager.noCampsOrganized')}</p>
-          <p className="text-sm text-gray-400">{t('campManager.noCampsDesc')}</p>
+        <div className="space-y-3 rounded-2xl border border-dashed border-line-strong bg-foreground/[0.02] p-12 text-center">
+          <Calendar className="mx-auto h-10 w-10 text-gray-600" aria-hidden="true" />
+          <p className="font-display text-2xl text-foreground">{t('campManager.noCampsOrganized')}</p>
+          <p className="mx-auto max-w-md text-sm text-gray-400">{t('campManager.noCampsDesc')}</p>
         </div>
       ) : (
-        <div className="grid gap-6">
+        <div className="grid gap-5">
           {camps.map((camp) => (
-            <div key={camp.id} className="glass-card rounded-2xl border border-white/5 overflow-hidden flex flex-col">
-              <div className="p-6 flex flex-col md:flex-row gap-6 md:items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-white break-words">{camp.name}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      camp.status === 'SCHEDULED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                      camp.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                      'bg-gray-500/20 text-gray-400 border border-gray-500/30'
-                    }`}>
-                      {camp.status}
-                    </span>
+            <div key={camp.id} className="glass-card flex flex-col overflow-hidden rounded-2xl">
+              <div className="flex flex-col justify-between gap-6 p-6 md:flex-row md:items-center">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <h3 className="font-display break-words text-2xl text-foreground">{camp.name}</h3>
+                    <StatusBadge
+                      value={camp.status}
+                      tone={camp.status === 'SCHEDULED' ? 'green' : camp.status === 'CANCELLED' ? 'red' : 'gray'}
+                    />
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-400 mt-3">
-                    <span className="flex items-center gap-1.5 text-gray-300">
-                      <Calendar className="w-4 h-4 text-rose-500" />
+                  <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-300">
+                    <span className="flex items-center gap-2 font-mono text-[13px]">
+                      <Calendar className="h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
                       {new Date(camp.scheduledDate).toLocaleDateString()}
                     </span>
-                    <span className="flex items-center gap-1.5 text-gray-300">
-                      <Clock className="w-4 h-4 text-amber-500" />
-                      {camp.startTime} - {camp.endTime}
+                    <span className="flex items-center gap-2 font-mono text-[13px]">
+                      <Clock className="h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+                      {camp.startTime} – {camp.endTime}
                     </span>
-                    <span className="flex items-center gap-1.5 text-gray-300">
-                      <MapPin className="w-4 h-4 text-emerald-500" />
-                      {camp.location}, {camp.district}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <MapPin className="h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+                      <span className="min-w-0 break-words">
+                        {camp.location}, {camp.district}
+                      </span>
                     </span>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
-                    className="h-9 px-4 text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-white"
-                    onClick={() => setCampToGeneratePost(camp)}
-                  >
-                    <Share2 className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
+                  <Button variant="secondary" size="sm" onClick={() => setCampToGeneratePost(camp)}>
+                    <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
                     {t('campManager.sharePoster')}
                   </Button>
-                  <Button 
-                    variant="secondary"
+                  <Button
+                    variant={activeCampForSlots === camp.id ? 'primary' : 'secondary'}
                     size="sm"
-                    className={`h-9 px-4 text-xs font-semibold transition-colors ${activeCampForSlots === camp.id ? 'bg-rose-600 border-rose-600 text-white' : 'bg-white/5 hover:bg-white/10 border border-white/10 text-white'}`}
+                    aria-expanded={activeCampForSlots === camp.id}
                     onClick={() => setActiveCampForSlots(activeCampForSlots === camp.id ? null : camp.id)}
                   >
-                    <Clock className={`w-3.5 h-3.5 mr-1.5 ${activeCampForSlots === camp.id ? 'text-white' : 'text-rose-400'}`} />
+                    <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                     {activeCampForSlots === camp.id ? t('campManager.closeSlots') : t('campManager.manageSlots')}
                   </Button>
                 </div>
               </div>
 
-              {/* Collapsible Slot Manager */}
+              {/* Collapsible slot manager */}
               {activeCampForSlots === camp.id && (
-                <div className="bg-black/20 border-t border-white/5 p-6 animate-in slide-in-from-top-2 duration-300">
-                  <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-rose-400" /> {t('campManager.appointmentsWalkins')}
+                <div className="border-t border-line bg-background/60 p-6">
+                  <h4 className="eyebrow mb-5 flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-ember" aria-hidden="true" /> {t('campManager.appointmentsWalkins')}
                   </h4>
                   <SlotManager hostType="camp" hostId={camp.id} />
                 </div>
@@ -169,12 +155,7 @@ export default function CampManagerDashboard() {
         </div>
       )}
 
-      {campToGeneratePost && (
-        <CampPostGenerator 
-          camp={campToGeneratePost} 
-          onClose={() => setCampToGeneratePost(null)} 
-        />
-      )}
+      {campToGeneratePost && <CampPostGenerator camp={campToGeneratePost} onClose={() => setCampToGeneratePost(null)} />}
 
       <CreateCampModal
         isOpen={isCreateModalOpen}

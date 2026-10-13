@@ -17,22 +17,22 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0d0d14] disabled:opacity-50 disabled:cursor-not-allowed';
+    'group/btn relative inline-flex items-center justify-center gap-2 rounded-full font-medium tracking-[-0.005em] transition-[background-color,border-color,color,transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100';
 
   const variants = {
     primary:
-      'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/50 focus:ring-red-500',
+      'bg-ember text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_6px_20px_-8px_color-mix(in_oklch,var(--ember)_70%,transparent)] hover:bg-[color-mix(in_oklch,var(--ember)_88%,white)]',
     secondary:
-      'bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-white/40 backdrop-blur-sm focus:ring-white/30',
+      'border border-line-strong bg-foreground/[0.04] text-foreground hover:border-foreground/30 hover:bg-foreground/[0.08]',
     danger:
-      'bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white focus:ring-red-600',
-    ghost: 'text-gray-400 hover:text-white hover:bg-white/5 focus:ring-white/20',
+      'border border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20',
+    ghost: 'text-gray-400 hover:bg-foreground/[0.06] hover:text-foreground',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-5 py-2.5 text-sm',
-    lg: 'px-8 py-3.5 text-base',
+    sm: 'px-4 py-1.5 text-[13px]',
+    md: 'px-6 py-2.5 text-sm',
+    lg: 'px-8 py-3.5 text-[15px]',
   };
 
   return (

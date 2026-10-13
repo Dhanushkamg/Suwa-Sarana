@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Clock, Users, CheckCircle2, AlertCircle, Loader2, CalendarCheck } from 'lucide-react';
+import { Clock, Users, Loader2, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/pub/Alert';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
@@ -108,8 +109,8 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
   }
 
   return (
-    <div className="space-y-2 mt-4">
-      <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-3">
+    <div className="mt-4 space-y-2.5">
+      <p className="eyebrow mb-3">
         {t('slotPicker.available')}
       </p>
 
@@ -122,21 +123,23 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
         return (
           <div
             key={slot.id}
-            className={`rounded-xl border p-3 transition-all duration-200 ${
+            className={`rounded-xl border p-3.5 transition-colors duration-300 ${
               isFull || isCancelled
-                ? 'border-white/5 bg-white/[0.01] opacity-50'
-                : 'border-white/10 bg-white/[0.03] hover:border-red-500/20'
+                ? 'border-line bg-transparent opacity-50'
+                : 'border-line-strong bg-foreground/[0.03] hover:border-ember/40'
             }`}
           >
             <div className="flex items-center justify-between gap-3 flex-wrap">
               {/* Time & date */}
               <div>
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-white">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  {formatDate(slot.startTime)} · {formatTime(slot.startTime)} – {formatTime(slot.endTime)}
+                <div className="flex items-start gap-2 text-sm font-medium text-foreground">
+                  <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden="true" />
+                  <span className="min-w-0">
+                    {formatDate(slot.startTime)} · <span className="font-mono text-[13px]">{formatTime(slot.startTime)} – {formatTime(slot.endTime)}</span>
+                  </span>
                 </div>
-                <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-400">
-                  <Users className="w-3 h-3" />
+                <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-400">
+                  <Users className="h-3 w-3 shrink-0" aria-hidden="true" />
                   {isFull
                     ? t('slotPicker.fullyBooked')
                     : t(slot.spotsLeft !== 1 ? 'slotPicker.spotsLeft' : 'slotPicker.spotLeft', { left: slot.spotsLeft, capacity: slot.capacity })}
@@ -146,10 +149,10 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
               {/* Capacity bar + action */}
               <div className="flex items-center gap-3">
                 {/* Visual fill bar */}
-                <div className="w-20 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="h-1 w-20 overflow-hidden rounded-full bg-foreground/10" aria-hidden="true">
                   <div
-                    className={`h-full rounded-full transition-all ${isFull ? 'bg-red-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${Math.min(100, (slot.bookedCount / slot.capacity) * 100)}%` }}
+                    className={`h-full w-full origin-left rounded-full transition-transform duration-500 ${isFull ? 'bg-ember' : 'bg-emerald-400'}`}
+                    style={{ transform: `scaleX(${Math.min(1, slot.capacity > 0 ? slot.bookedCount / slot.capacity : 0)})` }}
                   />
                 </div>
 
@@ -173,16 +176,9 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
 
             {/* Per-slot feedback */}
             {slotFeedback && (
-              <div role={slotFeedback.type === 'error' ? 'alert' : 'status'} className={`flex items-start gap-2 mt-2 text-xs rounded-lg p-2 ${
-                slotFeedback.type === 'success'
-                  ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                  : 'bg-red-500/10 text-red-300 border border-red-500/20'
-              }`}>
-                {slotFeedback.type === 'success'
-                  ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                  : <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />}
+              <Alert tone={slotFeedback.type} className="mt-3 px-3 py-2 text-xs">
                 {slotFeedback.message}
-              </div>
+              </Alert>
             )}
           </div>
         );

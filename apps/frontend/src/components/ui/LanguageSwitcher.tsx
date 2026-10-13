@@ -5,10 +5,10 @@ import { useI18n, Locale } from '@/lib/i18n';
 import { Globe, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const LOCALES: { code: Locale; label: string }[] = [
-  { code: 'en', label: 'English' },
-  { code: 'si', label: 'සිංහල' },
-  { code: 'ta', label: 'தமிழ்' },
+const LOCALES: { code: Locale; label: string; short: string }[] = [
+  { code: 'en', label: 'English', short: 'EN' },
+  { code: 'si', label: 'සිංහල', short: 'සිං' },
+  { code: 'ta', label: 'தமிழ்', short: 'த' },
 ];
 
 export function LanguageSwitcher({ className }: { className?: string }) {
@@ -50,10 +50,13 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Switch language"
-        className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10"
+        className="inline-flex h-9 items-center gap-2 rounded-full border border-line-strong bg-foreground/[0.03] px-3 text-gray-300 transition-colors duration-300 hover:border-foreground/30 hover:bg-foreground/[0.07] hover:text-foreground"
       >
-        <Globe className="w-4 h-4 text-red-400" />
-        <span className="font-medium text-xs">{current.label}</span>
+        <Globe className="h-3.5 w-3.5 text-gray-400" aria-hidden="true" />
+        <span aria-hidden="true" className="font-mono text-[11px] font-medium uppercase leading-none tracking-[0.12em]">
+          {current.short}
+        </span>
+        <span className="sr-only">{current.label}</span>
       </button>
 
       {/* Options stay in the DOM; visibility is toggled via the `hidden` class */}
@@ -61,7 +64,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         role="menu"
         aria-label="Language"
         className={cn(
-          'absolute right-0 top-full mt-2 w-44 rounded-xl border border-white/10 bg-[#14141f] shadow-2xl shadow-black/80 z-50 py-1 backdrop-blur-xl',
+          'absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-2xl border border-line-strong bg-surface-raised p-1 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)]',
           !open && 'hidden'
         )}
       >
@@ -76,14 +79,12 @@ export function LanguageSwitcher({ className }: { className?: string }) {
               setOpen(false);
             }}
             className={cn(
-              'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors',
-              locale === lang.code
-                ? 'text-white bg-red-500/15 font-medium'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+              'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',
+              locale === lang.code ? 'bg-foreground/[0.06] font-medium text-foreground' : 'text-gray-400 hover:bg-foreground/[0.05] hover:text-foreground'
             )}
           >
             <span>{lang.label}</span>
-            {locale === lang.code && <Check className="ml-auto w-4 h-4 text-red-400" />}
+            {locale === lang.code && <Check className="ml-auto h-3.5 w-3.5 text-ember" aria-hidden="true" />}
           </button>
         ))}
       </div>

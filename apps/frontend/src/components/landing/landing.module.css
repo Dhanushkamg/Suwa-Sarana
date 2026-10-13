@@ -1,0 +1,85 @@
+/* Landing-page-only styles. Every colour comes from the global tokens (--ember, --foreground, --line ...). */
+
+/* Large, soft ember light that sits behind the hero map. Static (never animated) so it costs nothing at runtime. */
+.emberLight {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklch, var(--ember) 26%, transparent),
+    color-mix(in oklch, var(--ember) 9%, transparent) 55%,
+    transparent 100%
+  );
+}
+
+/* A quiet dot grid that fades out toward the edges */
+.dotGrid {
+  background-image: radial-gradient(color-mix(in oklch, var(--foreground) 16%, transparent) 1px, transparent 1.3px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+  mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+}
+
+/* Hairline outlined letters for the giant footer wordmark */
+.outline {
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in oklch, var(--foreground) 24%, transparent);
+  transition: -webkit-text-stroke-color 0.5s var(--ease-out);
+}
+
+.outlineWrap:hover .outline {
+  -webkit-text-stroke-color: color-mix(in oklch, var(--ember) 70%, transparent);
+}
+
+/* Bottom ember wash behind the closing call to action */
+.ctaWash {
+  background: radial-gradient(
+    ellipse 60% 70% at 50% 100%,
+    color-mix(in oklch, var(--ember) 20%, transparent),
+    transparent 70%
+  );
+}
+
+/* Slow sweep of the radar line in the proximity illustration (transform only) */
+@keyframes sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sweep {
+  /* the pivot is set inline (transform-origin in viewBox units) */
+  transform-box: view-box;
+  animation: sweep 9s linear infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.blink {
+  animation: blink 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep,
+  .blink {
+    animation: none;
+  }
+}
+
+/* Sinhala and Tamil have no upper case and look broken with wide tracking: reset the .eyebrow caption style for them.
+   Selector specificity beats the unlayered global .eyebrow rule. */
+:global(:lang(si)) .scriptFix,
+:global(:lang(ta)) .scriptFix {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.8rem;
+}

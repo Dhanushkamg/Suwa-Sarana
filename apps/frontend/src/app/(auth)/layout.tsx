@@ -1,90 +1,107 @@
 'use client';
 
 import Link from 'next/link';
-import { Heart, ArrowLeft } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
+import { ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
+import { SriLankaMap } from '@/components/brand/SriLankaMap';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useI18n } from '@/lib/i18n';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
+  const reduce = useReducedMotion();
+
+  const stats = [
+    { value: '25', label: t('authFlow.statDistricts') },
+    { value: '8', label: t('authFlow.statBloodTypes') },
+    { value: '3', label: t('authFlow.statLanguages') },
+  ];
 
   return (
-    <div className="min-h-screen flex bg-[#0d0d14]">
-      {/* Left panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 overflow-hidden">
-        {/* Background gradient orbs */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-red-600/20 blur-3xl" />
-          <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-rose-500/15 blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-red-500/10 blur-2xl" />
+    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+      {/* Left: calm editorial panel (desktop only) */}
+      <aside className="relative hidden overflow-hidden border-r border-line bg-surface lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+        {/* Dot-matrix island, breathing slowly behind the copy */}
+        <motion.div
+          aria-hidden="true"
+          className="absolute -right-12 top-1/2 h-[min(88vh,860px)] -translate-y-1/2 xl:right-4"
+          initial={reduce ? false : { opacity: 0 }}
+          animate={reduce ? { opacity: 0.5 } : { opacity: [0.35, 0.6, 0.35] }}
+          transition={reduce ? undefined : { duration: 9, ease: 'easeInOut', repeat: Infinity }}
+        >
+          <SriLankaMap className="h-full" showLabels={false} />
+        </motion.div>
+
+        <div className="relative z-10">
+          <Logo />
         </div>
 
-        {/* Grid overlay */}
-        <div
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)',
-            backgroundSize: '60px 60px',
-          }}
-        />
-
-        <div className="relative z-10 text-center">
-          {/* Logo */}
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 shadow-2xl shadow-red-500/40 mb-8 animate-pulse-glow">
-            <Heart className="w-10 h-10 text-white fill-white" />
-          </div>
-
-          <h1 className="text-5xl font-bold text-white mb-4">
-            <span className="gradient-text">Suwa Sarana</span>
-          </h1>
-          <p className="text-gray-400 text-lg max-w-sm mx-auto leading-relaxed">
+        <div className="relative z-10 max-w-md">
+          <motion.p
+            className="eyebrow mb-6 flex items-center gap-2.5"
+            initial={reduce ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+          >
+            <span aria-hidden="true" className="h-px w-6 bg-ember" />
+            {t('pub.authEyebrow')}
+          </motion.p>
+          <motion.p
+            className="font-display text-5xl text-foreground xl:text-6xl"
+            initial={reduce ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+          >
+            {t('pub.authHeadline')}
+          </motion.p>
+          <motion.p
+            className="mt-6 max-w-sm text-[15px] leading-relaxed text-gray-400"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.5 }}
+          >
             {t('authFlow.tagline')}
-          </p>
-
-          {/* Stats */}
-          <div className="mt-12 grid grid-cols-3 gap-4">
-            {[
-              { value: '25', label: t('authFlow.statDistricts') },
-              { value: '8', label: t('authFlow.statBloodTypes') },
-              { value: '3', label: t('authFlow.statLanguages') },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="glass-card rounded-2xl p-4 transition-all duration-300 hover:scale-105"
-              >
-                <div className="text-2xl font-bold text-white">{stat.value}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          </motion.p>
         </div>
-      </div>
 
-      {/* Right panel - Form */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-12 pt-24 lg:px-16 lg:py-12 relative">
-        <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
-          {/* Back to Home — visible on all screen sizes */}
+        <dl className="relative z-10 grid max-w-md grid-cols-3 gap-6 border-t border-line pt-6">
+          {stats.map((stat) => (
+            <div key={stat.label}>
+              <dt className="eyebrow">{stat.label}</dt>
+              <dd className="mt-2 font-display text-4xl text-foreground">{stat.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </aside>
+
+      {/* Right: the form */}
+      <div className="relative flex min-h-screen flex-col px-5 sm:px-10 lg:px-16">
+        <header className="flex items-center justify-between gap-3 py-5 lg:py-8">
+          <Logo className="lg:hidden" />
           <Link
             href="/"
-            className="hidden lg:inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-white transition-colors group"
+            className="group hidden items-center gap-2 text-sm text-gray-400 transition-colors hover:text-foreground lg:inline-flex"
           >
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-0.5" aria-hidden="true" />
             {t('authFlow.home')}
           </Link>
-          <div className="ml-auto">
-            <LanguageSwitcher />
-          </div>
-        </div>
-        {/* Mobile logo */}
-        <Link href="/" className="flex items-center gap-3 mb-10 lg:hidden">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30">
-            <Heart className="w-5 h-5 text-white fill-white" />
-          </div>
-          <span className="text-xl font-bold text-white">Suwa Sarana</span>
-        </Link>
+          <LanguageSwitcher />
+        </header>
 
-        <div className="w-full max-w-md">{children}</div>
+        <main className="mx-auto my-auto w-full max-w-md py-10 lg:py-14">{children}</main>
+
+        <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line py-5 font-mono text-[11px] uppercase tracking-[0.12em] text-gray-600">
+          <span>{t('footer.rights')}</span>
+          <span className="flex gap-5">
+            <Link href="/privacy" className="transition-colors hover:text-gray-300">
+              {t('footer.privacy')}
+            </Link>
+            <Link href="/terms" className="transition-colors hover:text-gray-300">
+              {t('footer.terms')}
+            </Link>
+          </span>
+        </footer>
       </div>
     </div>
   );
