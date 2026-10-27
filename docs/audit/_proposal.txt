@@ -1,0 +1,703 @@
+
+=== PAGE 1 ===
+Suwa Sarana: Completion & Production-Readiness Proposal
+Repository: https://github.com/Dhanushkamg/Suwa-Sarana Owner: Dhanushka
+Madhushanka Audience: Claude Code (you will review the code yourself; this document tells
+you what to check, what to build, and what "done" means) Goal: Take the whole project from
+its current state to a fully working, secure, polished, tested, AWS-deployable product.
+0. How to work on this (read first)
+1. Do not trust the existing status reports. An earlier tool (Antigravity) produced a status
+report claiming many features are complete. Treat every "done" claim as unverified until
+you have run it and seen it work (browser, API call, or automated test). Code that exists is
+not proof a feature works.
+2. Start with an audit, not with edits. Phase 1 produces docs/AUDIT.md  (findings with
+severity) and docs/PLAN.md . Stop and show both to the owner before large refactors.
+After approval, work through the plan without asking again unless a decision is
+irreversible or genuinely ambiguous.
+3. Work on a branch (e.g. chore/completion ), in small logical commits. Never force-push
+main . Never delete user data or drop tables without asking.
+4. Run the app for real. Start the backend, database and frontend, then use a browser
+(Playwright) and curl /HTTP tests. Record what you actually verified.
+5. No secrets in git. Check history for committed keys, .env  files, or passwords. If found,
+report it, rotate it, and move to env vars. Provide .env.example  files.
+6. Don't invent requirements. Add features only when they serve the project's purpose
+(Section 7 and 8). Record each addition and its justification in docs/PLAN.md .
+7. Keep a running changelog in docs/CHANGELOG-COMPLETION.md  and a final docs/TEST-
+REPORT.md .
+8. Ask the owner only for things in Section 14 or anything that needs credentials, money, or
+a product decision.
+Inputs the owner supplies (look for them in docs/  or the repo root; ask if missing):
+The Antigravity project status report. (The owner's brief text file did not contain it.
+Request it, or derive status from the code yourself.)
+Web_UI_Generation_Criteria_Report.docx  (UI criteria; key points are summarised in
+Section 5).
+Screenshots of the current UI (key findings are transcribed in Section 4, so you can work
+even if the images are absent).
+
+
+=== PAGE 2 ===
+1. Project context
+Suwa Sarana is a community blood donation and emergency matching platform for Sri Lanka.
+It is a government-related service. Public landing text mentions: 24/25 districts, 8 blood types,
+"466K+ units/year" (verify that stat has a source or remove/label it).
+Observed from screenshots (confirm in code):
+Frontend appears to be Next.js (running at localhost:3000 ), dark theme only, with a
+language switcher (English / Sinhala / Tamil) and a floating "Eligibility AI Assistant"
+chatbot.
+Roles seen: Donor, Admin. Other roles the owner mentions: hospital, requester, blood
+bank.
+Donor area: My Profile, My Matches, Notifications. Admin area: Admin Console, All
+Blood Requests, Notifications, AI Triage Queue, Interactive Heatmap, Verification Portal,
+flagged reports, requester verification.
+Features present in some form: matching, real-time notifications, reliability score, low-
+data mode, district shortage heatmap (Leaflet-style map), AI eligibility chatbot ("NBTS
+grounded"), AI triage, AI poster/social post generation, Google sign-in.
+Owner's stack background: NestJS, Spring Boot, Node, React, Next.js, TypeScript,
+PostgreSQL; learning AWS and Docker. Keep the final deployment approach simple
+enough for them to understand and maintain.
+2. Final objective
+A production-ready application that has:
+Reliable, secure authentication (email/password and Google).
+Correct role-based features and server-enforced permissions.
+Accurate, natural Sinhala, Tamil and English across the entire app.
+A much better AI chatbot (Sinhala, Tamil, English, Singlish) and much better AI
+poster/social-post generation.
+A modern, consistent, accessible UI with working light and dark themes and a balanced
+colour palette.
+Verified, tested behaviour across features, roles, languages, themes and devices.
+A documented, repeatable AWS deployment.
+3. Issues the owner already knows about
+For each, find the root cause, fix it, add a regression test, and note it in the changelog.
+
+
+=== PAGE 3 ===
+3.1 Google authentication does not work correctly
+Reproduce first. Check OAuth client ID/secret handling, redirect/callback URIs (local and
+production), state /PKCE, token verification on the backend, account linking (same
+email via password and Google), first-time Google users (role selection / profile
+completion), session creation, error messages, and logout.
+Production note: Google Console needs authorized origins and redirect URIs for the final
+domain. Document the exact values.
+3.2 Buttons and interactive elements
+Inventory every button, link, toggle, form, menu, filter, tab, modal, and card action on
+every page for every role. Verify each performs its intended action, shows
+loading/success/error states, and handles failure.
+Known suspicious items: the donor "Save" button, availability toggle, Low-Data Mode
+toggle, "View My Matches", "Back", Admin "Refresh", "Verify User", "Open Interactive
+Map", "AI Triage Queue", "Verification Portal", chatbot quick-reply chips, language
+switcher, Sign out.
+Produce a checklist table (page, element, expected, actual, status) in the audit.
+3.3 Multilingual support (Sinhala, Tamil, English)
+Switching to Sinhala or Tamil breaks parts of the app and produces unnatural or
+inconsistent translations (word choice, sentence structure, context).
+Required: 100% of user-facing strings are translated: UI labels, buttons, validation
+messages, API error messages shown to users, empty states, toasts, emails/notifications,
+chart labels, map legends, dates, numbers, pluralisation, page titles and metadata, and
+chatbot UI text.
+Implementation expectations: a proper i18n library (e.g. next-intl  or react-i18next ),
+no hard-coded strings, translation keys organised by feature, locale persisted
+(cookie/profile), lang  attribute set on <html> , proper fonts (Noto Sans Sinhala, Noto
+Sans Tamil, with suitable line-height since these scripts need more vertical room),
+layouts that survive longer text, ICU plural rules (this fixes issues like "1 requests").
+Translation quality: use consistent medical and civic terminology (e.g. "blood donor",
+"requester", "verified", "deferral", "eligibility", "district") with a glossary file ( docs/i18n-
+glossary.md ) so each term is rendered the same way everywhere. Prefer natural, formal-
+but-plain Sinhala/Tamil used in Sri Lankan government and health communication over
+literal machine translation. Flag any term you are unsure about for human review by a
+native speaker; do not silently guess. Add a script that fails CI if a key is missing in any
+locale.
+
+
+=== PAGE 4 ===
+3.4 AI assistant chatbot
+Does not always work and handles Singlish poorly. Must understand and answer in
+Sinhala, Tamil, English, and Singlish (Sinhala in Latin letters, e.g. "mama blood denna
+puluwanda tattoo ekak thiyenawa nam?"), and Tanglish if feasible.
+Observed answer-quality bug: asked "What is the minimum age and weight to donate
+blood?", it answered only the age range (18-60) and ignored weight. Verify all eligibility
+facts against official Sri Lanka NBTS guidance, not model memory.
+See Section 9 for the target design.
+3.5 Login and registration
+There are known problems; find all of them. Example seen in a screenshot: signing in
+with a valid-looking account displays a generic "Validation Error" banner with no field-
+level guidance. Check: validation rules and messages (localised), duplicate emails,
+password policy, hashing (bcrypt/argon2), email verification, forgot/reset password flow,
+rate limiting and lockout, JWT/session handling (expiry, refresh, httpOnly cookies,
+CSRF), role assignment at registration (users must not be able to self-assign Admin),
+logout invalidation, and redirect-after-login by role.
+Test it as an attacker too (Section 8).
+3.6 Role-based features and permissions are incomplete
+Features for admins, hospitals, blood banks and other roles were never properly defined.
+See Section 7 for a proposed matrix. Reconcile with what exists, fill gaps, and enforce on
+the backend (guards/middleware, per-resource ownership checks). Hiding a button is
+not security.
+3.7 AI poster / social-media post generation is poor
+Accuracy and visual quality are insufficient. See Section 9.2 for the target design.
+4. Defects and weaknesses already visible in the screenshots
+Treat these as confirmed starting points for the audit (verify, then fix):
+Donor profile page
+Field label says "Patient Blood Type" on the donor's own profile. It should be "Blood
+Type". Check for other copy copied from the requester flow.
+Availability toggle label "Update availability" with a location-pin icon is confusing:
+rename (e.g. "Available to donate") and use an appropriate icon. If location is also being
+updated, make that a separate, explicit control.
+"Reliability scoring" is awkward wording and "Excellent Standing" is unexplained.
+Explain how the score is computed; consider whether to show it at all.
+
+
+=== PAGE 5 ===
+Stats (85 / 4 / 12) must be real data from the database, not placeholders.
+Next.js dev indicator ("N") overlaps the Sign out control (dev-only, but check the sign-
+out control spacing and that it is not obscured in production).
+Nearly everything is red: sidebar active state, primary button, toggle, links, floating
+chatbot button, stat icons. Red loses its meaning (see Section 5).
+The chatbot floating button overlaps page content in the bottom-right.
+Login page
+Generic "Validation Error" banner (see 3.5). Banner colour/style is fine as an error, but the
+message must be specific and localised.
+Inputs render as bright white fields on a dark page: inconsistent with the dark theme and
+visually jarring.
+Email field has an uneven left gutter (looks like a missing icon or padding bug).
+The sign-in form shows a plaintext password toggle; fine, but ensure autocomplete
+attributes are correct ( username , current-password ).
+Marketing stats ("466K+ Units/year", "24 Districts") are inconsistent with the app saying
+25 districts elsewhere. Reconcile (Sri Lanka has 25 districts).
+Note to owner: the screenshot shows a real-looking email and password in plaintext. If
+that is a real account, change that password.
+Admin overview
+"1 requests": pluralisation bug (also affects other languages).
+The district bars all render full width, so the chart conveys no proportion. Bars must scale
+to data, with axes or counts.
+Four action buttons use four different colours (purple, blue, red) with no consistent logic.
+Use a button hierarchy (one primary, others secondary/ghost).
+Requester verification by typing a raw User ID is poor UX and error-prone. Replace with a
+searchable pending-verification list with details (name, organisation, documents) and
+approve/reject with reason.
+Empty state for flagged reports is fine; make sure it exists elsewhere too.
+Admin analytics / heatmap
+Map tiles show "API KEY REQUIRED" watermarks (Carto basemap used without a valid
+key/terms). Switch to a properly licensed tile source (e.g. OpenStreetMap-compliant
+provider with attribution, or a keyed provider with the key in env vars) and make sure it
+works in production.
+The map view is zoomed out so far that India (Kerala, Tamil Nadu) labels crowd the view.
+Fit bounds to Sri Lanka and restrict panning.
+
+
+=== PAGE 6 ===
+Data inconsistency: the Admin overview shows open requests in Hambantota,
+Batticaloa, Colombo and Ratnapura, but the heatmap and telemetry table show 0 active
+requests everywhere. Also: "Registered Donors 0" next to "25 districts active", "National
+fulfilment 84%" while totals are 0, and "Fulfilment rate 100%" for districts with 0 total
+requests (divide-by-zero logic) while Colombo, Hambantota and Batticaloa show 0%. Fix
+the aggregation queries, define metrics precisely, and show "no data" instead of fake
+100%.
+All map markers show "0": markers should encode status (colour plus icon/label), not
+only the count. Colour-only status (red/amber/green) fails accessibility.
+Legend wording ("Active > Donors", "Low donor ratio") needs clear definitions.
+Chatbot
+Incomplete answers (age without weight), as noted in 3.4.
+Quick-reply chips are clipped/scroll horizontally with no affordance; wrap them or add
+clear scroll cues.
+"NBTS GROUNDED" badge makes a strong claim: only display it when the answer really
+is retrieved from a verified source, and cite the source passage.
+Global
+Dark theme only. Light theme missing (see Section 5).
+Browser tab titles are truncated ("Suwa Sarana: Community Blo..."); set concise, localised
+titles per page.
+5. UI/UX requirements
+Use the owner's Web UI Generation Criteria Report as the reference checklist. Its key rules:
+clear visual hierarchy; responsive layouts with no overflow; WCAG 2.2 AA (4.5:1 normal text,
+3:1 large text and UI components); never rely on colour alone; visible focus and keyboard
+access; defined hover/focus/active/disabled/loading/success/error/empty states; shared
+components and design tokens; semantic tokens mapped separately for light and dark themes;
+frontend role visibility is UX only, backend enforces access.
+5.1 Design direction
+Combine the familiarity and trust of a government service with modern UI:
+Keep the good parts of government sites: clear header with identity and language
+switcher, predictable navigation, plain language, prominent "Emergency / Request
+blood" path, visible contact/help, a footer with policy links, breadcrumbs or Back links
+where useful, high-contrast readable type, and printable/clearly structured pages for
+forms.
+
+
+=== PAGE 7 ===
+Avoid the bad parts: dense text walls, tiny fonts, cluttered link lists, tables with no
+hierarchy, dated gradients, stock-photo banners, inconsistent styles, and non-responsive
+layouts.
+Do not imply official government or NBTS endorsement unless the owner confirms it. No
+official logos, crests or ministry names without permission.
+Plain, calm tone. Medical content should read as trustworthy, not alarmist.
+5.2 Colour strategy
+The current UI uses red for nearly everything. Replace it with a balanced system:
+Primary (actions, active navigation, links): a trustworthy blue or teal-blue.
+Brand accent: a restrained blood-red/crimson used sparingly (logo, blood-type badges,
+the single "Request blood / urgent" call to action).
+Secondary: teal or green family for supportive elements.
+Semantic only: red = error/destructive/critical shortage; amber = warning/pending;
+green = success/verified; blue = info.
+Neutrals: layered surfaces, borders and text greys for most of the UI.
+Starting tokens (from the criteria report; adjust and validate contrast with a script, don't
+assume):
+Token
+Light
+Dark (propose, then verify)
+primary
+#2563EB
+lighter blue (e.g. 
+#60A5FA  /
+#3B82F6  by contrast)
+secondary
+#0F766E
+lighter teal
+accent / brand
+crimson, limited use
+slightly lighter crimson
+background
+#F8FAFC
+deep neutral (not pure black)
+surface
+#FFFFFF
+one step lighter than background
+text
+#1E293B
+near-white
+muted text
+#64748B
+mid grey meeting 4.5:1
+border
+#E2E8F0
+subtle lighter-than-surface line
+success / error /
+warning / info
+#16A34A  / 
+#DC2626  /
+#D97706  / 
+#2563EB
+adjusted for dark surfaces
+
+
+=== PAGE 8 ===
+5.3 Theme system
+Light, dark, and system option, with a visible toggle, persisted per user/device, no flash of
+wrong theme on load.
+Semantic CSS variables / Tailwind tokens only. No hard-coded hex values in
+components (grep for them and remove).
+Verify every page, form, dialog, table, chart, map (tiles/legend/popups), toast, chatbot,
+and focus ring in both themes. Charts and heatmap colours need separate dark/light
+validation.
+5.4 Components, layout and consistency
+Build or consolidate a small design system: Button (primary/secondary/ghost/destructive,
+sizes), Input/Select/Toggle/Checkbox, Card, Badge/Status chip (icon + text + colour),
+Table, Dialog, Toast, Empty state, Skeleton/loading, Tabs, Navigation, Breadcrumb, Form
+field with label/help/error.
+Consistent spacing scale, type scale, radii, shadows, icon set and size.
+One primary button per view. Fix the multi-colour button row in Admin.
+Document it in docs/DESIGN-SYSTEM.md  (tokens, components, do/don't, accessibility
+notes).
+5.5 Responsive and accessible
+Test at 360, 768, 1024, 1440 widths. Sidebar collapses to a drawer on mobile; tables
+become cards or scroll within their container; no horizontal page scroll.
+Skip-to-content link, semantic landmarks, label every input, visible focus, keyboard-
+operable menus/dialogs (focus trap, Escape), ARIA only where needed, prefers-
+reduced-motion , 44px minimum touch targets.
+Run automated checks (axe, Lighthouse) and fix violations. Test keyboard-only and with
+a screen reader at least once on key flows.
+Low-data mode (existing feature): verify it works (e.g. no heavy images/maps, reduced
+polling) and apply it consistently.
+5.6 Feedback states
+Every async action needs loading, success, error and empty states, plus double-submit
+prevention. Error messages must be human, specific and localised, and must never leak stack
+traces or internals.
+6. Comprehensive review scope
+Do not limit yourself to the issues above. Audit all of the following and record findings with
+severity (Critical / High / Medium / Low) in docs/AUDIT.md :
+
+
+=== PAGE 9 ===
+1. Completed-but-unverified features: exercise every feature the Antigravity report calls
+done.
+2. Partial or fake implementations: TODOs, stubbed endpoints, mocked data, hard-coded
+numbers, placeholder AI responses, console.log  debugging, dead routes.
+3. Frontend ↔ backend integration: wrong endpoints, mismatched DTOs/types, missing
+error handling, stale caches, inconsistent API response shapes.
+4. API and data layer: endpoint inventory with auth requirement and role for each; input
+validation (DTO/schema) on every write; pagination and filtering; N+1 queries; indexes;
+migrations (versioned, repeatable, reversible); seed data separated from production;
+transactions where needed; soft-delete and audit trails where appropriate.
+5. Authentication & authorization: see Section 8.
+6. Matching logic: correctness of donor-request matching (blood-type compatibility rules,
+district/proximity, availability, cooldown between donations, reliability score), tested
+with a compatibility matrix and edge cases.
+7. Real-time notifications: delivery, ordering, duplicates, read/unread, reconnection,
+scalability (WebSocket/SSE behind a load balancer, which matters for AWS).
+8. Multilingual: entire app, backend messages, emails and notifications included.
+9. AI features: quality, grounding, safety, cost, latency, failure handling.
+10. UI/UX, accessibility, responsiveness, themes.
+11. Error handling & observability: global error boundary, consistent error format,
+structured logs, request IDs, no sensitive data in logs.
+12. Performance: bundle size, image/font optimisation, caching, lazy-loading map/chart
+code, query performance, Lighthouse targets.
+13. Compatibility with AWS: see Section 11.
+14. Code quality: lint/format, TypeScript strictness, dead code, duplicated logic, dependency
+vulnerabilities ( npm audit ), README accuracy.
+15. Privacy & legal: donors' health, contact and location data are sensitive. Review data
+minimisation, consent, retention, who can see what, and alignment with Sri Lanka's
+Personal Data Protection Act (No. 9 of 2022). Add privacy policy and terms pages,
+consent at registration, and account/data deletion or export if feasible. State clearly
+(without legal claims) what the app collects.
+7. Roles and permissions (proposed baseline, reconcile with existing code)
+Confirm the roles actually in the database/enums. Proposed baseline; adjust where the code or
+the owner's intent differs.
+
+
+=== PAGE 10 ===
+Capability
+Guest
+Donor
+Requester
+(patient/family)
+Hospital
+Blood
+bank
+Admin
+View public info, eligibility
+FAQ/chatbot, campaigns
+✔
+✔
+✔
+✔
+✔
+✔
+Register / login (email, Google)
+✔
+✔
+✔
+✔
+✔
+n/a
+(invite-
+only)
+Manage own profile, blood type,
+district, availability
+✔
+✔
+✔
+✔
+✔
+Donation history, reliability score,
+eligibility/next-donation date
+✔
+view all
+Receive and respond to match
+alerts (accept/decline)
+✔
+Create blood request (type, units,
+urgency, location, hospital, contact,
+needed-by)
+✔
+✔
+✔
+Track/cancel/close own requests,
+mark fulfilled
+✔
+✔
+✔
+Verified-requester badge required
+for urgent/mass alerts
+✔
+✔
+✔
+grants it
+Hospital: manage staff accounts,
+requests for the institution, confirm
+donations
+✔
+✔
+Blood bank: manage inventory by
+blood type and component, expiry,
+thresholds, low-stock alerts,
+publish stock status, record
+collections, organise donation
+camps
+✔
+✔
+Create/publish donation
+campaigns and AI posters
+✔
+✔
+✔
+
+
+=== PAGE 11 ===
+Capability
+Guest
+Donor
+Requester
+(patient/family)
+Hospital
+Blood
+bank
+Admin
+Verification queue (approve/reject
+hospitals, blood banks, requesters
+with reason, document review)
+✔
+Moderation: flagged reports,
+suspend/ban/restore users, audit
+log
+✔
+Analytics: national heatmap,
+shortages, fulfilment; scoped views
+for hospital/blood bank
+own
+own
+all
+AI triage queue, system settings,
+announcement broadcast
+✔
+Export data (CSV)
+own
+own
+all
+Requirements:
+Roles stored server-side; never trust a role sent by the client. Admin accounts created
+only by seed/invite.
+Authorization at the API layer, plus resource ownership checks (a hospital cannot read
+or edit another hospital's requests; a donor cannot read other donors' details).
+Donor contact details are revealed to a requester only after the donor accepts a match (or
+per documented rules). Document the privacy rule you implement.
+Automated tests: for each endpoint, assert allowed and forbidden roles.
+UI hides unavailable actions, and each role has its own sensible dashboard, navigation
+and empty states.
+8. Security checklist
+OWASP Top 10 review: injection (SQL/NoSQL/command), broken access control (IDOR),
+auth failures, security misconfiguration, vulnerable dependencies, SSRF, logging failures.
+Password hashing with argon2/bcrypt, password policy, breach-resistant reset tokens
+(single-use, short-lived, hashed at rest), email verification.
+Sessions/JWT: short-lived access tokens, rotation/refresh strategy, httpOnly + Secure +
+SameSite cookies if cookie-based, CSRF protection, logout invalidation.
+
+
+=== PAGE 12 ===
+Rate limiting and brute-force protection on login, register, reset, OTP, chatbot and AI
+endpoints. Add CAPTCHA/Turnstile if abuse is likely.
+Input validation (server-side, schema-based) on every endpoint; output encoding; file-
+upload validation (type, size, malware considerations) for verification documents; store
+files privately (S3 private bucket + signed URLs).
+Security headers (CSP, HSTS, X-Content-Type-Options, frame protections), strict CORS
+allow-list, HTTPS only, secure cookies.
+AI-specific: prompt-injection resistance, no secrets in prompts, output sanitisation, per-
+user rate and cost limits, no medical diagnosis claims.
+Secrets in env/AWS Secrets Manager or SSM; none in repo or client bundles. Only
+NEXT_PUBLIC_*  values intended to be public.
+Audit log for admin actions (verification, suspension, data exports).
+Dependency and container scanning in CI.
+9. AI features: target design
+9.1 Eligibility chatbot
+Grounded answers (RAG): build a curated, versioned knowledge base of Sri Lanka
+NBTS eligibility and deferral guidance (age, weight, haemoglobin, donation intervals,
+tattoos/piercings, medications, travel, illness, pregnancy, vaccinations, etc.) as structured
+entries with source URL/title and a "last reviewed" date. Retrieve the relevant entries and
+have the model answer only from them. Answer every part of a multi-part question (age
+and weight). If the knowledge base has no answer, say so and direct the user to the
+NBTS/Medical Officer. Never invent thresholds. Verify the facts with the owner or official
+sources before shipping.
+Languages: auto-detect Sinhala script, Tamil script, English, and Singlish/Tanglish
+(romanised). Normalise romanised input (transliteration and/or a model step that
+rewrites the query into standard Sinhala/English), retrieve, then reply in the user's
+language (Singlish in → reply in Sinhala script or Singlish per a configurable setting,
+default match the user). Include a test set of at least 100 questions across the four input
+styles with expected key facts.
+Safety: clear disclaimer that final eligibility is decided by the Medical Officer; no
+diagnosis; recommend professional help for symptoms/emergencies; handle off-topic
+and abusive messages politely; resist prompt injection.
+Reliability: timeouts, retries, graceful fallback (FAQ search or friendly error) when the AI
+provider fails, streaming responses if possible, conversation history limits, rate limiting,
+cost monitoring.
+
+
+=== PAGE 13 ===
+UI: chat window that works in both themes and on mobile, accessible (focus
+management, aria-live  for replies), wrapped quick-reply chips, a "show source"
+affordance, and a language indicator. The "grounded" badge shows only when a source
+was actually used.
+9.2 AI poster and social media post generator
+Problem: output is inaccurate and visually weak. Likely cause: asking an image model to
+render text and layout. Prefer a deterministic, template-based pipeline:
+1. Data from the system (blood type, units, hospital, district, date/time, contact,
+campaign details) fills the poster directly, so facts are never hallucinated.
+2. LLM only for copy: short headline, body and hashtags in the chosen language
+(Sinhala/Tamil/English), constrained by length and tone, and validated (required
+fields present, no invented phone numbers/places).
+3. Render with HTML/SVG/Canvas templates (several layouts: urgent request,
+donation camp, awareness, thank-you) in real fonts, correct Sinhala/Tamil shaping,
+brand-consistent colours, QR code to the request/campaign page. Export PNG/PDF
+at social sizes (1080×1080, 1080×1350, 1200×630, 1080×1920 story).
+4. Preview and edit before export, with copy-to-clipboard captions and share links.
+5. Guardrails: show an "unverified" warning or block if the requester is unverified; no
+patient names/photos or sensitive details without consent; avoid scare tactics.
+Add visual regression tests (screenshot comparison) for each template/language.
+9.3 AI triage queue (admin)
+Verify what it actually does. Make criteria transparent (why an item was
+flagged/prioritised), keep a human in the loop for decisions, log AI suggestions, and
+handle model failures gracefully.
+10. Testing requirements
+Do not call anything finished until it is tested. Deliver docs/TEST-REPORT.md  with results.
+Unit tests: matching logic, eligibility/cooldown calculations, reliability score, metrics
+aggregation, validators, translation completeness.
+API/integration tests: every endpoint, happy path, validation failures, unauthorised and
+forbidden access per role.
+End-to-end tests (Playwright): registration → login → profile → request → match →
+notification → fulfilment, for each role; Google sign-in flow (mock where needed;
+document manual verification); admin verification and moderation; chatbot; poster
+generation.
+
+
+=== PAGE 14 ===
+Cross-matrix runs: each key flow in English, Sinhala and Tamil; light and dark themes;
+mobile and desktop viewports.
+Accessibility: axe on every page in both themes; keyboard-only pass on core flows.
+Performance: Lighthouse on key pages (target ≥ 90 performance/accessibility/best-
+practices where realistic); API latency under modest load (k6 or similar) to check nothing
+falls over.
+Security tests: auth bypass/IDOR attempts, rate-limit checks, dependency audit.
+AI evaluation: the chatbot test set (Section 9.1) with pass rate reported; poster outputs
+reviewed visually.
+CI: GitHub Actions running lint, type-check, unit, integration, and e2e on pull requests.
+Seed/demo data: a script to create realistic demo data (all roles, all 25 districts) so
+dashboards and the heatmap can be validated with non-zero values.
+11. AWS readiness (deploy only after owner approval)
+Prepare and document, and implement what is possible without owner credentials:
+Containerise: Dockerfiles for frontend and backend (multi-stage, non-root, health
+checks), docker-compose.yml  for local dev (app + PostgreSQL), env var documentation.
+Suggested architecture (keep it simple and affordable; propose alternatives with
+cost/complexity notes): ECS Fargate (or App Runner) for services behind an Application
+Load Balancer; RDS PostgreSQL (private subnets, automated backups, encryption); S3
+for uploads and static assets (private + signed URLs), CloudFront in front; Route 53 +
+ACM for HTTPS; Secrets Manager/SSM for secrets; CloudWatch logs and alarms; SES for
+email; ECR for images.
+Real-time: confirm WebSocket/SSE works through the ALB (sticky sessions or a pub/sub
+backing such as Redis if multiple instances).
+Configuration: no hard-coded localhost  URLs; configurable API base URL, CORS
+origins, cookie domains, OAuth redirect URIs, map tile key, AI provider keys.
+Database: migration workflow run at deploy time, seed only in non-production,
+backup/restore procedure documented.
+CI/CD: GitHub Actions to build, test, push to ECR, and deploy to staging then
+production, using OIDC (no long-lived AWS keys).
+Operations: health/readiness endpoints, graceful shutdown, structured logging, basic
+alarms (5xx rate, latency, DB CPU/storage), cost estimate.
+Deliver docs/DEPLOYMENT-AWS.md  with step-by-step instructions the owner (who is still
+learning AWS and Docker) can follow, and optionally IaC (Terraform or AWS CDK) if the
+owner wants it.
+
+
+=== PAGE 15 ===
+Staging environment first; run the full e2e suite against staging before production.
+
+
+=== PAGE 16 ===
+12. Phased plan and deliverables
+Phase
+Work
+Exit criteria
+1. Audit
+Run the app; inventory features, endpoints, roles,
+strings, buttons; verify "completed" claims; security
+and dependency scan; screenshot every page in
+both languages
+docs/AUDIT.md  +
+docs/PLAN.md  shared with
+owner for sign-off
+2. Foundations
+Env/config cleanup, secrets hygiene, migrations,
+seed data, i18n infrastructure, design tokens +
+theme system, shared components, test harness
+and CI
+App runs from a clean clone
+with documented steps; tokens
+used everywhere; CI green
+3. Auth & roles
+Fix Google auth, login/registration, reset, sessions,
+rate limits, RBAC guards and ownership checks,
+role dashboards
+Role/permission test matrix
+passes; auth e2e passes
+4. Core features
+Verify and fix requests, matching, notifications,
+donor profile, hospital and blood-bank features,
+admin verification and moderation, analytics data
+correctness, map provider
+Each feature has passing
+integration + e2e tests
+5. UI/UX
+overhaul
+Apply palette and design system to all pages,
+light/dark, responsive, accessibility,
+loading/empty/error states, government-service
+patterns
+Axe clean, Lighthouse targets,
+visual review in both themes at
+4 breakpoints
+6. Multilingual
+Complete and polish Sinhala/Tamil translations
+with glossary, fonts, plurals, backend/emails,
+native-speaker review list
+No missing keys; manual
+walkthrough in each language
+7. AI
+Chatbot RAG + multilingual/Singlish, poster
+generator rebuild, triage review, evaluation sets
+Chatbot ≥ agreed pass rate
+(propose 90%+) on the test set;
+poster templates reviewed
+8. Hardening &
+performance
+Security fixes, performance tuning, error handling,
+logging, privacy pages
+Security checklist complete; no
+Critical/High open
+9. AWS
+Docker, CI/CD, staging deployment, smoke + e2e
+on staging, runbook
+Staging fully working; owner
+approves production release
+
+
+=== PAGE 17 ===
+Report progress at the end of each phase: what was verified, what changed, what remains, and
+any decisions needed.
+13. Definition of done
+Every item in this document is fixed, implemented, or explicitly deferred with a reason
+the owner accepted.
+Every button and interactive element works for every role.
+Google and email/password auth work in local, staging and production configurations.
+All user-facing text is correct in English, Sinhala and Tamil; the chatbot handles Singlish.
+Light and dark themes both pass contrast and visual review; no hard-coded colours.
+Red is used only where semantically appropriate (plus the restrained brand accent).
+All endpoints enforce authentication, authorisation and validation; permission tests pass.
+Heatmap and admin metrics match the database and handle zero-data states honestly.
+Test suite and CI green; docs/TEST-REPORT.md  written with real results.
+App runs from a clean clone using the README; .env.example  provided; no secrets in
+the repo.
+Deployment to AWS staging verified; production deployment runbook ready.
+Docs delivered: AUDIT.md , PLAN.md , DESIGN-SYSTEM.md , i18n-glossary.md , TEST-
+REPORT.md , DEPLOYMENT-AWS.md , updated README.md .
+14. Questions to confirm with the owner (ask early, in one batch)
+1. Which roles must exist at launch (donor, requester, hospital, blood bank, admin, anything
+else, e.g. NBTS staff, camp organiser)? How is each verified?
+2. Is the project officially affiliated with NBTS or the Ministry of Health? This decides
+branding, logos and wording.
+3. Which AI provider(s) and budget should be used for the chatbot and poster text? Which
+API keys are available?
+4. Can the owner provide authoritative NBTS eligibility documents for the knowledge
+base? Who will review the Sinhala and Tamil text (a native speaker)?
+5. Target domain name, AWS account/region (Sri Lanka users: consider ap-south-1
+Mumbai or ap-southeast-1  Singapore for latency), and budget ceiling.
+6. Map provider preference and whether a paid tile key is acceptable.
+7. Email/SMS provider for notifications (SES for email; SMS gateway if needed).
+8. Any compliance, hosting-location or data-retention requirements from the government
+stakeholders?
+
+
+=== PAGE 18 ===
+9. Expected scale at launch (users, concurrent requests), to size the AWS setup.

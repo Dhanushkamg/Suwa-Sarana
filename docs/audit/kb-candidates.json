@@ -1,0 +1,533 @@
+{
+  "_meta": {
+    "purpose": "PROPOSED curated knowledge-base entries for the donor eligibility chatbot. NOT loaded by any code. Owner / NBTS Medical Officer must approve before use.",
+    "prepared": "2026-10-27",
+    "method": "Pages fetched with a summarising web-fetch tool on 2026-10-27, so wording is paraphrased by the tool. A human must re-read each source URL and confirm values before shipping (especially the malaria country list).",
+    "primary_official_source": {
+      "title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "url": "https://nbts.health.gov.lk/donate-blood/",
+      "note": "English only. No 'last updated' date on the page; footer shows 'Copyright 2025'; malaria country list is labelled 2024."
+    },
+    "other_official_sources": [
+      {"title": "Contact Us – NBTS", "url": "https://nbts.health.gov.lk/contact-us/"},
+      {"title": "Organizing Mobile Blood Donation – NBTS", "url": "https://nbts.health.gov.lk/organizing-mobile-blood-donation/"},
+      {"title": "Blood Banks Map – NBTS", "url": "https://nbts.health.gov.lk/blood-bank-map/"}
+    ],
+    "status_values": {
+      "verified": "Stated on an official NBTS page.",
+      "conflict": "Official page and a secondary source disagree; do NOT ship without owner/NBTS decision.",
+      "gap": "No official source found. Chatbot must NOT state a number; use the safe_reply instead."
+    },
+    "translation_note": "answer_en only. Sinhala and Tamil answers must be written and reviewed by native speakers using plain government-health register. si/ta/singlish question_examples below are drafts for the eval set and also need native review.",
+    "owner_actions": [
+      "Ask NBTS (info@nbts.health.gov.lk, +94 11 236 9931-4) for the current written Donor Selection Guideline covering tattoos/piercings, medications, surgery, dental work, breastfeeding/post-partum, vaccination, alcohol, apheresis.",
+      "Ask NBTS to resolve: first-time donor weight (page: above 50 kg; Dec-2025 news quoting the NBTS Director: exceed 55 kg) and malaria-travel rule (page: 3 years deferral; Dec-2025 news: 2 years).",
+      "Confirm the 2024 malaria-endemic list is current (e.g. it includes Egypt, Turkey, Georgia, South Korea).",
+      "Confirm whether the 'Raktha' app/website named in faq-knowledge.txt #78 exists; no public evidence was found."
+    ]
+  },
+  "entries": [
+    {
+      "id": "ELIG-AGE",
+      "status": "verified",
+      "topic": "Age range",
+      "question_examples": {
+        "en": ["What is the age limit to donate blood?", "Am I too old to donate blood?"],
+        "si": ["රුධිර දානය කිරීමට වයස් සීමාව කීයද?"],
+        "ta": ["இரத்த தானம் செய்ய வயது வரம்பு என்ன?"],
+        "singlish": ["blood denna wayasa keeyada thiyenna one?", "mata 58 ne, blood denna puluwanda?"]
+      },
+      "answer_en": "Donors must be between 18 and 60 years of age. First-time donors can be up to 55 years of age.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "ELIG-AGE-FIRST-TIME",
+      "status": "verified",
+      "topic": "Age limit for first-time donors",
+      "question_examples": {
+        "en": ["I am 57 and have never donated. Can I donate?", "Maximum age for first time donor?"],
+        "si": ["මම පළමු වතාවට රුධිර දානය කරන්නේ. උපරිම වයස කීයද?"],
+        "ta": ["முதல் முறையாக இரத்த தானம் செய்பவருக்கு அதிகபட்ச வயது என்ன?"],
+        "singlish": ["mama aluth donor kenek, wayasa 57, blood denna puluwanda?"]
+      },
+      "answer_en": "First-time donors can be up to 55 years of age. Regular donors can donate up to 60 years.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "ELIG-WEIGHT",
+      "status": "verified",
+      "topic": "Minimum weight",
+      "question_examples": {
+        "en": ["What is the minimum weight to donate blood?", "I weigh 49 kg, can I donate?"],
+        "si": ["රුධිර දානය කිරීමට අවම බර කීයද?"],
+        "ta": ["இரத்த தானம் செய்ய குறைந்தபட்ச எடை எவ்வளவு?"],
+        "singlish": ["blood denna bara kg keeyak thiyenna one?", "mage bara 49 kg, denna puluwanda?"]
+      },
+      "answer_en": "Donors must weigh above 50 kg.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": true,
+      "review_reason": "Dec-2025 news quotes the NBTS Director saying FIRST-TIME donors must exceed 55 kg (see CONFLICT-FIRST-TIME-WEIGHT). Official page says above 50 kg with no first-time distinction."
+    },
+    {
+      "id": "ELIG-AGE-WEIGHT-COMBINED",
+      "status": "verified",
+      "topic": "Minimum age AND weight (multi-part question; the observed failing question)",
+      "question_examples": {
+        "en": ["What is the minimum age and weight to donate blood?"],
+        "si": ["රුධිර දානය කිරීමට අවම වයස සහ බර කීයද?"],
+        "ta": ["இரத்த தானம் செய்ய குறைந்தபட்ச வயது மற்றும் எடை என்ன?"],
+        "singlish": ["blood denna minimum wayasa saha bara keeyada?"]
+      },
+      "answer_en": "You must be at least 18 years old (up to 60; first-time donors up to 55) and weigh above 50 kg.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": true,
+      "review_reason": "Inherits the weight conflict above."
+    },
+    {
+      "id": "ELIG-HAEMOGLOBIN",
+      "status": "verified",
+      "topic": "Haemoglobin level",
+      "question_examples": {
+        "en": ["What haemoglobin level do I need to donate?", "My Hb is 12. Can I donate?"],
+        "si": ["රුධිර දානයට හිමොග්ලොබින් මට්ටම කීයද විය යුත්තේ?"],
+        "ta": ["இரத்த தானத்திற்கு ஹீமோகுளோபின் அளவு எவ்வளவு இருக்க வேண்டும்?"],
+        "singlish": ["blood denna haemoglobin level eka keeyada wenna one?"]
+      },
+      "answer_en": "Haemoglobin must be above 12.5 g/dL. It is checked at the blood bank before you donate.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "ELIG-INTERVAL",
+      "status": "verified",
+      "topic": "Minimum interval between donations",
+      "question_examples": {
+        "en": ["How often can I donate blood?", "Can I donate every 3 months?"],
+        "si": ["රුධිර දානයක් කළාට පසු නැවත කොපමණ කාලයකින් දිය හැකිද?"],
+        "ta": ["ஒரு முறை இரத்த தானம் செய்த பிறகு மீண்டும் எப்போது செய்யலாம்?"],
+        "singlish": ["ekapaara blood dunnata passe aye kawadda denna puluwan?", "masa 3kata ekapaara denna puluwanda?"]
+      },
+      "answer_en": "There must be at least 4 months between blood donations. The page gives one interval and does not separate men and women.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "ELIG-PREGNANCY",
+      "status": "verified",
+      "topic": "Pregnancy",
+      "question_examples": {
+        "en": ["Can a pregnant woman donate blood?"],
+        "si": ["ගර්භණී කාන්තාවකට රුධිර දානය කළ හැකිද?"],
+        "ta": ["கர்ப்பிணிப் பெண்கள் இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["gabbini ammalata blood denna puluwanda?"]
+      },
+      "answer_en": "No. Donors must not be pregnant.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "ELIG-SERIOUS-ILLNESS",
+      "status": "verified",
+      "topic": "Serious medical illness (general)",
+      "question_examples": {
+        "en": ["I have a serious illness. Can I donate?"],
+        "si": ["බරපතල රෝගයක් තිබුණොත් රුධිර දානය කළ හැකිද?"],
+        "ta": ["தீவிர நோய் இருந்தால் இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["mata leda thiyenawa, blood denna puluwanda?"]
+      },
+      "answer_en": "Donors must be free from serious medical illnesses. The page does not list specific conditions, so the Medical Officer at the blood bank decides during screening. Please ask them about your condition.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "ELIG-RISK-BEHAVIOUR",
+      "status": "verified",
+      "topic": "Risk behaviours",
+      "question_examples": {
+        "en": ["What are risk behaviours for blood donation?"],
+        "si": ["රුධිර දානයේදී අවදානම් හැසිරීම් යනු මොනවාද?"],
+        "ta": ["இரத்த தானத்தில் ஆபத்தான நடத்தைகள் என்றால் என்ன?"],
+        "singlish": ["blood denna risk behaviours kiyanne mokakda?"]
+      },
+      "answer_en": "Donors must be free from risk behaviours. The NBTS page does not define the term. Screening staff will ask you confidential questions; answer honestly.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": true,
+      "review_reason": "Sensitive topic. A 2023 news report quotes the NBTS Director on a specific group being ineligible. Owner/NBTS must decide exact, non-discriminatory wording; the chatbot should not improvise definitions."
+    },
+    {
+      "id": "TRAVEL-MALARIA",
+      "status": "verified",
+      "topic": "Travel to malaria-endemic countries",
+      "question_examples": {
+        "en": ["I travelled to a malaria country. When can I donate?"],
+        "si": ["මැලේරියා රටකට ගිහින් ආවොත් රුධිර දානය කළ හැකිද?"],
+        "ta": ["மலேரியா உள்ள நாட்டிற்குச் சென்று வந்தால் இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["malaria thiyena ratakata gihin awoth kawadda blood denna puluwan?"]
+      },
+      "answer_en": "If you travelled to a country on the NBTS malaria-endemic list (2024), you are deferred for 3 years from the date of return.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "medium",
+      "needs_human_review": true,
+      "review_reason": "Dec-2025 news quotes the NBTS Director with a 2-year look-back (CONFLICT-MALARIA-2YR). The list may change; store the list as structured data with its own version/date."
+    },
+    {
+      "id": "TRAVEL-OTHER",
+      "status": "verified",
+      "topic": "Other foreign travel",
+      "question_examples": {
+        "en": ["I came back from abroad last month. Can I donate?"],
+        "si": ["විදේශ ගමනකින් පසු රුධිර දානය කළ හැකිද?"],
+        "ta": ["வெளிநாட்டுப் பயணத்திற்குப் பிறகு இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["rata yanna giyaata passe blood denna puluwanda?"]
+      },
+      "answer_en": "For foreign travel to countries not on the malaria-endemic list, you are deferred for 3 months from the date of return.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "TRAVEL-INDIA",
+      "status": "verified",
+      "topic": "Travel to India",
+      "question_examples": {
+        "en": ["I visited India. Can I donate blood?"],
+        "si": ["ඉන්දියාවට ගියාට පසු රුධිර දානය කළ හැකිද?"],
+        "ta": ["இந்தியாவுக்குச் சென்று வந்த பிறகு இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["India giyoth blood denna puluwanda?"]
+      },
+      "answer_en": "India is on the NBTS 2024 malaria-endemic country list, so the 3-year deferral from the date of return applies.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "medium",
+      "needs_human_review": true,
+      "review_reason": "Depends on the list reading and the malaria 2-year/3-year conflict."
+    },
+    {
+      "id": "TRAVEL-SOUTH-KOREA",
+      "status": "verified",
+      "topic": "Travel to South Korea",
+      "question_examples": {
+        "en": ["Can I donate after visiting South Korea?"],
+        "si": ["දකුණු කොරියාවට ගියාට පසු රුධිර දානය කළ හැකිද?"],
+        "ta": ["தென் கொரியாவுக்குச் சென்று வந்த பிறகு இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["South Korea giyata passe blood denna puluwanda?"]
+      },
+      "answer_en": "South Korea appears on the NBTS 2024 malaria-endemic country list, so the 3-year deferral from the date of return applies.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "medium",
+      "needs_human_review": true,
+      "review_reason": "Surprising list entry; a human must confirm it on the live page."
+    },
+    {
+      "id": "TRAVEL-UAE",
+      "status": "verified",
+      "topic": "Travel to Dubai / UAE",
+      "question_examples": {
+        "en": ["Can I donate blood after a trip to Dubai?"],
+        "si": ["දුබායි ගියාට පසු රුධිර දානය කළ හැකිද?"],
+        "ta": ["துபாய் சென்று வந்த பிறகு இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["Dubai giyata passe blood denna puluwanda?"]
+      },
+      "answer_en": "The UAE is not on the NBTS 2024 malaria-endemic list, so the 'other foreign travel' rule applies: a 3-month deferral from the date of return. Staff will confirm at screening.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "medium",
+      "needs_human_review": true,
+      "review_reason": "Inference: absence from the list plus the 'other foreign travel' rule. Not an explicit NBTS statement about the UAE."
+    },
+    {
+      "id": "ID-REQUIRED",
+      "status": "verified",
+      "topic": "Identification to bring",
+      "question_examples": {
+        "en": ["Do I need to bring my NIC?"],
+        "si": ["රුධිර දානයට හැඳුනුම්පතක් ගෙන යා යුතුද?"],
+        "ta": ["இரத்த தானத்திற்கு அடையாள அட்டை கொண்டு வர வேண்டுமா?"],
+        "singlish": ["blood denna yaddi NIC ekak gannada one?"]
+      },
+      "answer_en": "Bring your National Identity Card or another valid ID.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "PREP-MEAL-FLUIDS",
+      "status": "verified",
+      "topic": "Food and fluids before donating",
+      "question_examples": {
+        "en": ["Should I eat before donating blood?"],
+        "si": ["රුධිර දානයට පෙර කෑම කා යා යුතුද?"],
+        "ta": ["இரத்த தானத்திற்கு முன் சாப்பிட வேண்டுமா?"],
+        "singlish": ["blood denna kalin kanna one da?"]
+      },
+      "answer_en": "Have a main meal within 4 hours before donating and drink plenty of fluids.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "PREP-ALCOHOL",
+      "status": "verified",
+      "topic": "Alcohol before donating (no hour figure officially)",
+      "question_examples": {
+        "en": ["Can I drink alcohol before donating blood?"],
+        "si": ["රුධිර දානයට පෙර මත්පැන් පානය කළ හැකිද?"],
+        "ta": ["இரத்த தானத்திற்கு முன் மது அருந்தலாமா?"],
+        "singlish": ["blood denna kalin beema puluwanda?"]
+      },
+      "answer_en": "Avoid alcohol before donating. The NBTS page does not give a number of hours, so do not quote one; if unsure, ask the blood bank staff.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false,
+      "review_reason": "Code currently says 24 hours (DeferralRulesConfig.ALCOHOL_DEFERRAL_HOURS); that figure has no official source."
+    },
+    {
+      "id": "PREP-SLEEP",
+      "status": "verified",
+      "topic": "Sleep before donating",
+      "question_examples": {
+        "en": ["How much sleep do I need before donating?"],
+        "si": ["රුධිර දානයට පෙර පැය කීයක් නිදා ගත යුතුද?"],
+        "ta": ["இரத்த தானத்திற்கு முன் எத்தனை மணி நேரம் தூங்க வேண்டும்?"],
+        "singlish": ["blood denna kalin paya keeyak nidaaganna one?"]
+      },
+      "answer_en": "Rest for at least 6 hours the night before you donate.",
+      "source_title": "Donate Blood – National Blood Transfusion Service – Sri Lanka",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "CONTACT-NATIONAL-BLOOD-CENTRE",
+      "status": "verified",
+      "topic": "National Blood Centre address, phone, donor hours",
+      "question_examples": {
+        "en": ["What are the opening hours of the National Blood Centre?", "Where is the National Blood Centre?"],
+        "si": ["ජාතික රුධිර මධ්‍යස්ථානය විවෘත වේලාවන් මොනවාද?"],
+        "ta": ["தேசிய இரத்த மையம் எப்போது திறந்திருக்கும்?"],
+        "singlish": ["National Blood Centre eka kiyatada open?"]
+      },
+      "answer_en": "National Blood Centre, No. 555/5D, Elvitigala Mawatha, Narahenpita, Colombo 05. Donor hours: daily, 8.00 am to 6.00 pm. Phone +94 11 236 9931-4; email info@nbts.health.gov.lk.",
+      "source_title": "Contact Us – NBTS",
+      "source_url": "https://nbts.health.gov.lk/contact-us/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "high",
+      "needs_human_review": false
+    },
+    {
+      "id": "MOBILE-CAMP-ORGANISING",
+      "status": "gap",
+      "topic": "Organising a mobile blood donation campaign",
+      "question_examples": {
+        "en": ["How do I organise a blood donation camp?"],
+        "si": ["රුධිර දාන කඳවුරක් සංවිධානය කරන්නේ කෙසේද?"],
+        "ta": ["இரத்த தான முகாமை எவ்வாறு ஏற்பாடு செய்வது?"],
+        "singlish": ["blood donation camp ekak organise karanna kohomada?"]
+      },
+      "answer_en": "NOT VERIFIED. NBTS links a Sinhala instruction manual (PDF) on its page; its contents were not read. Suggested safe reply: 'NBTS publishes an instruction manual for organising a mobile campaign. See nbts.health.gov.lk/organizing-mobile-blood-donation or call +94 11 236 9931-4.'",
+      "source_title": "Organizing Mobile Blood Donation – NBTS",
+      "source_url": "https://nbts.health.gov.lk/organizing-mobile-blood-donation/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "low",
+      "needs_human_review": true,
+      "extra_source": "https://nbts.health.gov.lk/wp-content/uploads/2024/07/organize-mobile-blood-donation-campaign.pdf"
+    },
+    {
+      "id": "CONFLICT-FIRST-TIME-WEIGHT",
+      "status": "conflict",
+      "topic": "Weight for first-time donors",
+      "question_examples": {
+        "en": ["I am a first-time donor weighing 52 kg. Can I donate?"],
+        "si": ["පළමු වරට දන් දෙන මගේ බර කිලෝ 52යි. දිය හැකිද?"],
+        "ta": ["முதல் முறை தானம் செய்பவன் 52 கிலோ எடை. செய்யலாமா?"],
+        "singlish": ["aluth donor kenek, bara kg 52, denna puluwanda?"]
+      },
+      "answer_en": "NOT RESOLVED. Official page: weight above 50 kg (no first-time distinction). The Morning (2 Dec 2025, 'NBTS: More blood donations sought'), quoting the NBTS Director: first-time donors' weight must exceed 55 kg. Until NBTS confirms, the chatbot should state the official page value and add 'first-time donors: please confirm with the blood bank'.",
+      "source_title": "Donate Blood – NBTS (official) vs The Morning, 'NBTS: More blood donations sought', 2 Dec 2025 (secondary)",
+      "source_url": "https://www.themorning.lk/articles/MgKluuOIWz1nloKkjn1c",
+      "last_reviewed": "2026-10-27",
+      "confidence": "low",
+      "needs_human_review": true
+    },
+    {
+      "id": "CONFLICT-MALARIA-2YR",
+      "status": "conflict",
+      "topic": "Malaria-area travel look-back period",
+      "question_examples": {
+        "en": ["How long after travelling to a malaria country must I wait?"],
+        "si": ["මැලේරියා රටකින් පැමිණ කොපමණ කාලයක් බලා සිටිය යුතුද?"],
+        "ta": ["மலேரியா நாட்டிலிருந்து வந்த பிறகு எவ்வளவு காலம் காத்திருக்க வேண்டும்?"],
+        "singlish": ["malaria rata giyata passe kochchara kalayak inna one?"]
+      },
+      "answer_en": "NOT RESOLVED. Official page: 3 years deferral from date of return. The Morning (2 Dec 2025) quotes first-time donor condition 'not travelled to a country that has not eradicated malaria within the two years prior'. Use the official 3-year value until NBTS clarifies.",
+      "source_title": "Donate Blood – NBTS (official) vs The Morning, 2 Dec 2025 (secondary)",
+      "source_url": "https://www.themorning.lk/articles/MgKluuOIWz1nloKkjn1c",
+      "last_reviewed": "2026-10-27",
+      "confidence": "low",
+      "needs_human_review": true
+    },
+    {
+      "id": "GAP-TATTOO-PIERCING",
+      "status": "gap",
+      "topic": "Tattoos and piercings",
+      "question_examples": {
+        "en": ["Can I donate blood if I got a tattoo recently?"],
+        "si": ["පච්චයක් ගැසුවොත් රුධිර දානය කළ හැකිද?"],
+        "ta": ["பச்சை குத்தினால் இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["pachchak gahuwoth blood denna puluwanda?", "mama blood denna puluwanda tattoo ekak thiyenawa nam?"]
+      },
+      "answer_en": "NOT VERIFIED - do not state a number. Official page is silent. Code says 12 months (DeferralRulesConfig:16); IVR says 12 months; The Morning (2 Dec 2025) quotes the NBTS Director that a tattoo older than 2 years is acceptable. Suggested safe reply: 'Tattoos and piercings can lead to a waiting period. The exact period must be confirmed by NBTS or the Medical Officer at the blood bank (011 236 9931-4).'",
+      "source_title": "The Morning, 'NBTS: More blood donations sought', 2 Dec 2025 (secondary, quoting NBTS Director)",
+      "source_url": "https://www.themorning.lk/articles/MgKluuOIWz1nloKkjn1c",
+      "last_reviewed": "2026-10-27",
+      "confidence": "low",
+      "needs_human_review": true
+    },
+    {
+      "id": "GAP-MEDICATION",
+      "status": "gap",
+      "topic": "Medications (general, antibiotics, chronic illness medicine)",
+      "question_examples": {
+        "en": ["I take antibiotics. Can I donate?", "I take diabetes tablets. Can I donate?"],
+        "si": ["බෙහෙත් ගන්නවා නම් රුධිර දානය කළ හැකිද?"],
+        "ta": ["மருந்து எடுத்துக்கொள்கிறேன். இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["mama beheth gannawa, blood denna puluwanda?", "diyawadiyawa thiyenawa, denna puluwanda?"]
+      },
+      "answer_en": "NOT VERIFIED - no official figure found. Code uses 7 days after antibiotics (DeferralRulesConfig:19) with no source. Suggested safe reply: 'Tell the screening staff which medicine you take and why. The Medical Officer will decide.'",
+      "source_title": "No official page found (NBTS page defers to staff)",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "none",
+      "needs_human_review": true
+    },
+    {
+      "id": "GAP-SURGERY-DENTAL",
+      "status": "gap",
+      "topic": "Surgery and dental procedures",
+      "question_examples": {
+        "en": ["I had surgery last year. When can I donate?", "I had a tooth extracted yesterday."],
+        "si": ["සැත්කමකට පසු රුධිර දානය කළ හැක්කේ කවදාද?"],
+        "ta": ["அறுவை சிகிச்சைக்குப் பிறகு எப்போது இரத்த தானம் செய்யலாம்?"],
+        "singlish": ["surgery ekak karala thiyenawa, kawadda blood denna puluwan?", "dath ekak ganna giyaa, denna puluwanda?"]
+      },
+      "answer_en": "NOT VERIFIED. Code says surgery 6 months (DeferralRulesConfig:17; prompt says 6 to 12) and dental extraction 7 days (:18); IVR says surgery 12 months. None sourced. Suggested safe reply: refer to the Medical Officer.",
+      "source_title": "No official page found",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "none",
+      "needs_human_review": true
+    },
+    {
+      "id": "GAP-BREASTFEEDING-POSTPARTUM",
+      "status": "gap",
+      "topic": "Breastfeeding / after delivery",
+      "question_examples": {
+        "en": ["I am breastfeeding. Can I donate blood?"],
+        "si": ["මව්කිරි දෙන මවකට රුධිර දානය කළ හැකිද?"],
+        "ta": ["தாய்ப்பால் கொடுக்கும் தாய் இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["kiri denawa, blood denna puluwanda?"]
+      },
+      "answer_en": "NOT VERIFIED. Official page only says donors must not be pregnant. Code claims 12 months after delivery/breastfeeding (DeferralRulesConfig:21) with no source. Suggested safe reply: refer to the Medical Officer.",
+      "source_title": "No official page found",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "none",
+      "needs_human_review": true
+    },
+    {
+      "id": "GAP-VACCINATION",
+      "status": "gap",
+      "topic": "Vaccination (COVID-19, others)",
+      "question_examples": {
+        "en": ["I got a vaccine yesterday. Can I donate?"],
+        "si": ["එන්නතක් ගත්තට පසු රුධිර දානය කළ හැකිද?"],
+        "ta": ["தடுப்பூசி போட்ட பிறகு இரத்த தானம் செய்யலாமா?"],
+        "singlish": ["vaccine ekak gaththa, blood denna puluwanda?"]
+      },
+      "answer_en": "NOT VERIFIED. No official figure found. Suggested safe reply: tell the screening staff the vaccine name and date; the Medical Officer will advise.",
+      "source_title": "No official page found",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "none",
+      "needs_human_review": true
+    },
+    {
+      "id": "GAP-POST-DONATION-CARE",
+      "status": "gap",
+      "topic": "After-donation advice (rest 20 min, plaster 12 h, no heavy lifting 24 h, fluids 4 h)",
+      "question_examples": {
+        "en": ["What should I do after donating blood?"],
+        "si": ["රුධිර දානයෙන් පසු කළ යුතු දේ මොනවාද?"],
+        "ta": ["இரத்த தானத்திற்குப் பிறகு என்ன செய்ய வேண்டும்?"],
+        "singlish": ["blood dunnata passe mokada karanna one?"]
+      },
+      "answer_en": "NOT VERIFIED. faq-knowledge.txt #81-90 states specific figures but no NBTS page for them was found (other services give different numbers). Suggested safe reply: follow the instructions the donation staff give you; if you feel faint or unwell, tell staff or seek medical care.",
+      "source_title": "No official page found",
+      "source_url": "https://nbts.health.gov.lk/donate-blood/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "none",
+      "needs_human_review": true
+    },
+    {
+      "id": "GAP-APPOINTMENT-CHANNEL",
+      "status": "gap",
+      "topic": "Booking an appointment ('Raktha' app, other blood bank hours)",
+      "question_examples": {
+        "en": ["How can I book a donation appointment?", "What time do other blood banks open?"],
+        "si": ["රුධිර දානය සඳහා වේලාවක් වෙන් කරගන්නේ කෙසේද?"],
+        "ta": ["இரத்த தானத்திற்கு நேரம் முன்பதிவு செய்வது எப்படி?"],
+        "singlish": ["blood denna time ekak book karanne kohomada?"]
+      },
+      "answer_en": "NOT VERIFIED. faq-knowledge.txt #78 names a 'Raktha' app/website; no public evidence found. #70 says other blood banks are open 8:00-16:00; only a 2020 WHO notice mentions 8 am-4 pm for pre-booked visits. Suggested safe reply: contact NBTS on +94 11 236 9931-4 or use the blood bank map at nbts.health.gov.lk/blood-bank-map/.",
+      "source_title": "Blood Banks Map – NBTS (lists 'more than 108 blood banks'; no hours)",
+      "source_url": "https://nbts.health.gov.lk/blood-bank-map/",
+      "last_reviewed": "2026-10-27",
+      "confidence": "low",
+      "needs_human_review": true
+    }
+  ]
+}

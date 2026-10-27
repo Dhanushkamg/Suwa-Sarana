@@ -1,0 +1,502 @@
+
+=== PAGE 1 ===
+ The Current Status of the Suwa Sarana Project 
+(comprehensive Project Analysis & Architectural Audit: Suwa 
+Sarana) 
+ 
+Executive Summary 
+Suwa Sarana is a full-stack, enterprise-grade emergency blood donation and donor dispatch 
+platform designed specifically for the healthcare and emergency response ecosystem in Sri 
+Lanka. The platform bridges the time-critical gap between patients in acute need of blood 
+transfusions, licensed hospitals/blood banks, and voluntary blood donors. 
+The system is architected as a modern Turborepo monorepo integrating a high-performance 
+Spring Boot reactive/REST backend (running on Java with PostgreSQL earthdistance spatial 
+indexing) and a Next.js (App Router) client with full trilingual localization (English, Sinhala, Tamil), 
+real-time Server-Sent Events (SSE), Groq-powered AI clinical deferral and extraction engines, 
+interactive geospatial heatmaps, and a donation camp appointment slot management system. 
+ 
+1. System Architecture & Tech Stack Overview 
+suwa-sarana/ 
+├── apps/ 
+│   ├── backend/               # Spring Boot 4.x / Java 17-21, Spring 
+Security, JPA, Flyway (V1–V16) 
+│   └── frontend/              # Next.js 16 (App Router), React 19, 
+Tailwind CSS v4, Zustand, Leaflet 
+├── packages/ 
+│   └── shared-types/          # Shared cross-boundary TypeScript 
+interfaces 
+├── docs/                      # Architectural specifications, audit 
+notes, deployment guides 
+├── docker-compose.yml         # Container orchestration (PostgreSQL 
+16, backend, frontend) 
+
+
+=== PAGE 2 ===
+└── .env.example               # Root environment configuration 
+  
+Technology Matrix 
+Layer 
+Technologies & Libraries 
+Key Responsibilities 
+Frontend 
+Core 
+Next.js 16.3.4, React 19.2.8, 
+TypeScript 5 
+Server & Client Components, Dynamic 
+Routing, Metadata Generation 
+Frontend 
+Styling 
+Tailwind CSS v4, Vanilla CSS Custom 
+Variables, Radix / Lucide Icons 
+Dark obsidian theme, glassmorphism, 
+micro-animations, responsive layout 
+Frontend 
+Visuals 
+Leaflet 1.9, React-Leaflet 5.0, 
+html-to-image, qrcode.react, 
+html5-qrcode 
+Choropleth district maps, QR check-in 
+scanner, 1080×1080 campaign poster 
+generator 
+State & 
+Auth 
+Zustand 4.5.2, @react-
+oauth/google 
+In-memory token store, silent cookie 
+refresh, Google Identity Services (FedCM) 
+Backend 
+Core 
+Spring Boot, Spring Data JPA, Spring 
+Validation 
+REST APIs, scheduled escalations, 
+transactional business logic 
+Database 
+& ORM 
+PostgreSQL 16 (cube, 
+earthdistance), Flyway (18 
+migrations) 
+Relational schema, geospatial proximity 
+indexing, multi-device refresh tokens 
+Security & 
+Limits 
+Spring Security 6, JJWT 0.12.5, 
+Bucket4j 8.10.1 
+Role-based RBAC, token-bucket rate 
+limiting, strict CSP, CORS filter 
+AI 
+Subsystem 
+Groq Cloud API (llama-3.3-70b-
+versatile, qwen/qwen3.8-27b) 
+Natural language intake parser, NBTS 
+clinical FAQ assistant, fraud triage 
+Telephony 
+/ IVR 
+Twilio TwiML Webhooks 
+Emergency voice hotline for feature-
+phone users 
+ 
+
+
+=== PAGE 3 ===
+2. Frontend Design, UI & User Experience (UI/UX) Analysis 
+2.1 Aesthetic & Visual Identity 
+• Color Palette: Curated dark-mode palette built on a deep obsidian canvas (#0d0d14 
+background, #09090e map canvas). Accentuated with vibrant crimson (#ef4444) and 
+rose gradients (#f43f5e), warm amber (#f59e0b) for medium urgency, and emerald 
+(#10b981) for verified credentials and open capacity. 
+• Surface Design & Glassmorphism: Utilizes multi-layer .glass-card styling with 
+backdrop-filter: blur(20px) and subtle border highlights (rgba(255, 255, 
+255, 0.08)), imparting depth without visual clutter. 
+• Typography: Standardized on Google Fonts Inter, utilizing strict typographic scale (text-
+xs up to text-7xl) with high-contrast text hierarchy (text-white, text-gray-400, 
+text-gray-500). 
+• Motion & Dynamic Micro-Animations: 
+o Glowing blood drop pulse animation (animate-pulse-glow) for emergency 
+markers and hero icons. 
+o Real-time scrolling inventory ticker (animate-marquee-horizontal) featuring 
+interactive pause-on-hover (.hover-pause:hover). 
+o Concentric expanding radar rings (marker-pulse-critical, marker-pulse-
+warning) on Leaflet maps identifying active emergency epicenters. 
+o Tile color inversion (.dark-map-tiles) that transforms standard 
+OpenStreetMap tiles into a seamless dark night mode. 
+2.2 Component Hierarchy & Usability 
+• Design Consistency: Reusable atomic primitives in src/components/ui/ 
+(Button.tsx, Input.tsx, Select.tsx, StockTicker.tsx, 
+LanguageSwitcher.tsx) enforce uniform padding, rounded borders (rounded-xl, 
+rounded-2xl), and consistent focus states. 
+• Trilingual Localization Engine: 
+o Native translation architecture (I18nProvider.tsx) supporting English (en), 
+Sinhala (si), and Tamil (ta). 
+o Instant, client-side language switching without full page reload. 
+o Complete dictionaries (en.json, si.json, ta.json) covering all headers, 
+badges, forms, and validation alerts. 
+• Mobile Responsiveness: 
+
+
+=== PAGE 4 ===
+o Responsive navigation bar with mobile hamburger drawer and backdrop blur. 
+o Flexible desktop sidebar (md:ml-64) that collapses gracefully to mobile 
+bottom/top bars. 
+o Grid layouts automatically reflow from 4-column desktop stats to 2-column 
+mobile cards. 
+ 
+3. Current Project Status: Component-by-Component 
+Component 
+/ Subsystem 
+Path / Package 
+Current 
+Stage 
+Functional 
+Status 
+Authenticati
+on & RBAC 
+com.suwasarana.api.auth, 
+apps/frontend/src/app/(auth) 
+Complet
+e 
+Production
+-ready 
+(Google 
+OAuth + 
+Custom 
+JWT + 
+Refresh 
+Rotation) 
+Spatial 
+Matching 
+Engine 
+com.suwasarana.api.matching, PostgreSQL 
+earthdistance 
+Complet
+e 
+Production
+-ready sub-
+millisecond 
+distance 
+filtering 
+Escalation 
+Scheduler 
+com.suwasarana.api.matching.EscalationS
+cheduler 
+Complet
+e 
+Cron-
+driven 
+radius 
+escalation 
+(5km → 
+50km) 
+based on 
+urgency 
+
+
+=== PAGE 5 ===
+Blood 
+Request 
+Intake (AI) 
+com.suwasarana.api.ai.RequestIntakeAiSe
+rvice 
+Complet
+e 
+Groq 
+Llama-3.3-
+70b with 
+determinist
+ic regex 
+fallback 
+NBTS 
+Clinical FAQ 
+Bot 
+com.suwasarana.api.ai.DonorFaqAiService, 
+DonorFaqChatbot.tsx 
+Complet
+e 
+Grounded 
+NBTS 
+knowledge 
+base + 
+Singlish 
+language 
+heuristics 
+AI Fraud & 
+Triage 
+Engine 
+com.suwasarana.api.ai.RequestTriageAiSe
+rvice, /admin/triage 
+Complet
+e 
+Risk 
+scoring 
+heuristic 
+(0-100) 
+with 
+diagnostic 
+flag 
+generation 
+Private 
+Circles & 
+Sharing 
+com.suwasarana.api.circle, 
+/circle/[token], /share/[token] 
+Complet
+e 
+Cryptograp
+hic 
+tokenized 
+links + 
+dynamic 
+Open 
+Graph 
+social cards 
+Donation 
+Camps & 
+Slots 
+com.suwasarana.api.camp, 
+com.suwasarana.api.slot, /camps 
+Complet
+e 
+Camp 
+manageme
+nt, slot 
+booking, 
+QR check-
+
+
+=== PAGE 6 ===
+in & poster 
+generator 
+Interactive 
+Leaflet 
+Maps 
+AdminMap.tsx, SriLankaHeatmap.tsx, 
+RequestDistanceMap.tsx 
+Complet
+e 
+District 
+inventory 
+choropleth, 
+donor 
+proximity 
+visualizatio
+n 
+Hospital & 
+Blood Bank 
+Portals 
+apps/frontend/src/app/dashboard/{hospit
+al,blood-bank} 
+Complet
+e 
+Requisition 
+dispatch, 
+slot 
+manager, 
+camp 
+schedule 
+manageme
+nt 
+Admin 
+Console & 
+Verification 
+apps/frontend/src/app/dashboard/admin/* 
+Complet
+e 
+Hospital 
+verification
+, audit logs, 
+district 
+analytics, 
+triage 
+queue 
+IVR Voice 
+Hotline 
+com.suwasarana.api.ivr.IvrController 
+Beta / 
+Functio
+nal 
+Twilio 
+TwiML XML 
+endpoints 
+with text-
+to-speech 
+emergency 
+playback 
+Notification 
+Cascade 
+NotificationCascadeService.java, 
+SseNotificationService.java 
+Partial 
+SSE active; 
+SMS 
+
+
+=== PAGE 7 ===
+delivery 
+relies on 
+console 
+logging 
+stub 
+Testing 
+Suite 
+apps/backend/src/test, apps/frontend 
+Backend 
+High / 
+Fronten
+d Low 
+Backend: 
+22 test 
+suites; 
+Frontend: 
+1 unit test 
+suite 
+ 
+4. Completed and Fully Functional Features (100% Complete) 
+4.1 Authentication & Multi-Role Security 
+• JWT Access / Refresh Token Pattern: Dual-token pattern using short-lived in-memory 
+access tokens (15 minutes) and long-lived HttpOnly, SameSite=Strict refresh 
+cookies stored in PostgreSQL (RefreshToken.java), protecting against cross-site 
+scripting (XSS). 
+• Google OAuth2 Integration: Integrated with Google Identity Services (FedCM ready), 
+supporting one-click sign-in with automatic account provisioning. 
+• Role-Based Access Control (RBAC): Segregated permissions for DONOR, REQUESTER, 
+HOSPITAL_REQUESTER, BLOOD_BANK_REQUESTER, and ADMIN. 
+• API Rate Limiting: Bucket4j token-bucket filter enforcing 20 requests/minute on public 
+registration and login routes. 
+4.2 Proximity-Based Matching & Dynamic Radius Escalation 
+• PostgreSQL Native Geodesic Math: Queries utilize cube and earthdistance 
+extensions to calculate spherical distance between hospital coordinates and donor 
+locations with sub-millisecond index scans. 
+• Automated Escalation Scheduler: Scheduled background worker running every 5 minutes 
+(0 0/5 * * * *). It inspects open requisitions and progressively widens search radii 
+
+
+=== PAGE 8 ===
+(5km → 15km → 25km → 50km) based on urgency thresholds (Critical: 5 min, Urgent: 10 
+min, Routine: 20 min). 
+• Donor Location Privacy Jitter: During registration, donor GPS coordinates are perturbed 
+by ~500m ((rand.nextDouble() - 0.5) * 0.01) to protect exact residential 
+addresses. 
+4.3 Multilingual Clinical AI Services (Groq Integration) 
+• Natural Language Requisition Intake: Translates unstructured clinical notes (in English, 
+Sinhala, or Tamil) into structured JSON blood requests using Groq's llama-3.3-70b-
+versatile. Includes a deterministic local NLP fallback if API calls time out. 
+• Grounded NBTS Eligibility Chatbot: Conversational FAQ bot grounded in official National 
+Blood Transfusion Service guidelines (faq-knowledge.txt). Includes a Singlish 
+interpreter (e.g., mapping terms like "pachcha" to tattoos, "diyawadiyawa" to 
+diabetes) and clinical disclaimers. 
+• Advisory AI Fraud Scoring: Evaluates new requisitions against four risk vectors (creation 
+frequency, volume by unverified accounts, hospital facility name anomaly, and critical 
+urgency flag). Annotates requests with risk scores (0–100) without blocking life-saving 
+dispatches. 
+4.4 Private Replacement Circles & Open Graph Cards 
+• Tokenized Private Circle Links: Families can generate unique URLs (/circle/{token}) 
+to privately coordinate donations with coworkers or family members. 
+• Dynamic Open Graph Requisition Cards: Generates social media preview cards 
+(/share/{token}) with Open Graph meta tags optimized for WhatsApp, Viber, and 
+Facebook. 
+4.5 Donation Camp & Appointment Slot Booking Ecosystem 
+• Camp Creation & Dashboard: Authorized hospital and blood bank coordinators can 
+organize national donation drives with target blood group requirements. 
+• High-Resolution Poster Generator: Client-side canvas rendering engine (html-to-
+image) that generates downloadable 1080×1080 square JPG promotional banners. 
+• Time Slot Booking & QR Flow: Donors can book 15-minute donation slots 
+(SlotPicker.tsx), while organizers can scan check-in QR codes (html5-qrcode) at 
+camp reception desks to eliminate wait lines. 
+
+
+=== PAGE 9 ===
+4.6 Geospatial Visualizations & Admin Dashboards 
+• District Supply Heatmap: Real-time Leaflet map covering all 25 administrative districts 
+with color-coded shortages and inventory indicators. 
+• Live Emergency Map: Shows active emergency requisitions with interactive distance 
+circles. 
+• Hospital Verification Workflow: Admin console to review, approve, or reject hospital 
+accreditation documents. 
+ 
+5. Incomplete, Stubbed, or Non-Functional Features 
+5.1 SMS Notification Gateway (Logging Stub) 
+• Current State: The notification cascade (NotificationCascadeService.java) 
+dispatches Server-Sent Events (SSE) and falls back to SMS. However, 
+LoggingSmsProvider.java only logs SMS payloads to the backend application 
+console via SLF4J:log.info(">>> [SMS STUB DISPATCH] To: {} | Key 
+configured: {} | Message: {}", recipientPhone, ...); 
+  
+• Impact: Real SMS messages are not actually sent to donor phones when they are offline 
+or away from the browser. 
+5.2 IVR Voice Hotline External Integration 
+• Current State: IvrController.java returns compliant Twilio TwiML XML with 
+Amazon Polly speech synthesis (Polly.Amy) and DTMF keypress parsing (Press 1 for 
+shortages, Press 2 for rules, Press 3 to transfer). 
+• Impact: While the controller logic is verified via unit tests, it is not wired to an active 
+external Twilio SIP trunk or Sri Lankan telecom shortcode (e.g., 19xx emergency hotline). 
+5.3 Live Public Stock Signal Integration 
+• Current State: InventoryController.java provides mock/seed stock signal levels 
+(/api/inventory/stock-signals). 
+• Impact: Inventory data does not synchronize in real time with the internal NBTS blood 
+bank mainframe software (e.g., e-Blood Bank systems). 
+
+
+=== PAGE 10 ===
+5.4 Frontend Automated Test Coverage 
+• Current State: While the backend has 22 comprehensive test classes (63+ tests), the 
+frontend directory only contains a single test suite (LanguageSwitcher.test.tsx). 
+• Impact: Regression risks on critical UI flows, including slot booking, auth state hydration, 
+and form submissions. 
+ 
+6. Areas for Improvement (Bug Fixes, Quality & Performance) 
+6.1 Security & Authentication Hardening 
+1. JWT Secret in Repository: The .env and .env.example files contain default secret 
+strings. A secret generation script or vault integration should be enforced in production. 
+2. Refresh Token Cookie Secure Flag: In AuthController.java, ensure the Secure flag 
+on the refresh token cookie is dynamically toggled based on HTTPS availability to avoid 
+transmission over unencrypted connections in staging/production. 
+3. CORS Origins Configuration: Expand CORS_ALLOWED_ORIGIN in application.yml 
+from a single static string to support multiple origins (e.g., production domains, mobile 
+apps, and staging URLs). 
+6.2 Data Layer & State Management 
+1. Frontend Authentication Rehydration: In authStore.ts, the access token is stored 
+purely in memory. When a user hard-refreshes the page, the app relies on intercepting 
+the next 401 response to refresh the token. A proactive initialization check on app load 
+(/auth/refresh) would eliminate visual auth flickers. 
+2. Database Connection Pooling: Configure HikariCP parameters explicitly in 
+application.yml (maximum pool size, minimum idle, idle timeout) to handle sudden 
+spikes during national blood crises. 
+6.3 UI/UX Enhancements 
+1. Skeleton Loaders: Replace generic spinning circles with tailored skeleton cards on the 
+Camp and Matches pages to improve perceived performance. 
+2. Offline PWA Capabilities: Add a service worker to enable donors to review appointment 
+QR codes and hospital contact directions even without active cell connectivity. 
+ 
+
+
+=== PAGE 11 ===
+7. Recommended Future Roadmap 
+Phase 1: Production Infrastructure & Real Gateways 
+├── Real SMS Gateway Integration (Notify.lk / Twilio / Dialog Axiata) 
+├── Strict HTTPS Secret & Environment Vault Management 
+└── Comprehensive Frontend Vitest & Playwright E2E Test Suite 
+ 
+Phase 2: Operational Enhancements 
+├── Direct NBTS Hospital Inventory Sync API 
+├── Sri Lanka Emergency Voice Shortcode (TwiML / Asterisk Integration) 
+└── Progressive Web App (PWA) with Offline QR Ticket Storage 
+ 
+Phase 3: Advanced Intelligence & Scaling 
+├── Predictive Shortage Forecasting (ML-based Seasonal Dengue 
+Projections) 
+├── WhatsApp & Viber Interactive Chatbot Booking Integration 
+└── Gamified Donor Recognition Badges & Digital Certificate Generation 
+  
+Strategic Recommendations: 
+1. Deploy Production SMS Provider: Replace LoggingSmsProvider with an enterprise 
+SMS driver for Sri Lanka (e.g., Notify.lk or Dialog IdeaMart), with fallback to global 
+gateways like Twilio. 
+2. Automated End-to-End Testing: Implement Playwright tests covering critical paths: donor 
+registration → request broadcast → proximity match notification → appointment slot 
+booking. 
+3. Integrate Sri Lankan Telecom Shortcode: Hook the existing IvrController to a toll-
+free shortcode for regional rural donors with basic feature phones. 
+4. Predictive Seasonal Blood Shortage Modeling: Extend the Groq/analytics module to 
+forecast regional shortages before major festival periods (e.g., Sinhala and Tamil New 
+Year, Vesak) and dengue peak seasons. 
+ 
+ 
