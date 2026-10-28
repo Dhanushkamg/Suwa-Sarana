@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * Spring Security chain to control the peer address and the authenticated user.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "app.rate-limit.trusted-proxies=10.0.0.0/8")
+        properties = {"app.rate-limit.enabled=true", "app.rate-limit.multiplier=1", "app.rate-limit.trusted-proxies=10.0.0.0/8"})
 @ActiveProfiles("test")
 class RateLimitFilterChainTest {
 
