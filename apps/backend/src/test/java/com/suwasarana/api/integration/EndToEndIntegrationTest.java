@@ -1,140 +1,195 @@
 package com.suwasarana.api.integration;
 
-import com.suwasarana.api.auth.AuthService;
-import com.suwasarana.api.auth.dto.AuthResponse;
-import com.suwasarana.api.auth.dto.RegisterDto;
-import com.suwasarana.api.donor.DonorProfile;
-import com.suwasarana.api.donor.DonorRepository;
-import com.suwasarana.api.matching.MatchStatus;
-import com.suwasarana.api.matching.MatchingEngine;
-import com.suwasarana.api.matching.RequestMatch;
-import com.suwasarana.api.matching.RequestMatchRepository;
-import com.suwasarana.api.request.BloodRequest;
-import com.suwasarana.api.request.RequestRepository;
-import com.suwasarana.api.request.Urgency;
-import com.suwasarana.api.user.Role;
-import com.suwasarana.api.user.User;
-import com.suwasarana.api.user.UserRepository;
+import com.jayway.jsonpath.JsonPath;
+import com.suwasarana.api.support.PostgresIntegrationTest;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@org.junit.jupiter.api.Disabled("Requires running Postgres instance with earthdistance")
-public class EndToEndIntegrationTest {
+/**
+ * End-to-end API flow on the real stack (PostgreSQL + Flyway schema + security chain), driven over HTTP-level MockMvc:
+ *
+ * <pre>
+ *   donor A (Colombo) and donor B (Kandy):  send-otp -> verify-otp -> register -> complete profile
+ *   requester:                              send-otp -> verify-otp -> register -> login
+ *   requester creates an URGENT O+ request in Colombo -> matching engine (native earthdistance SQL) runs
+ *   => donor A (inside the radius) receives a PENDING match, donor B (about 100 km away) does not
+ *   donor A accepts -> the single needed unit is covered -> the request is MATCHED
+ * </pre>
+ *
+ * The OTP is obtained "the way a phone would": from the SMS handed to the (spied) SMS gateway, so the test keeps
+ * working however the application stores OTPs. Each call uses its own client address because the auth endpoints are
+ * rate limited per IP.
+ */
+class EndToEndIntegrationTest extends PostgresIntegrationTest {
+
+    private static final Pattern OTP = Pattern.compile("(?<![0-9])([0-9]{6})(?![0-9])");
+    private static final AtomicInteger IP_SEQ = new AtomicInteger(1);
+    private static final String PASSWORD = "Str0ng-Passw0rd!";
 
     @Autowired
-    private AuthService authService;
+    private MockMvc mockMvc;
 
-    @Autowired
-    private UserRepository userRepository;
+    /** Unique 10-digit local number per call so the shared database never collides between tests. */
+    private static String uniquePhone() {
+        long n = Math.abs(UUID.randomUUID().getMostSignificantBits()) % 90_000_000L + 10_000_000L;
+        return "07" + n;
+    }
 
-    @Autowired
-    private DonorRepository donorRepository;
+    private static RequestPostProcessor freshClientIp() {
+        int n = IP_SEQ.getAndIncrement();
+        return request -> {
+            request.setRemoteAddr("10.77." + (n / 250) + "." + (n % 250 + 1));
+            return request;
+        };
+    }
 
-    @Autowired
-    private RequestRepository requestRepository;
+    private String body(String template, Object... args) {
+        return template.formatted(args);
+    }
 
-    @Autowired
-    private RequestMatchRepository requestMatchRepository;
+    /** Registers a user through the real OTP flow and returns [accessToken, userId, email]. */
+    private String[] registerViaOtp(String role, String phone) throws Exception {
+        String email = role.toLowerCase() + "." + UUID.randomUUID().toString().substring(0, 8) + "@example.org";
 
-    @Autowired
-    private MatchingEngine matchingEngine;
+        mockMvc.perform(post("/api/auth/send-otp").with(freshClientIp())
+                        .contentType(MediaType.APPLICATION_JSON).content(body("{\"phoneNumber\":\"%s\"}", phone)))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<String> message = ArgumentCaptor.forClass(String.class);
+        verify(smsProvider, atLeastOnce()).sendSms(eq(phone), message.capture());
+        Matcher m = OTP.matcher(message.getValue());
+        assertThat(m.find()).as("the SMS contains a 6-digit code").isTrue();
+        String otp = m.group(1);
+
+        mockMvc.perform(post("/api/auth/verify-otp").with(freshClientIp())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("{\"phoneNumber\":\"%s\",\"otpCode\":\"%s\"}", phone, otp)))
+                .andExpect(status().isOk());
+
+        String response = mockMvc.perform(post("/api/auth/register").with(freshClientIp())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("""
+                                {"email":"%s","phoneNumber":"%s","password":"%s","firstName":"E2E","lastName":"%s",
+                                 "role":"%s","otpCode":"%s"}""", email, phone, PASSWORD, role, role, otp)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andReturn().getResponse().getContentAsString();
+        return new String[] {JsonPath.read(response, "$.data.accessToken"),
+                String.valueOf((Object) JsonPath.read(response, "$.data.userId")), email};
+    }
+
+    private void saveDonorProfile(String token, String bloodType, String district, double lat, double lon) throws Exception {
+        String dob = LocalDate.now().minusYears(28).toString();
+        mockMvc.perform(put("/api/donors/me").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("""
+                                {"bloodType":"%s","dateOfBirth":"%s","weightKg":70.5,"district":"%s",
+                                 "latitude":%s,"longitude":%s}""", bloodType, dob, district, lat, lon)))
+                .andExpect(status().isOk())
+                // dates are ISO strings, never [yyyy, m, d] arrays
+                .andExpect(jsonPath("$.data.dateOfBirth").value(dob));
+    }
 
     @Test
-    @Transactional
-    public void testFullMatchingFlow() {
-        // 1. Setup Requester
-        String requesterEmail = "requester_" + UUID.randomUUID() + "@suwasarana.com";
-        RegisterDto requesterDto = new RegisterDto();
-        requesterDto.setEmail(requesterEmail);
-        requesterDto.setPhoneNumber("0710000001");
-        requesterDto.setPassword("securePassword123");
-        requesterDto.setRole(Role.REQUESTER);
-        AuthResponse requesterAuth = authService.register(requesterDto, "127.0.0.1");
-        assertNotNull(requesterAuth.getAccessToken());
+    @DisplayName("register (OTP) -> login -> create request -> geo matching -> donor accepts")
+    void fullFlow() throws Exception {
+        // --- two donors with different locations
+        String[] donorColombo = registerViaOtp("DONOR", uniquePhone());
+        saveDonorProfile(donorColombo[0], "O+", "Colombo", 6.9275, 79.8615);
+        String[] donorKandy = registerViaOtp("DONOR", uniquePhone());
+        saveDonorProfile(donorKandy[0], "O+", "Kandy", 7.2906, 80.6337);
 
-        User requester = userRepository.findById(requesterAuth.getUserId()).orElseThrow();
+        // --- requester registers, then signs in with e-mail + password
+        String requesterPhone = uniquePhone();
+        String[] requester = registerViaOtp("REQUESTER", requesterPhone);
+        String loginResponse = mockMvc.perform(post("/api/auth/login").with(freshClientIp())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("{\"email\":\"%s\",\"password\":\"%s\"}", requester[2], PASSWORD)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.role").value("REQUESTER"))
+                .andReturn().getResponse().getContentAsString();
+        String requesterToken = JsonPath.read(loginResponse, "$.data.accessToken");
 
-        // 2. Setup Eligible Donor (Colombo)
-        String donorEmail = "donor_" + UUID.randomUUID() + "@suwasarana.com";
-        RegisterDto donorDto = new RegisterDto();
-        donorDto.setEmail(donorEmail);
-        donorDto.setPhoneNumber("0710000002");
-        donorDto.setPassword("securePassword123");
-        donorDto.setRole(Role.DONOR);
-        AuthResponse donorAuth = authService.register(donorDto, "127.0.0.1");
+        // --- create an URGENT request in Colombo (CRITICAL would additionally need admin verification)
+        String created = mockMvc.perform(post("/api/requests").header("Authorization", "Bearer " + requesterToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"patientBloodType":"O+","unitsNeeded":1,"urgency":"URGENT",
+                                 "hospitalName":"National Hospital Colombo","district":"Colombo",
+                                 "latitude":6.9271,"longitude":79.8612}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value(org.hamcrest.Matchers.anyOf(
+                        org.hamcrest.Matchers.is("OPEN"), org.hamcrest.Matchers.is("ESCALATING"))))
+                // timestamps are ISO-8601 strings, never numeric arrays
+                .andExpect(jsonPath("$.data.createdAt").isString())
+                .andExpect(jsonPath("$.timestamp").isString())
+                .andReturn().getResponse().getContentAsString();
+        int requestId = JsonPath.read(created, "$.data.id");
 
-        User donorUser = userRepository.findById(donorAuth.getUserId()).orElseThrow();
-        DonorProfile profile = new DonorProfile();
-        profile.setUser(donorUser);
-        profile.setBloodType("O+");
-        profile.setDateOfBirth(LocalDate.now().minusYears(25)); // 25 years old
-        profile.setWeightKg(new BigDecimal("70.00")); // Eligible weight
-        profile.setAvailable(true);
-        profile.setReliabilityScore(new BigDecimal("50.00"));
-        profile.setDistrict("Colombo");
-        profile.setLatitude(6.9271); // Colombo coordinates
-        profile.setLongitude(79.8612);
-        donorRepository.save(profile);
+        // --- the nearby donor was matched, the distant one was not
+        String nearby = mockMvc.perform(get("/api/donors/me/matches").header("Authorization", "Bearer " + donorColombo[0]))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Integer> nearbyRequestIds = JsonPath.read(nearby, "$.data[*].request.id");
+        assertThat(nearbyRequestIds).contains(requestId);
+        List<Integer> matchIds = JsonPath.read(nearby, "$.data[?(@.request.id == " + requestId + ")].id");
+        List<String> matchStatuses = JsonPath.read(nearby, "$.data[?(@.request.id == " + requestId + ")].status");
+        int matchId = matchIds.get(0);
+        assertThat(matchStatuses).containsExactly("PENDING");
+        assertThat((String) JsonPath.read(nearby, "$.data[0].createdAt")).contains("T");
 
-        // 3. Setup Distant Donor (Kandy) - Should NOT match initially (Radius 5km)
-        String distantDonorEmail = "dist_donor_" + UUID.randomUUID() + "@suwasarana.com";
-        RegisterDto distantDonorDto = new RegisterDto();
-        distantDonorDto.setEmail(distantDonorEmail);
-        distantDonorDto.setPhoneNumber("0710000003");
-        distantDonorDto.setPassword("securePassword123");
-        distantDonorDto.setRole(Role.DONOR);
-        AuthResponse distDonorAuth = authService.register(distantDonorDto, "127.0.0.1");
+        mockMvc.perform(get("/api/donors/me/matches").header("Authorization", "Bearer " + donorKandy[0]))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.request.id == " + requestId + ")]").isEmpty());
 
-        User distDonorUser = userRepository.findById(distDonorAuth.getUserId()).orElseThrow();
-        DonorProfile distProfile = new DonorProfile();
-        distProfile.setUser(distDonorUser);
-        distProfile.setBloodType("O+");
-        distProfile.setDateOfBirth(LocalDate.now().minusYears(30));
-        distProfile.setWeightKg(new BigDecimal("80.00"));
-        distProfile.setAvailable(true);
-        distProfile.setReliabilityScore(new BigDecimal("50.00"));
-        distProfile.setDistrict("Kandy");
-        distProfile.setLatitude(7.2906); // Kandy coordinates (approx 100km away)
-        distProfile.setLongitude(80.6337);
-        donorRepository.save(distProfile);
+        // --- the donor accepts; the single requested unit is now covered
+        mockMvc.perform(post("/api/matches/" + matchId + "/respond").param("response", "ACCEPTED")
+                        .header("Authorization", "Bearer " + donorColombo[0]))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/requests/me").header("Authorization", "Bearer " + requesterToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.id == " + requestId + ")].status").value(org.hamcrest.Matchers.contains("MATCHED")));
+    }
 
-        // 4. Create Blood Request in Colombo
-        BloodRequest request = new BloodRequest();
-        request.setRequester(requester);
-        request.setPatientBloodType("O+");
-        request.setUrgency(Urgency.URGENT);
-        request.setHospitalName("National Hospital Colombo");
-        request.setDistrict("Colombo");
-        request.setLatitude(6.9271); 
-        request.setLongitude(79.8612);
-        request.setUnitsNeeded((short) 1);
-        request.setExpiresAt(LocalDateTime.now().plusDays(2));
-        request.setLastEscalatedAt(LocalDateTime.now());
-        request.setCurrentRadiusKm((short) 5); // 5km radius initially
-        BloodRequest savedRequest = requestRepository.save(request);
+    @Test
+    @DisplayName("unauthenticated and wrong-role calls get the JSON error envelope with codes")
+    void errorEnvelope() throws Exception {
+        mockMvc.perform(get("/api/requests/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("auth.unauthorized"));
 
-        // 5. Run Matching Engine
-        matchingEngine.runMatchingForRequest(savedRequest.getId());
+        String[] donor = registerViaOtp("DONOR", uniquePhone());
+        mockMvc.perform(get("/api/admin/reports").header("Authorization", "Bearer " + donor[0]))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("auth.forbidden"));
 
-        // 6. Assertions
-        List<RequestMatch> matches = requestMatchRepository.findByRequestId(savedRequest.getId());
-        
-        // Should only match the Colombo donor, not the Kandy donor
-        assertEquals(1, matches.size());
-        
-        RequestMatch match = matches.get(0);
-        assertEquals(donorUser.getId(), match.getDonor().getUser().getId());
-        assertEquals(MatchStatus.PENDING, match.getStatus());
+        mockMvc.perform(post("/api/auth/login").with(freshClientIp())
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("validation.failed"))
+                .andExpect(jsonPath("$.data.password").exists());
     }
 }
