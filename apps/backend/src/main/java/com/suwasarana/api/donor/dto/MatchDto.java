@@ -13,6 +13,7 @@ public class MatchDto {
     private LocalDateTime createdAt;
     private LocalDateTime respondedAt;
     private RequestSummary request;
+    private java.math.BigDecimal distanceKm;
 
     public static class RequestSummary {
         private Long id;
@@ -59,6 +60,8 @@ public class MatchDto {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getRespondedAt() { return respondedAt; }
     public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = respondedAt; }
+    public java.math.BigDecimal getDistanceKm() { return distanceKm; }
+    public void setDistanceKm(java.math.BigDecimal distanceKm) { this.distanceKm = distanceKm; }
     public RequestSummary getRequest() { return request; }
     public void setRequest(RequestSummary request) { this.request = request; }
 }
