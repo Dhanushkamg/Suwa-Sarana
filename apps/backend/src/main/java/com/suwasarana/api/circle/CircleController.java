@@ -65,6 +65,10 @@ public class CircleController {
             @PathVariable("token") String token,
             @Valid @RequestBody SubmitCircleResponseDto dto) {
         CircleResponseDto response = circleService.submitResponse(token, dto);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thank you for volunteering. The requester has been notified."));
+        // Only claim a notification when one was really delivered (see PledgeNotifier).
+        String message = Boolean.TRUE.equals(response.getRequesterNotified())
+                ? "Thank you for volunteering. The requester has been notified."
+                : "Thank you for volunteering. Your details have been saved for the requester.";
+        return ResponseEntity.ok(ApiResponse.success(response, message));
     }
 }

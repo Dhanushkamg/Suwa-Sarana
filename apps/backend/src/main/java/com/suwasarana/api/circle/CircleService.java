@@ -6,6 +6,8 @@ import com.suwasarana.api.exception.CircleExpiredException;
 import com.suwasarana.api.exception.CircleNotFoundException;
 import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.request.RequestRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,15 +16,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class CircleService {
 
+    private static final Logger log = LoggerFactory.getLogger(CircleService.class);
+
+    /** Neutral texts: they never contain the token or any other detail of the request. */
+    static final String MSG_NOT_FOUND = "This invitation link is not valid.";
+    static final String MSG_INACTIVE = "This invitation link is no longer active.";
+
     private final RequestCircleRepository requestCircleRepository;
     private final CircleResponseRepository circleResponseRepository;
     private final RequestRepository requestRepository;
+    private final CircleTokens tokens;
+    private final CircleProperties properties;
+    private final List<PledgeNotifier> notifiers;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -30,10 +40,16 @@ public class CircleService {
     @Autowired
     public CircleService(RequestCircleRepository requestCircleRepository,
                          CircleResponseRepository circleResponseRepository,
-                         RequestRepository requestRepository) {
+                         RequestRepository requestRepository,
+                         CircleTokens tokens,
+                         CircleProperties properties,
+                         List<PledgeNotifier> notifiers) {
         this.requestCircleRepository = requestCircleRepository;
         this.circleResponseRepository = circleResponseRepository;
         this.requestRepository = requestRepository;
+        this.tokens = tokens;
+        this.properties = properties;
+        this.notifiers = notifiers == null ? List.of() : notifiers;
     }
 
     @Transactional
@@ -44,61 +60,93 @@ public class CircleService {
         if (!request.getRequester().getId().equals(userId)) {
             throw new AccessDeniedException("Only the request creator can generate or manage private circles");
         }
+        if (!properties.isActive(request.getStatus())) {
+            throw ApiException.conflict("This blood request is no longer active, so an invite link cannot be created.");
+        }
 
-        RequestCircle circle = requestCircleRepository.findByRequestId(requestId)
-                .orElseGet(() -> {
-                    String token = generateSecureToken();
-                    LocalDateTime expiresAt = request.getExpiresAt() != null ? request.getExpiresAt() : LocalDateTime.now().plusDays(2);
-                    RequestCircle newCircle = new RequestCircle(request, token, expiresAt);
-                    return requestCircleRepository.save(newCircle);
-                });
+        RequestCircle circle = requestCircleRepository.findByRequestId(requestId).orElse(null);
+        String token = null;
+        if (circle != null) {
+            token = tokens.decrypt(circle.getInviteTokenEnc()).orElse(null);
+            if (token == null || !tokens.hash(token).equals(circle.getInviteTokenHash())) {
+                // The protected copy cannot be read (legacy row not yet converted, or the key was changed):
+                // issue a fresh link. The previous link stops working, which is the safe failure.
+                log.warn("Circle {} invite token is not recoverable; issuing a new one", circle.getId());
+                token = tokens.generate();
+                circle.setInviteTokenHash(tokens.hash(token));
+                circle.setInviteTokenEnc(tokens.encrypt(token));
+                circle = requestCircleRepository.save(circle);
+            }
+        } else {
+            token = tokens.generate();
+            LocalDateTime expiresAt = request.getExpiresAt() != null ? request.getExpiresAt() : LocalDateTime.now().plusDays(2);
+            circle = requestCircleRepository.save(
+                    new RequestCircle(request, tokens.hash(token), tokens.encrypt(token), expiresAt));
+        }
 
-        String inviteUrl = frontendBaseUrl + "/circle/" + circle.getInviteToken();
-        return new CircleInviteDto(request.getId(), circle.getInviteToken(), inviteUrl, circle.getCreatedAt(), circle.getExpiresAt());
+        String inviteUrl = frontendBaseUrl + "/circle/" + token;
+        return new CircleInviteDto(request.getId(), token, inviteUrl, circle.getCreatedAt(), circle.getExpiresAt());
     }
 
     @Transactional(readOnly = true)
     public CircleInfoDto getCircleInfo(String token) {
-        RequestCircle circle = requestCircleRepository.findByInviteToken(token)
-                .orElseThrow(() -> new CircleNotFoundException("Replacement circle invite not found for token: " + token));
-
-        if (circle.isExpired()) {
-            throw new CircleExpiredException("This replacement circle invite link has expired.");
-        }
+        RequestCircle circle = requestCircleRepository.findByInviteTokenHash(tokens.hash(token))
+                .orElseThrow(() -> new CircleNotFoundException(MSG_NOT_FOUND));
+        assertUsable(circle);
 
         BloodRequest req = circle.getRequest();
         return new CircleInfoDto(
-                circle.getInviteToken(),
+                token,
                 req.getPatientBloodType(),
                 req.getUnitsNeeded(),
                 req.getUrgency(),
                 req.getHospitalName(),
                 req.getDistrict(),
                 circle.getExpiresAt(),
-                circle.isExpired()
+                false
         );
     }
 
     @Transactional
     public CircleResponseDto submitResponse(String token, SubmitCircleResponseDto dto) {
-        RequestCircle circle = requestCircleRepository.findByInviteToken(token)
-                .orElseThrow(() -> new CircleNotFoundException("Replacement circle invite not found for token: " + token));
+        // Row lock: concurrent pledges to one circle are processed one at a time so the caps below are exact.
+        RequestCircle circle = requestCircleRepository.findByInviteTokenHashForUpdate(tokens.hash(token))
+                .orElseThrow(() -> new CircleNotFoundException(MSG_NOT_FOUND));
+        assertUsable(circle);
 
-        if (circle.isExpired()) {
-            throw new CircleExpiredException("Cannot submit response: This replacement circle invite link has expired.");
+        String phone = PhoneNumbers.normalise(dto.getResponderPhone());
+        if (phone == null) {
+            throw ApiException.badRequest("Please enter a valid phone number, for example 0771234567 or +94771234567.");
+        }
+        String name = clean(dto.getResponderName());
+        if (name.length() < 2) {
+            throw ApiException.badRequest("Please enter your name.");
+        }
+        String notes = dto.getNotes() == null ? null : clean(dto.getNotes());
+        if (notes != null && notes.isEmpty()) {
+            notes = null;
         }
 
-        CircleResponse response = new CircleResponse(
-                circle,
-                dto.getResponderName().trim(),
-                dto.getResponderPhone().trim(),
-                dto.getBloodType().trim(),
-                dto.getNotes() != null ? dto.getNotes().trim() : null
-        );
+        if (circleResponseRepository.countByCircleId(circle.getId()) >= properties.getMaxPledgesPerCircle()) {
+            throw ApiException.conflict("This request already has enough volunteers. Thank you for offering to help.");
+        }
+        if (circleResponseRepository.countByCircleIdAndResponderPhone(circle.getId(), phone)
+                >= properties.getMaxPledgesPerPhonePerCircle()) {
+            throw ApiException.conflict("This phone number has already volunteered for this request.");
+        }
+        if (circleResponseRepository.countByResponderPhoneAndRespondedAtAfter(phone, LocalDateTime.now().minusDays(1))
+                >= properties.getMaxPledgesPerPhonePerDay()) {
+            throw ApiException.tooManyRequests("This phone number has made too many pledges today. Please try again tomorrow.");
+        }
 
-        CircleResponse saved = circleResponseRepository.save(response);
-        return new CircleResponseDto(saved.getId(), saved.getResponderName(), saved.getResponderPhone(),
+        CircleResponse saved = circleResponseRepository.save(
+                new CircleResponse(circle, name, phone, dto.getBloodType().trim(), notes));
+
+        boolean notified = notifyRequester(circle, saved);
+        CircleResponseDto out = new CircleResponseDto(saved.getId(), saved.getResponderName(), saved.getResponderPhone(),
                 saved.getBloodType(), saved.getNotes(), saved.getRespondedAt());
+        out.setRequesterNotified(notified);
+        return out;
     }
 
     @Transactional(readOnly = true)
@@ -120,8 +168,41 @@ public class CircleService {
                 .collect(Collectors.toList());
     }
 
-    private String generateSecureToken() {
-        return (UUID.randomUUID().toString().replace("-", "") +
-                UUID.randomUUID().toString().replace("-", "")).substring(0, 64);
+    /** A token only works while its own expiry has not passed AND the request is still active. */
+    private void assertUsable(RequestCircle circle) {
+        if (circle.isExpired() || !properties.isActive(circle.getRequest().getStatus())) {
+            throw new CircleExpiredException(MSG_INACTIVE);
+        }
+    }
+
+    private boolean notifyRequester(RequestCircle circle, CircleResponse pledge) {
+        BloodRequest request = circle.getRequest();
+        int count = (int) circleResponseRepository.countByCircleId(circle.getId());
+        boolean any = false;
+        for (PledgeNotifier notifier : notifiers) {
+            try {
+                any |= notifier.pledgeReceived(request.getId(), request.getRequester().getId(),
+                        pledge.getResponderName(), pledge.getBloodType(), count);
+            } catch (RuntimeException e) {
+                log.warn("Pledge notifier {} failed: {}", notifier.getClass().getSimpleName(), e.getClass().getSimpleName());
+            }
+        }
+        return any;
+    }
+
+    /** Trims and removes control characters (a NUL byte makes PostgreSQL reject the row) and line breaks. */
+    private static String clean(String value) {
+        StringBuilder sb = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (Character.isISOControl(c)) {
+                if (c == '\n' || c == '\r' || c == '\t') {
+                    sb.append(' ');
+                }
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString().trim();
     }
 }
