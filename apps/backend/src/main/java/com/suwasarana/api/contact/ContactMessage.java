@@ -26,8 +26,16 @@ public class ContactMessage {
     @Column(name = "created_at")
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private String status = "NEW";
+    private ContactStatus status = ContactStatus.NEW;
+
+    @Column(name = "handled_at")
+    private ZonedDateTime handledAt;
+
+    /** E-mail of the administrator who marked the message handled. */
+    @Column(name = "handled_by", length = 100)
+    private String handledBy;
 
     @PrePersist
     protected void onCreate() {
@@ -35,7 +43,7 @@ public class ContactMessage {
             createdAt = ZonedDateTime.now();
         }
         if (status == null) {
-            status = "NEW";
+            status = ContactStatus.NEW;
         }
     }
 
@@ -51,6 +59,10 @@ public class ContactMessage {
     public void setMessage(String message) { this.message = message; }
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public ContactStatus getStatus() { return status; }
+    public void setStatus(ContactStatus status) { this.status = status; }
+    public ZonedDateTime getHandledAt() { return handledAt; }
+    public void setHandledAt(ZonedDateTime handledAt) { this.handledAt = handledAt; }
+    public String getHandledBy() { return handledBy; }
+    public void setHandledBy(String handledBy) { this.handledBy = handledBy; }
 }

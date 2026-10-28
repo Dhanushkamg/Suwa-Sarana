@@ -13,22 +13,19 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Contact", description = "Public contact us endpoint")
 public class ContactController {
 
-    private final ContactRepository contactRepository;
+    private final ContactService contactService;
 
     @Autowired
-    public ContactController(ContactRepository contactRepository) {
-        this.contactRepository = contactRepository;
+    public ContactController(ContactService contactService) {
+        this.contactService = contactService;
     }
 
-    @Operation(summary = "Submit contact message", description = "Allows any user to submit a contact/support message.")
+    @Operation(summary = "Submit contact message",
+            description = "Allows any user to submit a contact/support message. Rate limited per IP (group 'contact').")
     @PostMapping
     public ResponseEntity<ApiResponse<String>> submitContact(@Valid @RequestBody ContactRequestDto dto) {
-        ContactMessage msg = new ContactMessage();
-        msg.setName(dto.getName());
-        msg.setEmail(dto.getEmail());
-        msg.setSubject(dto.getSubject());
-        msg.setMessage(dto.getMessage());
-        contactRepository.save(msg);
+        // Same answer whether the message was stored or caught by the honeypot, so a bot learns nothing.
+        contactService.submit(dto);
         return ResponseEntity.ok(ApiResponse.success("Message sent successfully. We will get back to you soon."));
     }
 }
