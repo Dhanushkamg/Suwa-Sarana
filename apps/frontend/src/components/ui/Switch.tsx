@@ -33,7 +33,7 @@ export function Switch({ checked, onChange, label, description, disabled, id }: 
         onClick={() => onChange(!checked)}
         className={cn(
           'relative mt-0.5 inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50',
-          checked ? 'border-primary bg-primary' : 'border-line-strong bg-surface-raised'
+          checked ? 'border-primary bg-primary' : 'border-control bg-surface-raised'
         )}
       >
         <span

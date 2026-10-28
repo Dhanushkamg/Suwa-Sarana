@@ -14,9 +14,10 @@
   --surface: #ffffff;
   --surface-raised: #f1f5f9;
   --foreground: #1e293b;
-  --muted: #64748b;
+  --muted: #5b6a80;
   --line: rgba(15, 23, 42, 0.1);
   --line-strong: rgba(15, 23, 42, 0.2);
+  --control: #718096;            /* borders of inputs, checkboxes, switches (WCAG 1.4.11: >= 3:1) */
 
   --primary: #2563eb;            /* fills (buttons, switches): white text = 5.2:1 */
   --primary-fg: #ffffff;
@@ -55,6 +56,7 @@
   --muted: #9aa7b8;
   --line: rgba(230, 234, 240, 0.1);
   --line-strong: rgba(230, 234, 240, 0.2);
+  --control: #6b7a90;
 
   --primary: #2563eb;
   --primary-fg: #ffffff;
@@ -62,7 +64,7 @@
   --primary-text: #7db1ff;
   --primary-soft: rgba(125, 177, 255, 0.14);
 
-  --brand: #dc3b34;
+  --brand: #cf322b;
   --brand-fg: #ffffff;
   --brand-soft: rgba(248, 113, 113, 0.14);
 
@@ -94,10 +96,11 @@
     --muted: #9aa7b8;
     --line: rgba(230, 234, 240, 0.1);
     --line-strong: rgba(230, 234, 240, 0.2);
+    --control: #6b7a90;
     --primary-hover: #3b7bf0;
     --primary-text: #7db1ff;
     --primary-soft: rgba(125, 177, 255, 0.14);
-    --brand: #dc3b34;
+    --brand: #cf322b;
     --brand-soft: rgba(248, 113, 113, 0.14);
     --danger-text: #f87171;
     --warning-text: #fbbf24;
@@ -114,6 +117,7 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
+  --color-control: var(--control);
   --color-primary: var(--primary);
   --color-primary-fg: var(--primary-fg);
   --color-primary-hover: var(--primary-hover);
