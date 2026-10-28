@@ -25,9 +25,16 @@ class ActuatorSecurityTest {
     }
 
     @Test
-    @DisplayName("GET /actuator/health is publicly accessible")
-    void actuatorHealth_isPublic() throws Exception {
-        buildMockMvc().perform(get("/actuator/health")).andExpect(status().isOk());
+    @DisplayName("Liveness and readiness probes are public (load balancer / orchestrator)")
+    void healthProbes_arePublic() throws Exception {
+        buildMockMvc().perform(get("/actuator/health/liveness")).andExpect(status().isOk());
+        buildMockMvc().perform(get("/actuator/health/readiness")).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("The aggregate /actuator/health is no longer public")
+    void aggregateHealth_requiresAuth() throws Exception {
+        buildMockMvc().perform(get("/actuator/health")).andExpect(status().isUnauthorized());
     }
 
     @Test

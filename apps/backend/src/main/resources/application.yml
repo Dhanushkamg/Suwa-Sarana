@@ -1,54 +1,136 @@
+# =====================================================================================================
+# Base configuration = SAFE FOR PRODUCTION. Nothing here carries a usable secret, password or URL.
+#
+#   * Secrets and environment-specific values come from environment variables only (see .env.example).
+#   * Missing/weak secrets fail the start-up in every profile except the explicit `dev` and `test`
+#     profiles (see config/ProductionSafetyCheck). There is no "default" profile that is lenient.
+#   * Local development: SPRING_PROFILES_ACTIVE=dev  -> application-dev.yml (throw-away defaults, demo seed).
+#   * Container image default: SPRING_PROFILES_ACTIVE=prod -> application-prod.yml (JSON logs).
+# =====================================================================================================
 spring:
+  application:
+    name: suwa-sarana-api
+
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/suwa_sarana_dev}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres123}
+    # No defaults: DB_URL / DB_USER / DB_PASSWORD must be provided (the dev profile supplies local ones).
+    url: ${DB_URL:}
+    username: ${DB_USER:}
+    password: ${DB_PASSWORD:}
+    hikari:
+      pool-name: suwa-hikari
+      # createRequest holds a connection through matching + notifications, so keep headroom over the Hikari default of 10.
+      # RDS db.t4g.micro allows ~80-100 connections: size = instances x DB_POOL_MAX must stay below that.
+      maximum-pool-size: ${DB_POOL_MAX:15}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: 10000     # ms to wait for a free connection before failing the request (fail fast, not hang)
+      validation-timeout: 5000      # ms
+      idle-timeout: 300000          # 5 min: retire surplus idle connections
+      max-lifetime: 1500000         # 25 min: below typical NAT / load-balancer / RDS-proxy idle cut-offs (30 min)
+      keepalive-time: 300000        # 5 min: keeps idle connections alive through NAT gateways
+      leak-detection-threshold: 0   # off in prod; the dev profile turns it on
+
   jpa:
+    # Never run a DB session across the web layer: lazy loading must happen inside services/transactions.
+    open-in-view: false
     hibernate:
       # Flyway owns all schema changes; Hibernate must never modify the schema.
-      # Override with JPA_DDL_AUTO=validate to have Hibernate check entities against the schema at startup.
+      # Set JPA_DDL_AUTO=validate to have Hibernate check entities against the schema at startup.
       ddl-auto: ${JPA_DDL_AUTO:none}
     properties:
       hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # Instants / OffsetDateTimes are written to and read from the database as UTC (see config/TimeConfig).
+        jdbc:
+          time_zone: UTC
+
   flyway:
     enabled: true
-    baseline-on-migrate: true
-    out-of-order: true
     locations: classpath:db/migration
     # CRITICAL: Never allow Flyway to DROP the schema in any environment.
-    # A migration validation error should be investigated, not auto-resolved by destroying data.
     clean-disabled: true
-    clean-on-validation-error: false
+    # No baseline-on-migrate / out-of-order here: a missing V1 on a non-empty database must be an error, not
+    # silently "baselined". (application-dev.yml enables out-of-order for parallel feature branches.)
+    # ${environment} is substituted into migrations; V22 removes the seeded demo rows whenever it is not 'dev'.
+    placeholders:
+      environment: ${APP_ENV:prod}
 
-# Trust forwarded headers from the reverse proxy so that request.getRemoteAddr()
-# returns the real client IP (used for rate limiting and audit logging).
-# Only enable this when the application is behind a trusted proxy (nginx, AWS ALB, etc.)
+  lifecycle:
+    timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:30s}
+
 server:
-  forward-headers-strategy: framework
+  port: ${PORT:8080}
+  # Finish in-flight requests on SIGTERM (ECS/Kubernetes rolling deploys) instead of cutting them off.
+  shutdown: graceful
+  # Behind an ALB/nginx: Tomcat's RemoteIpValve replaces the remote address / scheme from X-Forwarded-* headers, but
+  # ONLY when the direct peer is a trusted proxy (Tomcat's default internal-proxies = loopback + RFC1918 ranges, i.e.
+  # the VPC). Spring's `framework` strategy only rewrote scheme/host and never request.getRemoteAddr(), so per-IP rate
+  # limits and audit IPs saw the load balancer. Set FORWARD_HEADERS_STRATEGY=none when running without a proxy.
+  # If the proxy is outside the private ranges, set SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES to a regex of its addresses.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:native}
+  error:
+    # Never put exception text, stack traces or binding errors in the built-in error body.
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+    include-exception: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      # /actuator/health/liveness and /readiness are what the ALB / ECS / Kubernetes probe (public, status only).
+      probes:
+        enabled: true
+      show-details: when-authorized
+      roles: ADMIN
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          # Not ready (503) when the database is unreachable, so the ALB stops sending traffic to this task.
+          include: readinessState,db
 
 jwt:
-  secret: ${JWT_SECRET:dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LXRvLW1lZXQtam1hYy1yZXF1aXJlbWVudHM=}
+  # Base64 of >= 32 random bytes (64 recommended): `openssl rand -base64 64`. REQUIRED, no default.
+  secret: ${JWT_SECRET:}
   access-token-expiry-minutes: 15
   refresh-token-expiry-days: 7
 
 cors:
-  allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+  # Comma-separated list of exact origins, e.g. https://suwasarana.lk,https://www.suwasarana.lk. REQUIRED, no default.
+  # A wildcard is rejected because credentials (cookies) are enabled.
+  allowed-origin: ${CORS_ALLOWED_ORIGIN:}
 
 app:
+  # IANA zone for "business time": donor quiet hours, "today", slot reminder windows (see config/TimeConfig).
+  time-zone: ${APP_TIME_ZONE:Asia/Colombo}
+  # Public URL of the web frontend (links inside SMS/email/invites). No trailing slash. REQUIRED outside dev/test.
+  frontend-url: ${FRONTEND_URL:}
+  # Alias for code that still reads the old nested key `app.frontend.url`.
+  frontend:
+    url: ${app.frontend-url}
+  # Public base URL of this API as seen by clients (webhook signature URLs, absolute links). No trailing slash.
+  public-base-url: ${PUBLIC_BASE_URL:}
   # Refresh-token cookie. Keep secure=true in production (HTTPS). Use SameSite=None only when the
   # frontend and API are on different sites.
   cookie:
     secure: ${COOKIE_SECURE:true}
     same-site: ${COOKIE_SAME_SITE:Lax}
   sms:
-    provider-api-key: ${SMS_PROVIDER_API_KEY:mock_key}
+    provider-api-key: ${SMS_PROVIDER_API_KEY:}
     cascade-timeout-seconds: ${SMS_CASCADE_TIMEOUT_SECONDS:180}
-  # Set to true ONLY in local development to seed demo test accounts.
-  # MUST be false (or unset) in production — seeded accounts use well-known passwords.
+  # Demo accounts/data. Only honoured by the `dev` profile (DataInitializer is @Profile("dev")); the start-up check
+  # refuses to boot any other profile with this switched on.
   seed-data:
-    enabled: ${SEED_DATA_ENABLED:false}
+    enabled: false
   google:
-    client-id: ${GOOGLE_CLIENT_ID:166772425992-0dlhn1jn9iutvti95en8sbb8bgng8t7c.apps.googleusercontent.com}
+    # OAuth client id of the web app (public value, but it binds the API to ONE Google project). REQUIRED if Google
+    # sign-in is offered; no default so a prod deployment can never silently use the dev project.
+    client-id: ${GOOGLE_CLIENT_ID:}
 
+logging:
+  level:
+    root: INFO
+    com.suwasarana: INFO

@@ -1,0 +1,32 @@
+# Real PostgreSQL (Testcontainers) + Flyway + schema validation. Behaves like a production profile: it is NOT one of the
+# relaxed dev/test profiles, so config/ProductionSafetyCheck validates every value below.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    placeholders:
+      environment: prod   # V22 deletes the demo seed, as it does in production
+  datasource:
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 1
+
+jwt:
+  # random test-only value (not the committed dev secrets, which the strict check rejects)
+  secret: cHRlc3Qtb25seS1yYW5kb20tand0LXNpZ25pbmctc2VjcmV0LTdmM2E5YzFlLTRiMmQtOGU2Zi0xYTVjLTkwZDRiN2UyMzhmYQ==
+  access-token-expiry-minutes: 15
+  refresh-token-expiry-days: 7
+
+cors:
+  allowed-origin: https://suwasarana.test
+
+app:
+  frontend-url: https://suwasarana.test
+  public-base-url: https://api.suwasarana.test
+  time-zone: Asia/Colombo
+  cookie:
+    secure: true
+  seed-data:
+    enabled: false

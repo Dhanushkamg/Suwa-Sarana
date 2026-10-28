@@ -1,14 +1,19 @@
+# LOCAL DEVELOPMENT ONLY. Nothing in this file is suitable for a real deployment: the backend runs with the `dev`
+# profile (demo accounts with a public password, throw-away secrets, permissive defaults).
+# Production uses the backend image's default `prod` profile with secrets from AWS Secrets Manager / SSM.
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine3.23
     container_name: suwasarana-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: suwa_sarana_dev
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      # THROW-AWAY local password (the port below is only reachable from this machine).
+      POSTGRES_PASSWORD: devonly-postgres
     ports:
-      - "5432:5432"
+      # Bound to loopback so the database is not exposed to the LAN.
+      - "127.0.0.1:5432:5432"
     volumes:
       - suwa_sarana_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,18 +32,27 @@ services:
       db:
         condition: service_healthy
     environment:
+      # The image defaults to `prod` (strict start-up checks); compose opts into the lenient dev profile.
+      SPRING_PROFILES_ACTIVE: dev
       DB_URL: jdbc:postgresql://db:5432/suwa_sarana_dev
       DB_USER: postgres
-      DB_PASSWORD: postgres
-      JWT_SECRET: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LXRvLW1lZXQtam1hYy1yZXF1aXJlbWVudHM=
+      DB_PASSWORD: devonly-postgres
+      # THROW-AWAY signing key, committed on purpose, valid ONLY with the dev profile (the prod profile rejects it).
+      # Anyone who has this repository can forge tokens for a backend started with it - never reuse it anywhere real.
+      JWT_SECRET: ZGV2LW9ubHktdGhyb3ctYXdheS1qd3Qtc2lnbmluZy1rZXktbm90LWZvci1hbnl0aGluZy1yZWFsLTAxMjM0NTY3ODlhYmNkZWY=
       CORS_ALLOWED_ORIGIN: http://localhost:3000
+      FRONTEND_URL: http://localhost:3000
+      PUBLIC_BASE_URL: http://localhost:8080
+      COOKIE_SECURE: "false"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
-      # Local demo only: creates the admin@test.com / donor@test.com ... demo logins. Never enable in production.
+      # Local demo only: creates the admin@test.com / donor@test.com ... demo logins (see DataInitializer).
       SEED_DATA_ENABLED: "true"
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      # Readiness includes the database connection.
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/actuator/health/readiness || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10

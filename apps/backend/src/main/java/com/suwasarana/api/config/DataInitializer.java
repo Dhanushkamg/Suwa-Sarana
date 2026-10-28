@@ -9,20 +9,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
  * DataInitializer seeds development/demo test accounts and sample data.
  *
- * THIS COMPONENT IS DISABLED BY DEFAULT AND MUST NEVER RUN IN PRODUCTION.
- * Enable only for local development by setting:
- *   app.seed-data.enabled=true
- * (or environment variable SEED_DATA_ENABLED=true)
+ * <p>DEV PROFILE ONLY ({@code @Profile("dev")}): the bean does not exist under any other profile, whatever the
+ * environment variables say, and ProductionSafetyCheck additionally refuses to start a non-dev profile with
+ * {@code SEED_DATA_ENABLED=true}. Switch it off locally with {@code SEED_DATA_ENABLED=false}.</p>
  *
- * The seeded accounts use well-known passwords and are strictly for development use.
+ * <p>The seeded accounts use well-known passwords and are strictly for development use. It never changes the
+ * schema (Flyway owns that) - it only inserts/updates rows.</p>
  */
 @Component
+@Profile("dev")
 @ConditionalOnProperty(name = "app.seed-data.enabled", havingValue = "true", matchIfMissing = false)
 public class DataInitializer implements CommandLineRunner {
 
@@ -40,16 +42,6 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         log.warn("=== DataInitializer ACTIVE: Seeding development test data. MUST NOT RUN IN PRODUCTION. ===");
-        try {
-            jdbcTemplate.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_status VARCHAR(20) DEFAULT 'PENDING'");
-            jdbcTemplate.execute("UPDATE users SET verification_status = 'VERIFIED' WHERE is_verified = TRUE AND (verification_status IS NULL OR verification_status = 'PENDING')");
-            jdbcTemplate.execute("ALTER TABLE blood_requests ADD COLUMN IF NOT EXISTS fraud_risk_score INTEGER");
-            jdbcTemplate.execute("ALTER TABLE blood_requests ADD COLUMN IF NOT EXISTS ai_flag_reason VARCHAR(255)");
-            jdbcTemplate.execute("ALTER TABLE blood_requests ADD COLUMN IF NOT EXISTS triaged_at TIMESTAMPTZ");
-        } catch (Exception e) {
-            log.info("Schema guard check completed: {}", e.getMessage());
-        }
-
         initAccount("admin@test.com", "0777654321", "password123", Role.ADMIN, VerificationStatus.VERIFIED);
         initAccount("hospital@test.com", "0771234567", "password123", Role.HOSPITAL_REQUESTER, VerificationStatus.VERIFIED);
         initAccount("donor@test.com", "0773334455", "password123", Role.DONOR, VerificationStatus.VERIFIED);
@@ -209,8 +201,10 @@ public class DataInitializer implements CommandLineRunner {
                 user.setEmail(email);
                 user.setPhoneNumber(phone);
             }
-            if (user.getFirstName() == null) user.setFirstName("Test");
-            if (user.getLastName() == null) user.setLastName(role.name().substring(0, 1) + role.name().substring(1).toLowerCase().replace('_', ' '));
+            if (user.getFirstName() == null || user.getFirstName().isBlank()) user.setFirstName("Test");
+            if (user.getLastName() == null || user.getLastName().isBlank()) {
+                user.setLastName(role.name().substring(0, 1) + role.name().substring(1).toLowerCase().replace('_', ' '));
+            }
             user.setPasswordHash(passwordEncoder.encode(password));
             user.setRole(role);
             user.setVerificationStatus(status);
