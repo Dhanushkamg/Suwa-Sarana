@@ -1,6 +1,5 @@
 package com.suwasarana.api.admin;
 
-import com.suwasarana.api.admin.dto.DistrictSummaryDto;
 import com.suwasarana.api.admin.dto.ReportDto;
 import com.suwasarana.api.admin.dto.TriageReviewDto;
 import com.suwasarana.api.common.ApiResponse;
@@ -37,18 +36,6 @@ public class AdminController {
     @GetMapping("/reports")
     public ResponseEntity<ApiResponse<List<ReportDto>>> getReports() {
         return ResponseEntity.ok(ApiResponse.success(adminService.getReports()));
-    }
-
-    @Operation(summary = "Get platform analytics", description = "Returns key performance indicators and aggregate metrics.")
-    @GetMapping("/analytics")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getAnalytics() {
-        return ResponseEntity.ok(ApiResponse.success(adminService.getDistrictAnalytics()));
-    }
-
-    @Operation(summary = "Get district summary analytics", description = "Aggregates donor counts, active blood requests, and fulfillment rates across all 25 Sri Lankan districts.")
-    @GetMapping("/analytics/district-summary")
-    public ResponseEntity<ApiResponse<List<DistrictSummaryDto>>> getDistrictSummary() {
-        return ResponseEntity.ok(ApiResponse.success(adminService.getDistrictSummaries()));
     }
 
     @Operation(summary = "Get AI triage queue", description = "Retrieves active emergency requisitions prioritized by fraud risk score for moderation.")

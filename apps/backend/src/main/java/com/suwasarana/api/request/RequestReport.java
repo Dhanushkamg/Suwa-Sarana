@@ -5,7 +5,8 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "request_reports")
+@Table(name = "request_reports",
+       uniqueConstraints = @UniqueConstraint(name = "uq_request_reports_once", columnNames = {"request_id", "reported_by"}))
 public class RequestReport {
 
     @Id
@@ -23,6 +24,12 @@ public class RequestReport {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String reason;
 
+    @Column(name = "reason_code", length = 30)
+    private String reasonCode;
+
+    @Column(name = "details", length = 500)
+    private String details;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -37,6 +44,12 @@ public class RequestReport {
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+
+    public String getReasonCode() { return reasonCode; }
+    public void setReasonCode(String reasonCode) { this.reasonCode = reasonCode; }
+
+    public String getDetails() { return details; }
+    public void setDetails(String details) { this.details = details; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

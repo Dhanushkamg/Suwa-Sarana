@@ -20,7 +20,14 @@ public class RequestResponseDto {
     private Integer fraudRiskScore;
     private String aiFlagReason;
     private LocalDateTime triagedAt;
-    
+    private LocalDateTime closedAt;
+    private String closeReason;
+    /** Owner/admin views only: donors who accepted, and donations confirmed so far. */
+    private Long acceptedCount;
+    private Long confirmedDonations;
+    /** True when latitude/longitude are rounded (about 1 km) because the viewer is not the owner/admin/matched donor. */
+    private boolean coarseLocation;
+
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -66,4 +73,19 @@ public class RequestResponseDto {
 
     public LocalDateTime getTriagedAt() { return triagedAt; }
     public void setTriagedAt(LocalDateTime triagedAt) { this.triagedAt = triagedAt; }
+
+    public LocalDateTime getClosedAt() { return closedAt; }
+    public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
+
+    public String getCloseReason() { return closeReason; }
+    public void setCloseReason(String closeReason) { this.closeReason = closeReason; }
+
+    public Long getAcceptedCount() { return acceptedCount; }
+    public void setAcceptedCount(Long acceptedCount) { this.acceptedCount = acceptedCount; }
+
+    public Long getConfirmedDonations() { return confirmedDonations; }
+    public void setConfirmedDonations(Long confirmedDonations) { this.confirmedDonations = confirmedDonations; }
+
+    public boolean isCoarseLocation() { return coarseLocation; }
+    public void setCoarseLocation(boolean coarseLocation) { this.coarseLocation = coarseLocation; }
 }

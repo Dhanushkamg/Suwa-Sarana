@@ -8,4 +8,8 @@ import java.util.List;
 @Repository
 public interface RequestReportRepository extends JpaRepository<RequestReport, Long> {
     List<RequestReport> findByRequestId(Long requestId);
+
+    boolean existsByRequestIdAndReportedById(Long requestId, Long reporterId);
+
+    long countByRequestId(Long requestId);
 }
