@@ -1,0 +1,14 @@
+# =====================================================================================================
+# PRODUCTION profile (SPRING_PROFILES_ACTIVE=prod, the container default).
+# Adds nothing permissive. Secrets/URLs still come only from the environment and are validated at start-up by
+# config/ProductionSafetyCheck (JWT secret, DB credentials, CORS origins, frontend/public URLs, cookie flags).
+# Logs are JSON (see logback-spring.xml) so CloudWatch Logs Insights can filter on requestId / level / logger.
+# =====================================================================================================
+spring:
+  flyway:
+    placeholders:
+      environment: ${APP_ENV:prod}
+
+app:
+  cookie:
+    secure: ${COOKIE_SECURE:true}

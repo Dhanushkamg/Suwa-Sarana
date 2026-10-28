@@ -1,0 +1,50 @@
+# =====================================================================================================
+# DEVELOPMENT profile (SPRING_PROFILES_ACTIVE=dev). The ONLY place with throw-away defaults.
+# Never use for a deployment that holds real data: it seeds demo accounts that share a known password.
+# Everything below can still be overridden with the same environment variables as in production.
+# =====================================================================================================
+spring:
+  datasource:
+    # Local Postgres from docker-compose (port 5432) or a standalone container.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/suwa_sarana_dev}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:devonly-postgres}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      leak-detection-threshold: 20000   # ms: logs a stack trace for connections held longer than 20 s
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:none}
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    # Several feature branches can add migrations in parallel; allow applying a lower version that arrives late.
+    # NOT enabled outside dev: out-of-order / baseline-on-migrate can hide a missing migration on a real database.
+    out-of-order: true
+    baseline-on-migrate: true
+    placeholders:
+      # 'dev' keeps the demo rows from V3/V9/V10 (V22 only removes them when this is not 'dev').
+      environment: ${APP_ENV:dev}
+
+jwt:
+  # DEV ONLY throw-away signing key (random bytes, base64). Not accepted by the start-up check in any other profile.
+  secret: ${JWT_SECRET:ZGV2LW9ubHktdGhyb3ctYXdheS1qd3Qtc2lnbmluZy1rZXktbm90LWZvci1hbnl0aGluZy1yZWFsLTAxMjM0NTY3ODlhYmNkZWY=}
+
+cors:
+  allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
+  cookie:
+    # Browsers treat http://localhost as a secure context, so Secure cookies still work, but plain-http LAN testing does not.
+    secure: ${COOKIE_SECURE:false}
+  seed-data:
+    # Demo accounts (admin@test.com, donor@test.com ... password in DataInitializer) + sample requests/camps.
+    enabled: ${SEED_DATA_ENABLED:true}
+
+logging:
+  level:
+    com.suwasarana: DEBUG
