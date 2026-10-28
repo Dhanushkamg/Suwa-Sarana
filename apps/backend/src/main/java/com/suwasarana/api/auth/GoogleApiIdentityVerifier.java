@@ -19,12 +19,16 @@ public class GoogleApiIdentityVerifier implements GoogleIdentityVerifier {
 
     private final String googleClientId;
 
-    public GoogleApiIdentityVerifier(@Value("${app.google.client-id}") String googleClientId) {
+    public GoogleApiIdentityVerifier(@Value("${app.google.client-id:}") String googleClientId) {
         this.googleClientId = googleClientId;
     }
 
     @Override
     public GoogleIdentity verify(String idTokenString) {
+        if (googleClientId == null || googleClientId.isBlank()) {
+            // Google sign-in is not configured (GOOGLE_CLIENT_ID empty): never verify against an empty audience.
+            throw new AuthException(HttpStatus.SERVICE_UNAVAILABLE, AuthCodes.GOOGLE_UNAVAILABLE);
+        }
         GoogleIdToken idToken;
         try {
             idToken = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())

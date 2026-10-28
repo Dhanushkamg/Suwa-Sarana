@@ -16,6 +16,10 @@ public class SmsNotificationService {
 
     private final SmsProvider smsProvider;
 
+    /** Frontend base URL (app.frontend-url / FRONTEND_URL); the alert links to {base}/dashboard/donor/matches. */
+    @org.springframework.beans.factory.annotation.Value("${app.auth.frontend-url:http://localhost:3000}")
+    private String frontendUrl = "http://localhost:3000";
+
     @Autowired
     public SmsNotificationService(SmsProvider smsProvider) {
         this.smsProvider = smsProvider;
@@ -48,10 +52,11 @@ public class SmsNotificationService {
 
     public String formatSmsMessage(BloodRequest request) {
         return String.format("[Suwa Sarana Emergency Alert] Urgent %s blood needed at %s (%s). " +
-                        "Urgency: %s. Please log in to accept: https://suwasarana.lk/dashboard/donor/matches",
+                        "Urgency: %s. Please log in to accept: %s/dashboard/donor/matches",
                 request.getPatientBloodType(),
                 request.getHospitalName(),
                 request.getDistrict(),
-                request.getUrgency());
+                request.getUrgency(),
+                frontendUrl.endsWith("/") ? frontendUrl.substring(0, frontendUrl.length() - 1) : frontendUrl);
     }
 }

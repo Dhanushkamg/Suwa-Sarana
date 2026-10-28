@@ -1,6 +1,7 @@
 package com.suwasarana.api.auth.otp;
 
 import com.suwasarana.api.auth.AuthCodes;
+import com.suwasarana.api.auth.AuthTime;
 import com.suwasarana.api.auth.AuthException;
 import com.suwasarana.api.auth.AuthMessages;
 import com.suwasarana.api.notification.sms.SmsProvider;
@@ -72,8 +73,8 @@ public class OtpService {
         Optional<OtpVerification> latest = otpRepository.findTopByPhoneNumberInOrderByCreatedAtDesc(variants);
         if (latest.isPresent()) {
             LocalDateTime next = latest.get().getCreatedAt().plusSeconds(RESEND_COOLDOWN_SECONDS);
-            if (next.isAfter(LocalDateTime.now())) {
-                int wait = (int) Math.max(1, Duration.between(LocalDateTime.now(), next).toSeconds());
+            if (next.isAfter(AuthTime.now())) {
+                int wait = (int) Math.max(1, Duration.between(AuthTime.now(), next).toSeconds());
                 throw AuthException.tooManyRequests(AuthCodes.OTP_COOLDOWN, wait);
             }
         }
@@ -83,7 +84,7 @@ public class OtpService {
         OtpVerification verification = new OtpVerification();
         verification.setPhoneNumber(phone);
         verification.setOtpCode(hasher.hash(HASH_PURPOSE, phone + ":" + otp));
-        verification.setExpiresAt(LocalDateTime.now().plusMinutes(OTP_VALIDITY_MINUTES));
+        verification.setExpiresAt(AuthTime.now().plusMinutes(OTP_VALIDITY_MINUTES));
         verification = otpRepository.save(verification);
 
         String language = userRepository.findFirstByPhoneNumberIn(variants)
@@ -112,7 +113,7 @@ public class OtpService {
         }
 
         OtpVerification verification = optVerification.get();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = AuthTime.now();
 
         if (verification.getExpiresAt().isBefore(now)) {
             log.warn("OTP expired for {}", PhoneNumbers.mask(phone));
@@ -145,7 +146,7 @@ public class OtpService {
 
     public boolean isPhoneVerified(String phoneNumber) {
         return otpRepository.findTopByPhoneNumberInOrderByCreatedAtDesc(PhoneNumbers.variants(phoneNumber))
-                .map(v -> v.isVerified() && v.getExpiresAt().isAfter(LocalDateTime.now()))
+                .map(v -> v.isVerified() && v.getExpiresAt().isAfter(AuthTime.now()))
                 .orElse(false);
     }
 

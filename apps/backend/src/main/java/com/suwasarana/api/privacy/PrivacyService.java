@@ -46,7 +46,7 @@ import java.util.Map;
 public class PrivacyService {
 
     private static final Logger log = LoggerFactory.getLogger(PrivacyService.class);
-    private static final LocalDate SCRUBBED_DATE_OF_BIRTH = LocalDate.of(1900, 1, 1);
+    private static final LocalDate SCRUBBED_DATE_OF_BIRTH = LocalDate.of(1970, 1, 1);
 
     private final JdbcTemplate jdbc;
     private final UserRepository userRepository;
