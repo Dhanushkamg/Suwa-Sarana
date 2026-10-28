@@ -1,104 +1,126 @@
 package com.suwasarana.api.config;
 
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
-import jakarta.servlet.Filter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.suwasarana.api.ratelimit.CachedBodyRequestFactory;
+import com.suwasarana.api.ratelimit.ClientIpResolver;
+import com.suwasarana.api.ratelimit.RateGroup;
+import com.suwasarana.api.ratelimit.RateLimitProperties;
+import com.suwasarana.api.ratelimit.RateLimitResponses;
+import com.suwasarana.api.ratelimit.RateLimitService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Pre-authentication abuse protection: per-client-IP and per-identifier (hashed e-mail / phone / circle token)
+ * token buckets for the endpoint groups in {@link RateGroup}. Per-user limits need an authenticated principal and are
+ * applied afterwards by {@code UserRateLimitInterceptor}.
+ *
+ * <p>This is a {@link OncePerRequestFilter} that is added <b>once</b>, to the Spring Security chain
+ * ({@code SecurityConfig}); its servlet-container registration is disabled in
+ * {@code RateLimitConfig}. Even if it were registered twice, the once-per-request guard would make the second
+ * pass a no-op, so a request is never counted twice.
+ */
 @Component
-public class RateLimitingFilter implements Filter {
+public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private static final java.util.Set<String> AUTH_LIMITED_PATHS = java.util.Set.of(
-            "/api/auth/login", "/api/auth/register", "/api/auth/send-otp", "/api/auth/verify-otp",
-            "/api/auth/google/verify", "/api/auth/google/register", "/api/auth/reset-password");
+    /** Request attribute holding the resolved client IP (usable by controllers / audit logging). */
+    public static final String CLIENT_IP_ATTRIBUTE = RateLimitingFilter.class.getName() + ".CLIENT_IP";
 
-    // Cache of Client IP -> Bucket for Auth endpoints (10 req/min)
-    private final Map<String, Bucket> authBuckets = new ConcurrentHashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
-    // Cache of Client IP/User -> Bucket for Blood Request creation (5 req/min)
-    private final Map<String, Bucket> requestCreationBuckets = new ConcurrentHashMap<>();
+    private final RateLimitService limits;
+    private final ClientIpResolver ipResolver;
+    private final RateLimitProperties properties;
+    private final ObjectMapper objectMapper;
 
-    private Bucket createAuthBucket() {
-        // 10 requests per minute per IP for authentication
-        Bandwidth limit = Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1)));
-        return Bucket.builder().addLimit(limit).build();
-    }
-
-    private Bucket createRequestCreationBucket() {
-        // 5 requests per minute per IP for creating blood requests
-        Bandwidth limit = Bandwidth.classic(5, Refill.greedy(5, Duration.ofMinutes(1)));
-        return Bucket.builder().addLimit(limit).build();
+    @Autowired
+    public RateLimitingFilter(RateLimitService limits, ClientIpResolver ipResolver,
+                              RateLimitProperties properties, ObjectMapper objectMapper) {
+        this.limits = limits;
+        this.ipResolver = ipResolver;
+        this.properties = properties;
+        this.objectMapper = objectMapper;
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return !properties.isEnabled() || RateGroup.match(request.getMethod(), pathOf(request)) == null;
+    }
 
-        HttpServletRequest req = (HttpServletRequest) request;
-        HttpServletResponse res = (HttpServletResponse) response;
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws ServletException, IOException {
+        String path = pathOf(request);
+        RateGroup group = RateGroup.match(request.getMethod(), path);
+        if (group == null) { // shouldNotFilter already filtered this, kept for direct callers
+            chain.doFilter(request, response);
+            return;
+        }
 
-        String path = req.getRequestURI();
-        String method = req.getMethod();
-        String clientIp = getClientIp(req);
+        String clientIp = ipResolver.resolve(request);
+        request.setAttribute(CLIENT_IP_ATTRIBUTE, clientIp);
 
-        // Rate limit the credential / OTP / SMS-sending endpoints (OTP endpoints would otherwise allow SMS spam and code guessing)
-        if ("POST".equalsIgnoreCase(method) && AUTH_LIMITED_PATHS.contains(path)) {
-            Bucket bucket = authBuckets.computeIfAbsent(clientIp, k -> createAuthBucket());
-            if (!bucket.tryConsume(1)) {
-                sendRateLimitExceededResponse(res);
+        RateLimitService.Decision decision = limits.checkIp(group, clientIp);
+        if (!decision.allowed()) {
+            reject(response, group, decision);
+            return;
+        }
+
+        HttpServletRequest downstream = request;
+        if (limits.rule(group).hasId()) {
+            String identifier;
+            String circleToken = RateGroup.circleTokenOf(path);
+            if (circleToken != null) {
+                identifier = "t:" + circleToken;
+            } else {
+                CachedBodyRequestFactory.Peeked peeked = CachedBodyRequestFactory.peekJson(request, properties.getMaxBodyBytes(), objectMapper);
+                downstream = peeked.request();
+                identifier = peeked.identifier();
+            }
+            decision = limits.checkIdentifier(group, identifier);
+            if (!decision.allowed()) {
+                reject(response, group, decision);
                 return;
             }
         }
 
-        // Rate limit POST /api/requests
-        if ("POST".equalsIgnoreCase(method) && path.equals("/api/requests")) {
-            Bucket bucket = requestCreationBuckets.computeIfAbsent(clientIp, k -> createRequestCreationBucket());
-            if (!bucket.tryConsume(1)) {
-                sendRateLimitExceededResponse(res);
-                return;
-            }
+        chain.doFilter(downstream, response);
+    }
+
+    private void reject(HttpServletResponse response, RateGroup group, RateLimitService.Decision decision) throws IOException {
+        log.warn("Rate limit exceeded: group={} scope={} retryAfter={}s", group.key(), decision.scope(), decision.retryAfterSeconds());
+        RateLimitResponses.tooManyRequests(response, decision.retryAfterSeconds());
+    }
+
+    /** Path without context path, matrix parameters, duplicate/trailing slashes. */
+    public static String pathOf(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (uri == null) {
+            return "";
         }
-
-        chain.doFilter(request, response);
-    }
-
-    /**
-     * Extracts the client IP from the request.
-     *
-     * With server.forward-headers-strategy=framework configured in application.yml,
-     * Spring's ForwardedHeaderFilter populates HttpServletRequest.getRemoteAddr() with
-     * the real originating IP from X-Forwarded-For after validating the proxy chain.
-     * Directly parsing X-Forwarded-For in application code is avoided because it can
-     * be trivially spoofed if the application is not behind a trusted proxy.
-     */
-    private String getClientIp(HttpServletRequest request) {
-        return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
-    }
-
-    private void sendRateLimitExceededResponse(HttpServletResponse response) throws IOException {
-        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding("UTF-8");
-        response.getWriter().write("{\"status\":429,\"message\":\"Too many requests. Please slow down and try again later.\",\"data\":null}");
-    }
-
-    // Accessible for test state reset if needed
-    public void clearBuckets() {
-        authBuckets.clear();
-        requestCreationBuckets.clear();
+        String ctx = request.getContextPath();
+        if (ctx != null && !ctx.isEmpty() && uri.startsWith(ctx)) {
+            uri = uri.substring(ctx.length());
+        }
+        int semi = uri.indexOf(';');
+        if (semi >= 0) {
+            uri = uri.substring(0, semi);
+        }
+        while (uri.contains("//")) {
+            uri = uri.replace("//", "/");
+        }
+        if (uri.length() > 1 && uri.endsWith("/")) {
+            uri = uri.substring(0, uri.length() - 1);
+        }
+        return uri;
     }
 }

@@ -30,6 +30,10 @@ public class CircleResponse {
     @Column(name = "responded_at", nullable = false, updatable = false)
     private LocalDateTime respondedAt = LocalDateTime.now();
 
+    /** Set by the retention job once name / phone / notes have been removed. */
+    @Column(name = "scrubbed_at")
+    private LocalDateTime scrubbedAt;
+
     public CircleResponse() {}
 
     public CircleResponse(RequestCircle circle, String responderName, String responderPhone, String bloodType, String notes) {
@@ -61,4 +65,7 @@ public class CircleResponse {
 
     public LocalDateTime getRespondedAt() { return respondedAt; }
     public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = respondedAt; }
+
+    public LocalDateTime getScrubbedAt() { return scrubbedAt; }
+    public void setScrubbedAt(LocalDateTime scrubbedAt) { this.scrubbedAt = scrubbedAt; }
 }

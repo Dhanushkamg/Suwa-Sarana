@@ -7,11 +7,12 @@ import jakarta.validation.constraints.Size;
 public class SubmitCircleResponseDto {
 
     @NotBlank(message = "Responder name is required")
-    @Size(max = 150, message = "Name must not exceed 150 characters")
+    @Size(min = 2, max = 150, message = "Name must be between 2 and 150 characters")
     private String responderName;
 
     @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Must be a valid phone number")
+    @Size(max = 25, message = "Must be a valid phone number")
+    @Pattern(regexp = "^[+0-9 ()\\-.]{9,25}$", message = "Must be a valid phone number")
     private String responderPhone;
 
     @NotBlank(message = "Blood type is required")

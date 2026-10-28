@@ -1,7 +1,10 @@
 package com.suwasarana.api.circle.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.time.LocalDateTime;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CircleResponseDto {
     private Long id;
     private String responderName;
@@ -9,6 +12,11 @@ public class CircleResponseDto {
     private String bloodType;
     private String notes;
     private LocalDateTime respondedAt;
+    /**
+     * Only set on the answer to a new pledge: {@code true} when the requester was really notified, {@code false}
+     * when the pledge was saved but no notification channel delivered it. Absent in the requester's list.
+     */
+    private Boolean requesterNotified;
 
     public CircleResponseDto() {}
 
@@ -38,4 +46,7 @@ public class CircleResponseDto {
 
     public LocalDateTime getRespondedAt() { return respondedAt; }
     public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = respondedAt; }
+
+    public Boolean getRequesterNotified() { return requesterNotified; }
+    public void setRequesterNotified(Boolean requesterNotified) { this.requesterNotified = requesterNotified; }
 }
