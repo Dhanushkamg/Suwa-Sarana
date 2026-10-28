@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging (audit F-32).
+    - dev / test / pgtest : human-readable single line per event, includes the request id.
+    - everything else (prod, staging ...): one JSON object per line on stdout (logstash layout: @timestamp, level,
+      logger_name, message, stack_trace and every MDC entry such as requestId) - ready for CloudWatch Logs Insights.
+  PII: the platform never logs request bodies, query strings, headers or client addresses (see RequestIdFilter, which
+  logs the route template only). Feature code must not log phone numbers, e-mail addresses, OTPs or tokens.
+-->
+<configuration>
+
+    <springProfile name="dev | test | pgtest">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} %-5level [%X{requestId:-}] %logger{36} - %msg%n</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="!dev &amp; !test &amp; !pgtest">
+        <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>logstash</format>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="JSON"/>
+        </root>
+    </springProfile>
+
+</configuration>

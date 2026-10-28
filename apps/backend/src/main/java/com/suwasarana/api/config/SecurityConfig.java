@@ -13,15 +13,31 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.suwasarana.api.common.ErrorCodes;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    /** Pure JSON API: nothing may be loaded, framed or navigated to from an API response. */
+    static final String API_CSP = "default-src 'none'; frame-ancestors 'none'";
+    /** Swagger UI (ADMIN only) needs its own scripts/styles/images, but still no framing and no third-party origins. */
+    static final String SWAGGER_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+            + "img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'";
+    static final String PERMISSIONS_POLICY = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), "
+            + "microphone=(), payment=(), usb=()";
 
     private final JwtAuthFilter jwtAuthFilter;
     private final RateLimitingFilter rateLimitingFilter;
@@ -49,7 +65,29 @@ public class SecurityConfig {
             .cors(cors -> cors.configure(http)) // delegates to CorsConfig
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // Missing/expired JWT must answer 401 (not Spring's default 403) so the frontend knows to refresh the token.
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+            // Same JSON envelope (with a machine-readable code) as every other error, instead of an empty body.
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, e) ->
+                        ApiErrorWriter.write(response, HttpStatus.UNAUTHORIZED, ErrorCodes.AUTH_UNAUTHORIZED, "Authentication required"))
+                .accessDeniedHandler((request, response, e) ->
+                        ApiErrorWriter.write(response, HttpStatus.FORBIDDEN, ErrorCodes.AUTH_FORBIDDEN, "Access denied")))
+            .headers(headers -> {
+                RequestMatcher swagger = new OrRequestMatcher(
+                        PathPatternRequestMatcher.withDefaults().matcher("/swagger-ui/**"),
+                        PathPatternRequestMatcher.withDefaults().matcher("/swagger-ui.html"),
+                        PathPatternRequestMatcher.withDefaults().matcher("/v3/api-docs/**"));
+                headers
+                    .contentTypeOptions(Customizer.withDefaults())                               // X-Content-Type-Options: nosniff
+                    .frameOptions(frame -> frame.deny())                                         // X-Frame-Options: DENY
+                    .referrerPolicy(ref -> ref.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                    // Only sent on HTTPS requests (Spring checks the - proxy-corrected - scheme), so plain-http localhost is unaffected.
+                    .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000))
+                    .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy", PERMISSIONS_POLICY))
+                    .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                            new NegatedRequestMatcher(swagger), new StaticHeadersWriter("Content-Security-Policy", API_CSP)))
+                    .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                            swagger, new StaticHeadersWriter("Content-Security-Policy", SWAGGER_CSP)));
+            })
             .authorizeHttpRequests(auth -> auth
                 // Public auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
@@ -64,9 +102,9 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/*/slots").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/hospitals/*/slots").permitAll()
-                // Actuator: only /health is publicly accessible; all other actuator
-                // endpoints (env, metrics, beans, loggers, etc.) require ADMIN role
-                .requestMatchers("/actuator/health").permitAll()
+                // Actuator: only the liveness/readiness probes (status only, for the load balancer / orchestrator) are
+                // public; everything else - including the aggregate /actuator/health with details, metrics, info - is ADMIN.
+                .requestMatchers("/actuator/health/liveness", "/actuator/health/readiness").permitAll()
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                 // Swagger UI: restricted to ADMIN to prevent API schema leakage in production.
                 // For local development, log in as admin@test.com first, then visit /swagger-ui/index.html
