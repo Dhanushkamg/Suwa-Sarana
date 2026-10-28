@@ -25,13 +25,6 @@ public class AdminController {
     @Autowired
     private AdminService adminService;
 
-    @Operation(summary = "Verify user account", description = "Manually marks a user account as verified.")
-    @PostMapping("/requesters/{id}/verify")
-    public ResponseEntity<ApiResponse<Void>> verifyUser(@PathVariable Long id) {
-        adminService.verifyUser(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "User verified successfully"));
-    }
-
     @Operation(summary = "Get flagged reports", description = "Retrieves abuse reports and flagged items submitted by community users.")
     @GetMapping("/reports")
     public ResponseEntity<ApiResponse<List<ReportDto>>> getReports() {

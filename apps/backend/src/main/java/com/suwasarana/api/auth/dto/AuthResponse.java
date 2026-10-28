@@ -2,8 +2,10 @@ package com.suwasarana.api.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.suwasarana.api.user.Role;
+import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.VerificationStatus;
 
+/** Session returned by login / register / refresh. The refresh token travels only in the HttpOnly cookie. */
 public class AuthResponse {
     private String accessToken;
     private Long userId;
@@ -11,6 +13,10 @@ public class AuthResponse {
     private String email;
     private String phoneNumber;
     private VerificationStatus verificationStatus;
+    private String firstName;
+    private String lastName;
+    private boolean emailVerified;
+    private String preferredLanguage;
 
     @JsonIgnore
     private String refreshToken;
@@ -23,6 +29,16 @@ public class AuthResponse {
         this.phoneNumber = phoneNumber;
         this.refreshToken = refreshToken;
         this.verificationStatus = verificationStatus;
+    }
+
+    public static AuthResponse of(User user, String accessToken, String refreshToken) {
+        AuthResponse response = new AuthResponse(accessToken, user.getId(), user.getRole(), user.getEmail(),
+                user.getPhoneNumber(), refreshToken, user.getVerificationStatus());
+        response.firstName = user.getFirstName();
+        response.lastName = user.getLastName();
+        response.emailVerified = user.isEmailVerified();
+        response.preferredLanguage = user.getPreferredLanguage();
+        return response;
     }
 
     // Getters and Setters
@@ -40,4 +56,12 @@ public class AuthResponse {
     public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
     public VerificationStatus getVerificationStatus() { return verificationStatus; }
     public void setVerificationStatus(VerificationStatus verificationStatus) { this.verificationStatus = verificationStatus; }
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    public boolean isEmailVerified() { return emailVerified; }
+    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+    public String getPreferredLanguage() { return preferredLanguage; }
+    public void setPreferredLanguage(String preferredLanguage) { this.preferredLanguage = preferredLanguage; }
 }

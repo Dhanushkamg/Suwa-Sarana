@@ -1,5 +1,6 @@
 package com.suwasarana.api.auth.otp;
 
+import com.suwasarana.api.auth.AuthTime;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -14,7 +15,8 @@ public class OtpVerification {
     @Column(nullable = false, length = 20)
     private String phoneNumber;
 
-    @Column(nullable = false, length = 10)
+    /** HMAC-SHA256 hex digest of the code, never the code itself (the accessor keeps its historical name). */
+    @Column(nullable = false, length = 64)
     private String otpCode;
 
     @Column(nullable = false)
@@ -28,7 +30,7 @@ public class OtpVerification {
     private LocalDateTime expiresAt;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = AuthTime.now();
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

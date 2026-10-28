@@ -1,24 +1,29 @@
 package com.suwasarana.api.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.suwasarana.api.auth.AuthCodes;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class LoginDto {
 
-    @NotBlank(message = "Username (email or phone) is required")
+    /** Email or phone number. */
+    @NotBlank(message = AuthCodes.EMAIL_REQUIRED)
+    @Size(max = 254, message = AuthCodes.EMAIL_INVALID)
     @JsonAlias({"email", "phoneNumber", "phone"})
     private String username;
 
-    @NotBlank(message = "Password is required")
+    @NotBlank(message = AuthCodes.PASSWORD_REQUIRED)
+    @Size(max = 1024, message = AuthCodes.PASSWORD_TOO_LONG)
     private String password;
 
     // Getters and Setters
-    public String getUsername() { 
-        return username; 
+    public String getUsername() {
+        return username;
     }
-    
-    public void setUsername(String username) { 
-        this.username = username; 
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEmail() {
@@ -31,11 +36,11 @@ public class LoginDto {
         }
     }
 
-    public String getPassword() { 
-        return password; 
+    public String getPassword() {
+        return password;
     }
-    
-    public void setPassword(String password) { 
-        this.password = password; 
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

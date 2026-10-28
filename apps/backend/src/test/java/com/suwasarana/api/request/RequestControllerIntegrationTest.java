@@ -83,7 +83,7 @@ public class RequestControllerIntegrationTest {
         unverifiedDto.setPhoneNumber("0771000001");
         unverifiedDto.setFirstName("Test");
         unverifiedDto.setLastName("User");
-        unverifiedDto.setPassword("password12");
+        unverifiedDto.setPassword("Str0ng-Test-Pass1");
         unverifiedDto.setRole(Role.REQUESTER);
         AuthResponse unverifiedAuth = authService.register(unverifiedDto, "127.0.0.1");
         unverifiedToken = unverifiedAuth.getAccessToken();
@@ -94,7 +94,7 @@ public class RequestControllerIntegrationTest {
         verifiedDto.setPhoneNumber("0771000002");
         verifiedDto.setFirstName("Test");
         verifiedDto.setLastName("User");
-        verifiedDto.setPassword("password12");
+        verifiedDto.setPassword("Str0ng-Test-Pass1");
         verifiedDto.setRole(Role.REQUESTER);
         AuthResponse verifiedAuth = authService.register(verifiedDto, "127.0.0.1");
         verifiedToken = verifiedAuth.getAccessToken();
@@ -111,7 +111,7 @@ public class RequestControllerIntegrationTest {
         otherDto.setPhoneNumber("0771000003");
         otherDto.setFirstName("Test");
         otherDto.setLastName("User");
-        otherDto.setPassword("password12");
+        otherDto.setPassword("Str0ng-Test-Pass1");
         otherDto.setRole(Role.REQUESTER);
         AuthResponse otherAuth = authService.register(otherDto, "127.0.0.1");
         otherVerifiedToken = otherAuth.getAccessToken();

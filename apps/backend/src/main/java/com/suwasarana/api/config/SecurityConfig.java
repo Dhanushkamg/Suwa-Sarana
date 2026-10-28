@@ -89,6 +89,8 @@ public class SecurityConfig {
                             swagger, new StaticHeadersWriter("Content-Security-Policy", SWAGGER_CSP)));
             })
             .authorizeHttpRequests(auth -> auth
+                // The only /api/auth endpoint that needs a signed-in user (must precede the permitAll below)
+                .requestMatchers("/api/auth/resend-verification").authenticated()
                 // Public auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 // Public read-only data endpoints
