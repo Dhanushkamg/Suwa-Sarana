@@ -63,6 +63,18 @@ public class BloodRequest {
     @Column
     private LocalDateTime triagedAt;
 
+    /** When the request reached a terminal state (FULFILLED, CANCELLED or EXPIRED). Basis of the fulfilment rate. */
+    @Column(name = "closed_at")
+    private LocalDateTime closedAt;
+
+    /** When the request last became MATCHED; the donor-confirmation window is measured from here. */
+    @Column(name = "matched_at")
+    private LocalDateTime matchedAt;
+
+    /** Why a requester closed the request (see CloseReason); null for other endings. */
+    @Column(name = "close_reason", length = 30)
+    private String closeReason;
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -96,6 +108,15 @@ public class BloodRequest {
     public void setFraudRiskScore(Integer fraudRiskScore) { this.fraudRiskScore = fraudRiskScore; }
     public String getAiFlagReason() { return aiFlagReason; }
     public void setAiFlagReason(String aiFlagReason) { this.aiFlagReason = aiFlagReason; }
+    public LocalDateTime getClosedAt() { return closedAt; }
+    public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
+    public LocalDateTime getMatchedAt() { return matchedAt; }
+    public void setMatchedAt(LocalDateTime matchedAt) { this.matchedAt = matchedAt; }
+    public String getCloseReason() { return closeReason; }
+    public void setCloseReason(String closeReason) { this.closeReason = closeReason; }
+    public boolean isActive() {
+        return status == RequestStatus.OPEN || status == RequestStatus.ESCALATING || status == RequestStatus.MATCHED;
+    }
     public LocalDateTime getTriagedAt() { return triagedAt; }
     public void setTriagedAt(LocalDateTime triagedAt) { this.triagedAt = triagedAt; }
 }

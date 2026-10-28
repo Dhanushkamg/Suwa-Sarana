@@ -120,6 +120,15 @@ public class SlotBookingController {
         return ResponseEntity.ok(ApiResponse.success(slotBookingService.checkIn(slotId, bookingId, userDetails.getId()), "Donor checked in"));
     }
 
+    @Operation(summary = "List the bookings of a slot (organiser)", description = "Camp organiser, hospital or admin that owns the slot. Name (first + last initial), blood type and status; no contact details.")
+    @GetMapping("/api/slots/{slotId}/bookings")
+    @PreAuthorize("hasAnyRole('HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<com.suwasarana.api.slot.dto.SlotRosterEntryDto>>> getSlotBookings(
+            @PathVariable Long slotId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(ApiResponse.success(slotBookingService.getSlotBookings(slotId, userDetails.getId())));
+    }
+
     // -------------------------------------------------------------------------
     // My Bookings
     // -------------------------------------------------------------------------

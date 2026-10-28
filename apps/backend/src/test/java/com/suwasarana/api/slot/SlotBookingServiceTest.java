@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
@@ -41,6 +42,8 @@ public class SlotBookingServiceTest {
     @Mock private DonationCampRepository campRepository;
     @Mock private DeferralService deferralService;
     @Mock private NotificationService notificationService;
+    @Mock private com.suwasarana.api.donor.DonationRecorder donationRecorder;
+    @Spy private com.suwasarana.api.shared.AppClock clock = com.suwasarana.api.shared.AppClock.system();
 
     @InjectMocks
     private SlotBookingService service;

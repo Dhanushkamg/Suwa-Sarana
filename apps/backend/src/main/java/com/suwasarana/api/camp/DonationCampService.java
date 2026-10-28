@@ -3,6 +3,11 @@ package com.suwasarana.api.camp;
 import com.suwasarana.api.camp.dto.CreateCampDto;
 import com.suwasarana.api.camp.dto.DonationCampDto;
 import com.suwasarana.api.common.ApiException;
+import com.suwasarana.api.geo.District;
+import com.suwasarana.api.matching.BloodCompatibility;
+import com.suwasarana.api.shared.AppClock;
+import com.suwasarana.api.shared.CodedApiException;
+import com.suwasarana.api.shared.ErrorCodes;
 import com.suwasarana.api.donor.DonorProfile;
 import com.suwasarana.api.donor.DonorRepository;
 import com.suwasarana.api.slot.BookingStatus;
@@ -24,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class DonationCampService {
 
     @Autowired
@@ -44,15 +50,45 @@ public class DonationCampService {
     @Autowired
     private SlotBookingRepository bookingRepository;
 
+    @Autowired
+    private AppClock clock;
+
     private static final Set<String> CAMP_STATUSES = Set.of("SCHEDULED", "COMPLETED", "CANCELLED");
+
+    /**
+     * Shared by create and update. A camp must end after it starts, take place in one of the 25 districts, list only
+     * valid blood groups, and (when it is new or its date changes) not be in the past.
+     * Returns the canonical district name.
+     */
+    private String validate(CreateCampDto dto, LocalDate currentDate) {
+        if (!dto.getEndTime().isAfter(dto.getStartTime())) {
+            throw CodedApiException.badRequest(ErrorCodes.TIME_RANGE_INVALID, "End time must be after start time");
+        }
+        boolean dateChanged = currentDate == null || !currentDate.equals(dto.getScheduledDate());
+        if (dateChanged && dto.getScheduledDate().isBefore(clock.today())) {
+            throw CodedApiException.badRequest(ErrorCodes.CAMP_IN_PAST, "A camp cannot be scheduled in the past");
+        }
+        if (dto.getRequiredBloodGroups() != null && !dto.getRequiredBloodGroups().isBlank()) {
+            for (String g : dto.getRequiredBloodGroups().split(",")) {
+                if (!BloodCompatibility.isValid(g.trim().toUpperCase())) {
+                    throw CodedApiException.badRequest(ErrorCodes.BLOOD_GROUP_INVALID,
+                            "Unknown blood group '" + g.trim() + "'. Use A+, A-, B+, B-, AB+, AB-, O+ or O-.");
+                }
+            }
+        }
+        return District.normalise(dto.getDistrict())
+                .orElseThrow(() -> CodedApiException.badRequest(ErrorCodes.UNKNOWN_DISTRICT,
+                        "Unknown district. Use one of the 25 official district names (GET /api/meta/districts)."));
+    }
 
     public DonationCampDto createCamp(CreateCampDto dto, String userEmail) {
         User organizer = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Organizer not found"));
+                .orElseThrow(() -> ApiException.notFound("Organizer not found"));
+        String district = validate(dto, null);
 
         DonationCamp camp = new DonationCamp();
-        camp.setName(dto.getName());
-        camp.setDistrict(dto.getDistrict());
+        camp.setName(dto.getName().trim());
+        camp.setDistrict(district);
         camp.setLocation(dto.getLocation());
         camp.setLatitude(dto.getLatitude());
         camp.setLongitude(dto.getLongitude());
@@ -73,9 +109,10 @@ public class DonationCampService {
         if (!camp.getOrganizer().getEmail().equals(userEmail)) {
             throw ApiException.forbidden("Only the organizer can modify this camp.");
         }
+        String district = validate(dto, camp.getScheduledDate());
 
-        camp.setName(dto.getName());
-        camp.setDistrict(dto.getDistrict());
+        camp.setName(dto.getName().trim());
+        camp.setDistrict(district);
         camp.setLocation(dto.getLocation());
         camp.setLatitude(dto.getLatitude());
         camp.setLongitude(dto.getLongitude());
@@ -129,7 +166,8 @@ public class DonationCampService {
     }
 
     public List<DonationCampDto> getUpcomingCamps() {
-        return campRepository.findByStatusOrderByScheduledDateAsc("SCHEDULED")
+        // Only camps that have not happened yet
+        return campRepository.findUpcoming("SCHEDULED", clock.today())
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -137,13 +175,13 @@ public class DonationCampService {
 
     public List<DonationCampDto> getRecommendedCamps(String donorEmail) {
         User user = userRepository.findByEmail(donorEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
         DonorProfile donor = donorRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("Donor profile not found"));
+                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
 
         String donorBloodType = donor.getBloodType();
 
-        return campRepository.findByStatusOrderByScheduledDateAsc("SCHEDULED").stream()
+        return campRepository.findUpcoming("SCHEDULED", clock.today()).stream()
                 .filter(camp -> {
                     String required = camp.getRequiredBloodGroups();
                     if (required == null || required.trim().isEmpty()) {
@@ -175,16 +213,16 @@ public class DonationCampService {
 
     public void registerForCamp(Long campId, String donorEmail) {
         User user = userRepository.findByEmail(donorEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
         
         DonorProfile donor = donorRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("Donor profile not found"));
+                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
 
         DonationCamp camp = campRepository.findById(campId)
-                .orElseThrow(() -> new RuntimeException("Camp not found"));
+                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.CAMP_NOT_FOUND, "Camp not found"));
 
         if (registrationRepository.existsByCampIdAndDonorId(campId, donor.getId())) {
-            throw new RuntimeException("Already registered");
+            throw ApiException.conflict("Already registered");
         }
 
         CampRegistration registration = new CampRegistration();
