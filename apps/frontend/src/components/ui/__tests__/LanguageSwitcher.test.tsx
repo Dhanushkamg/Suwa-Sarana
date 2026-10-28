@@ -15,6 +15,7 @@ describe('LanguageSwitcher Component', () => {
       locale: 'en',
       setLocale: vi.fn(),
       t: vi.fn((key: string) => key),
+      format: { number: String, date: String, dateTime: String },
     });
 
     render(<LanguageSwitcher />);
@@ -32,6 +33,7 @@ describe('LanguageSwitcher Component', () => {
       locale: 'en',
       setLocale: setLocaleMock,
       t: vi.fn((key: string) => key),
+      format: { number: String, date: String, dateTime: String },
     });
 
     render(<LanguageSwitcher />);
@@ -49,6 +51,7 @@ describe('LanguageSwitcher Component', () => {
       locale: 'ta',
       setLocale: vi.fn(),
       t: vi.fn((key: string) => key),
+      format: { number: String, date: String, dateTime: String },
     });
 
     render(<LanguageSwitcher />);

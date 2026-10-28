@@ -1,27 +1,35 @@
+import { AlertCircle, AlertTriangle, CheckCircle2, Circle, Clock, Info, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/** Status is always icon + text + colour, never colour alone. */
 const TONES = {
-  red: 'bg-red-500/15 text-red-300 border-red-500/30',
-  amber: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-  green: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-  blue: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-  gray: 'bg-foreground/[0.05] text-gray-300 border-line-strong',
+  danger: { cls: 'bg-danger-soft text-danger-text border-danger/30', Icon: AlertCircle },
+  warning: { cls: 'bg-warning-soft text-warning-text border-warning/30', Icon: AlertTriangle },
+  success: { cls: 'bg-success-soft text-success-text border-success/30', Icon: CheckCircle2 },
+  info: { cls: 'bg-info-soft text-info-text border-info/30', Icon: Info },
+  pending: { cls: 'bg-warning-soft text-warning-text border-warning/30', Icon: Clock },
+  neutral: { cls: 'bg-foreground/[0.06] text-muted border-line-strong', Icon: Circle },
+  failed: { cls: 'bg-danger-soft text-danger-text border-danger/30', Icon: XCircle },
 } as const;
 
-type Tone = keyof typeof TONES;
+export type BadgeTone = keyof typeof TONES;
 
-/** Maps backend enum values (request status, urgency, verification...) to a colour. Unknown values render gray. */
-const VALUE_TONE: Record<string, Tone> = {
-  CRITICAL: 'red', URGENT: 'amber', ROUTINE: 'blue',
-  OPEN: 'blue', ESCALATING: 'amber', MATCHED: 'green', FULFILLED: 'green', CANCELLED: 'gray', EXPIRED: 'gray',
-  PENDING: 'amber', VERIFIED: 'green', REJECTED: 'red',
-  BOOKED: 'blue', CHECKED_IN: 'green', NO_SHOW: 'red', COMPLETED: 'green', FULL: 'amber', SCHEDULED: 'blue',
+/** Maps backend enum values (request status, urgency, verification...) to a tone. Unknown values render neutral. */
+const VALUE_TONE: Record<string, BadgeTone> = {
+  CRITICAL: 'danger', URGENT: 'warning', ROUTINE: 'info',
+  OPEN: 'info', ESCALATING: 'warning', MATCHED: 'success', FULFILLED: 'success', CANCELLED: 'neutral', EXPIRED: 'neutral',
+  PENDING: 'pending', VERIFIED: 'success', REJECTED: 'failed',
+  BOOKED: 'info', CHECKED_IN: 'success', NO_SHOW: 'failed', COMPLETED: 'success', FULL: 'warning', SCHEDULED: 'info',
 };
 
-export function StatusBadge({ value, label, tone, className }: { value: string; label?: string; tone?: Tone; className?: string }) {
-  const resolved = tone ?? VALUE_TONE[value] ?? 'gray';
+export function StatusBadge({ value, label, tone, className }: { value: string; label?: string; tone?: BadgeTone | 'red' | 'amber' | 'green' | 'blue' | 'gray'; className?: string }) {
+  // Old tone names kept so existing call sites compile
+  const legacy = { red: 'danger', amber: 'warning', green: 'success', blue: 'info', gray: 'neutral' } as const;
+  const resolved: BadgeTone = tone ? (tone in legacy ? legacy[tone as keyof typeof legacy] : (tone as BadgeTone)) : (VALUE_TONE[value] ?? 'neutral');
+  const { cls, Icon } = TONES[resolved];
   return (
-    <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.06em]', TONES[resolved], className)}>
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', cls, className)}>
+      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       {label ?? value.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
     </span>
   );

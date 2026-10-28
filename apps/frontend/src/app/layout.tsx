@@ -12,6 +12,9 @@ import { I18nProvider } from '@/lib/i18n';
 import DonorFaqChatbot from '@/components/chat/DonorFaqChatbot';
 import { GoogleAuthProvider } from '@/providers/GoogleAuthProvider';
 import { SITE_URL } from '@/lib/constants';
+import { ThemeProvider, THEME_INIT_SCRIPT } from '@/components/theme/ThemeProvider';
+import { SkipLink } from '@/components/ui/SkipLink';
+import { ToastProvider } from '@/components/ui/Toast';
 import './globals.css';
 
 // Latin: Geist for UI, Instrument Serif for editorial headings, Geist Mono for small captions.
@@ -26,7 +29,11 @@ const tamilSerif = Noto_Serif_Tamil({ subsets: ['tamil'], variable: '--font-tami
 const fontVars = [geist, geistMono, instrument, sinhala, sinhalaSerif, tamil, tamilSerif].map((f) => f.variable).join(' ');
 
 export const viewport: Viewport = {
-  themeColor: '#0b0908',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
+    { media: '(prefers-color-scheme: dark)', color: '#0e1116' },
+  ],
+  colorScheme: 'light dark',
 };
 
 export const metadata: Metadata = {
@@ -51,14 +58,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${fontVars} h-full`}>
+    // suppressHydrationWarning: the inline script below sets data-theme before React hydrates
+    <html lang="en" className={`${fontVars} h-full`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col antialiased">
-        <GoogleAuthProvider>
-          <I18nProvider defaultLocale="en">
-            {children}
-            <DonorFaqChatbot />
-          </I18nProvider>
-        </GoogleAuthProvider>
+        <ThemeProvider>
+          <GoogleAuthProvider>
+            <I18nProvider defaultLocale="en">
+              <ToastProvider>
+                <SkipLink />
+                {children}
+                <DonorFaqChatbot />
+              </ToastProvider>
+            </I18nProvider>
+          </GoogleAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

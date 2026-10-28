@@ -27,8 +27,8 @@ export function Select({ label, error, options, className, id, ...props }: Selec
           aria-describedby={error ? errorId : undefined}
           className={cn(
             'w-full rounded-xl border bg-surface-raised pl-4 pr-10 py-3 text-sm text-foreground transition-[border-color,box-shadow] duration-300 appearance-none',
-            'border-line-strong hover:border-foreground/25 focus:border-ember focus:outline-none focus:ring-4 focus:ring-ember/15',
-            error && 'border-red-500/50',
+            'border-line-strong hover:border-foreground/25 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20',
+            error && 'border-danger',
             className
           )}
           {...props}
@@ -45,7 +45,7 @@ export function Select({ label, error, options, className, id, ...props }: Selec
         />
       </div>
       {error && (
-        <p id={errorId} className="text-xs text-red-400">
+        <p id={errorId} className="text-xs text-danger-text">
           {error}
         </p>
       )}

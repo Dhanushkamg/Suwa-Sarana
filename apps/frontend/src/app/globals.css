@@ -2,25 +2,108 @@
 @import "./theme.css";
 
 /* ------------------------------------------------------------------
-   Ink & Ember — design tokens
-   Warm near-black ink, bone-coloured type, one vermilion accent and a
-   saffron highlight. Colour families used across the app are re-mapped
-   in theme.css, so existing utilities (text-gray-400, bg-red-500 ...)
-   already follow this palette.
+   Design tokens (semantic). Components use these, never raw hex.
+   Light is the default; <html data-theme="dark"> switches. The inline
+   script in layout.tsx sets data-theme before first paint.
+   Contrast (WCAG 2.2 AA) is verified by `pnpm check:contrast`.
 ------------------------------------------------------------------- */
-:root {
-  --background: #0b0908;
-  --surface: #131010;
-  --surface-raised: #1a1615;
-  --foreground: #f4eee4;
-  --muted: #a39a8e;
-  --line: rgba(244, 238, 228, 0.09);
-  --line-strong: rgba(244, 238, 228, 0.16);
-  --ember: oklch(0.66 0.205 31);
-  --ember-deep: oklch(0.48 0.17 29);
-  --saffron: oklch(0.8 0.15 80);
-  --sage: oklch(0.72 0.095 165);
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-raised: #f1f5f9;
+  --foreground: #1e293b;
+  --muted: #64748b;
+  --line: rgba(15, 23, 42, 0.1);
+  --line-strong: rgba(15, 23, 42, 0.2);
+
+  --primary: #2563eb;            /* fills (buttons, switches): white text = 5.2:1 */
+  --primary-fg: #ffffff;
+  --primary-hover: #1d4ed8;
+  --primary-text: #1d4ed8;       /* links / active nav text on surface */
+  --primary-soft: rgba(37, 99, 235, 0.1);
+
+  --brand: #b91c1c;              /* crimson: logo, blood-type badges, the one urgent CTA */
+  --brand-fg: #ffffff;
+  --brand-soft: rgba(185, 28, 28, 0.1);
+
+  --danger: #dc2626;
+  --danger-text: #b91c1c;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+  --warning: #d97706;
+  --warning-text: #92400e;
+  --warning-soft: rgba(217, 119, 6, 0.12);
+  --success: #16a34a;
+  --success-text: #166534;
+  --success-soft: rgba(22, 163, 74, 0.12);
+  --info: #2563eb;
+  --info-text: #1d4ed8;
+  --info-soft: rgba(37, 99, 235, 0.1);
+
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --grain-opacity: 0.025;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0e1116;
+  --surface: #151a21;
+  --surface-raised: #1c222b;
+  --foreground: #e6eaf0;
+  --muted: #9aa7b8;
+  --line: rgba(230, 234, 240, 0.1);
+  --line-strong: rgba(230, 234, 240, 0.2);
+
+  --primary: #2563eb;
+  --primary-fg: #ffffff;
+  --primary-hover: #3b7bf0;
+  --primary-text: #7db1ff;
+  --primary-soft: rgba(125, 177, 255, 0.14);
+
+  --brand: #dc3b34;
+  --brand-fg: #ffffff;
+  --brand-soft: rgba(248, 113, 113, 0.14);
+
+  --danger: #ef4444;
+  --danger-text: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+  --warning: #f59e0b;
+  --warning-text: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --success: #22c55e;
+  --success-text: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.14);
+  --info: #3b82f6;
+  --info-text: #7db1ff;
+  --info-soft: rgba(125, 177, 255, 0.14);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --grain-opacity: 0.04;
+}
+
+/* Visitors without JS still get their OS preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --background: #0e1116;
+    --surface: #151a21;
+    --surface-raised: #1c222b;
+    --foreground: #e6eaf0;
+    --muted: #9aa7b8;
+    --line: rgba(230, 234, 240, 0.1);
+    --line-strong: rgba(230, 234, 240, 0.2);
+    --primary-hover: #3b7bf0;
+    --primary-text: #7db1ff;
+    --primary-soft: rgba(125, 177, 255, 0.14);
+    --brand: #dc3b34;
+    --brand-soft: rgba(248, 113, 113, 0.14);
+    --danger-text: #f87171;
+    --warning-text: #fbbf24;
+    --success-text: #4ade80;
+    --info-text: #7db1ff;
+  }
 }
 
 @theme inline {
@@ -28,10 +111,32 @@
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
+  --color-muted: var(--muted);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-  --color-ember: var(--ember);
-  --color-saffron: var(--saffron);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-text: var(--primary-text);
+  --color-primary-soft: var(--primary-soft);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-danger: var(--danger);
+  --color-danger-text: var(--danger-text);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-text: var(--warning-text);
+  --color-warning-soft: var(--warning-soft);
+  --color-success: var(--success);
+  --color-success-text: var(--success-text);
+  --color-success-soft: var(--success-soft);
+  --color-info: var(--info);
+  --color-info-text: var(--info-text);
+  --color-info-soft: var(--info-soft);
+  /* Transitional aliases for the pre-theme redesign: migrate to primary/brand, then delete */
+  --color-ember: var(--primary);
+  --color-saffron: var(--warning-text);
   --font-sans: var(--font-geist), var(--font-sinhala), var(--font-tamil), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-instrument), var(--font-sinhala-serif), var(--font-tamil-serif), ui-serif, Georgia, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
@@ -53,34 +158,56 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Sinhala/Tamil need more vertical room than Latin */
+  line-height: 1.6;
 }
 
 ::selection {
-  background: var(--ember);
-  color: #fff;
+  background: var(--primary);
+  color: var(--primary-fg);
 }
 
-/* Film grain: a fixed, static noise layer that takes the "flat digital" edge off the dark background */
+/* Film grain: a fixed, static noise layer that takes the flat digital edge off the background */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 100;
   pointer-events: none;
-  opacity: 0.045;
-  mix-blend-mode: overlay;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:root[data-theme="dark"] body::before {
+  mix-blend-mode: overlay;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(244, 238, 228, 0.12); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(244, 238, 228, 0.22); }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
 :focus-visible {
-  outline: 2px solid var(--ember);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* Skip link (first focusable element on every page) */
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -4rem;
+  z-index: 200;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--primary-fg);
+  padding: 0.6rem 1.1rem;
+  font-weight: 600;
+  transition: top 0.2s var(--ease-out);
+}
+.skip-link:focus {
+  top: 1rem;
 }
 
 /* ------------------------------------------------------------------
@@ -90,14 +217,14 @@ body::before {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: -0.02em;
-  line-height: 1.02;
+  line-height: 1.04;
 }
 
 /* Sinhala and Tamil glyphs have tall ascenders/marks: give them room and drop the tight tracking */
 :lang(si) .font-display,
 :lang(ta) .font-display {
   letter-spacing: 0;
-  line-height: 1.28;
+  line-height: 1.3;
 }
 
 /* tiny mono caption above sections */
@@ -108,26 +235,32 @@ body::before {
   text-transform: uppercase;
   color: var(--muted);
 }
+:lang(si) .eyebrow,
+:lang(ta) .eyebrow {
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 0.8rem;
+}
 
-/* Accent text: ember -> saffron. Static on purpose (no animated gradient) */
+/* Accent text: primary -> teal. Static on purpose (no animated gradient) */
 .gradient-text {
-  background: linear-gradient(100deg, #ff5a3c, #f2b84b);
-  background: linear-gradient(100deg in oklch, var(--ember), var(--saffron));
+  background: linear-gradient(100deg, var(--primary-text), #0f766e);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+:root[data-theme="dark"] .gradient-text {
+  background-image: linear-gradient(100deg, var(--primary-text), #5eead4);
 }
 
 /* ------------------------------------------------------------------
    Surfaces
 ------------------------------------------------------------------- */
-/* Existing name kept so every page picks the new look up: warm panel, hairline border, soft top highlight */
+/* Existing name kept so every page picks the new look up: panel, hairline border, soft top highlight */
 .glass-card {
-  background:
-    linear-gradient(180deg, rgba(244, 238, 228, 0.045), rgba(244, 238, 228, 0.015)),
-    var(--surface);
+  background: var(--surface);
   border: 1px solid var(--line);
-  box-shadow: inset 0 1px 0 rgba(244, 238, 228, 0.05), 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-card);
   transition: border-color 0.3s var(--ease-out), background-color 0.3s var(--ease-out), transform 0.3s var(--ease-out);
 }
 
@@ -147,7 +280,7 @@ body::before {
   z-index: -1;
   border-radius: inherit;
   opacity: 0;
-  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklch, var(--ember) 16%, transparent), transparent 60%);
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklch, var(--primary) 14%, transparent), transparent 60%);
   transition: opacity 0.4s var(--ease-out);
 }
 .spotlight:hover::after {
@@ -162,8 +295,8 @@ body::before {
    Motion
 ------------------------------------------------------------------- */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--ember) 40%, transparent); }
-  50% { box-shadow: 0 0 0 10px color-mix(in oklch, var(--ember) 0%, transparent); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--brand) 40%, transparent); }
+  50% { box-shadow: 0 0 0 10px color-mix(in oklch, var(--brand) 0%, transparent); }
 }
 
 @keyframes float {
@@ -184,11 +317,6 @@ body::before {
 @keyframes ping-soft {
   0% { transform: scale(0.6); opacity: 0.8; }
   80%, 100% { transform: scale(2.6); opacity: 0; }
-}
-
-@keyframes ecg-draw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
 }
 
 .animate-pulse-glow { animation: pulse-glow 2.4s ease-out infinite; }
@@ -217,20 +345,19 @@ body::before {
 }
 
 /* ------------------------------------------------------------------
-   Leaflet (dark, warm)
+   Leaflet (follows the theme)
 ------------------------------------------------------------------- */
 .leaflet-container {
-  background: #080605 !important;
+  background: var(--surface-raised) !important;
   font-family: inherit;
 }
 
 .leaflet-popup-content-wrapper {
-  background: rgba(19, 16, 16, 0.96) !important;
-  backdrop-filter: blur(16px);
+  background: var(--surface) !important;
   border: 1px solid var(--line-strong);
   border-radius: 16px !important;
   color: var(--foreground) !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7) !important;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.25) !important;
   padding: 0 !important;
 }
 
@@ -240,7 +367,7 @@ body::before {
 }
 
 .leaflet-popup-tip {
-  background: rgba(19, 16, 16, 0.96) !important;
+  background: var(--surface) !important;
 }
 
 @keyframes pulse-ring {
@@ -251,7 +378,7 @@ body::before {
 .marker-pulse-critical { animation: pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
 .marker-pulse-warning { animation: pulse-ring 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
 
-/* Warm the OpenStreetMap tiles to match the ink background */
-.dark-map-tiles {
-  filter: invert(1) hue-rotate(180deg) brightness(0.62) contrast(1.15) saturate(0.35) sepia(0.35) !important;
+/* Dark theme: tone the standard OpenStreetMap tiles down instead of using a keyed dark basemap */
+:root[data-theme="dark"] .dark-map-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.62) contrast(1.15) saturate(0.35) !important;
 }

@@ -902,5 +902,17 @@
     "mapDistrictSuffix": "District",
     "mapActiveRadius": "Active radius",
     "mapScanning": "Scanning {radius} km perimeter"
+  },
+  "theme": {
+    "label": "Colour theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Match system"
+  },
+  "a11y": {
+    "skipToContent": "Skip to main content",
+    "breadcrumb": "Breadcrumb",
+    "loading": "Loading",
+    "required": "required"
   }
 }

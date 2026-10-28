@@ -30,9 +30,9 @@ export function Input({ label, error, icon, className, id, ...props }: InputProp
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           className={cn(
-            'w-full rounded-xl border bg-foreground/[0.035] px-4 py-3 text-sm text-foreground placeholder-gray-600 transition-[border-color,background-color,box-shadow] duration-300',
-            'border-line-strong hover:border-foreground/25 focus:border-ember focus:bg-foreground/[0.06] focus:outline-none focus:ring-4 focus:ring-ember/15',
-            error && 'border-red-500/50 focus:border-red-500 focus:ring-red-500/30',
+            'w-full rounded-xl border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-muted transition-[border-color,background-color,box-shadow] duration-300',
+            'border-line-strong hover:border-foreground/25 focus:border-primary focus:bg-surface focus:outline-none focus:ring-4 focus:ring-primary/20',
+            error && 'border-danger focus:border-danger focus:ring-danger/25',
             icon && 'pl-10',
             className
           )}
@@ -40,7 +40,7 @@ export function Input({ label, error, icon, className, id, ...props }: InputProp
         />
       </div>
       {error && (
-        <p id={errorId} className="text-xs text-red-400">
+        <p id={errorId} className="text-xs text-danger-text">
           {error}
         </p>
       )}
