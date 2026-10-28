@@ -57,7 +57,7 @@ class CircleTokensTest {
     @DisplayName("Without an explicit key the JWT secret is used; with neither, startup fails")
     void keySource() {
         String t = "abc";
-        assertEquals(t, new CircleTokens("", "jwt-secret").decrypt(new CircleTokens(null, "jwt-secret").encrypt(t)).orElseThrow());
+        assertEquals(t, new CircleTokens("", "jwt-secret").decrypt(new CircleTokens((String) null, "jwt-secret").encrypt(t)).orElseThrow());
         assertThrows(IllegalStateException.class, () -> new CircleTokens("", ""));
     }
 
