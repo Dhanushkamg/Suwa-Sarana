@@ -66,6 +66,11 @@ server:
   # limits and audit IPs saw the load balancer. Set FORWARD_HEADERS_STRATEGY=none when running without a proxy.
   # If the proxy is outside the private ranges, set SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES to a regex of its addresses.
   forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:native}
+  tomcat:
+    remoteip:
+      # Default = trust NO proxy (X-Forwarded-For is ignored, so clients cannot spoof their IP for rate limits/audit).
+      # Behind an ALB set TRUSTED_PROXY_REGEX to the VPC/ALB addresses, e.g. 10\.\d+\.\d+\.\d+ (Tomcat regex).
+      internal-proxies: ${TRUSTED_PROXY_REGEX:^$}
   error:
     # Never put exception text, stack traces or binding errors in the built-in error body.
     include-message: never
