@@ -1,12 +1,14 @@
 package com.suwasarana.api.auth.dto;
 
+import com.suwasarana.api.auth.AuthCodes;
+import com.suwasarana.api.user.PhoneNumbers;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 public class OtpRequestDto {
 
-    @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Must be a valid phone number")
+    @NotBlank(message = AuthCodes.PHONE_REQUIRED)
+    @Pattern(regexp = PhoneNumbers.MOBILE_E164_REGEX, message = AuthCodes.PHONE_INVALID)
     private String phoneNumber;
 
     public String getPhoneNumber() {
@@ -14,6 +16,6 @@ public class OtpRequestDto {
     }
 
     public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+        this.phoneNumber = PhoneNumbers.normalizeOrKeep(phoneNumber);
     }
 }

@@ -3,6 +3,7 @@ package com.suwasarana.api.notification.sms;
 import com.suwasarana.api.donor.DonorProfile;
 import com.suwasarana.api.notification.NotificationMessage;
 import com.suwasarana.api.request.BloodRequest;
+import com.suwasarana.api.user.PhoneNumbers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,22 +21,24 @@ public class SmsNotificationService {
         this.smsProvider = smsProvider;
     }
 
+    /** @return true only when the provider confirmed the message was accepted for delivery. */
     public boolean sendSmsNotification(DonorProfile donor, BloodRequest request) {
         if (donor.getUser() == null || donor.getUser().getPhoneNumber() == null || donor.getUser().getPhoneNumber().isBlank()) {
-            log.warn("Cannot send SMS: Donor {} has no registered phone number.", donor.getId());
+            log.warn("Cannot send SMS: donor {} has no registered phone number.", donor.getId());
             return false;
         }
 
         String phone = donor.getUser().getPhoneNumber();
         String message = formatSmsMessage(request);
 
-        log.info("Dispatching SMS notification to donor {} ({}) for request {}", donor.getId(), phone, request.getId());
+        log.info("Dispatching SMS alert to donor {} ({}) for request {}", donor.getId(), PhoneNumbers.mask(phone), request.getId());
         return smsProvider.sendSms(phone, message);
     }
 
+    /** @return true only when the provider confirmed the message was accepted for delivery. */
     public boolean sendSmsNotification(DonorProfile donor, NotificationMessage message) {
         if (donor.getUser() == null || donor.getUser().getPhoneNumber() == null || donor.getUser().getPhoneNumber().isBlank()) {
-            log.warn("Cannot send SMS: Donor {} has no registered phone number.", donor.getId());
+            log.warn("Cannot send SMS: donor {} has no registered phone number.", donor.getId());
             return false;
         }
 

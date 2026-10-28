@@ -63,14 +63,6 @@ public class AdminService {
     @Autowired
     private DonorRepository donorRepository;
 
-    @Transactional
-    public void verifyUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> ApiException.notFound("User not found"));
-        user.setVerificationStatus(VerificationStatus.VERIFIED);
-        userRepository.save(user);
-    }
-
     @Transactional(readOnly = true)
     public List<ReportDto> getReports() {
         return requestReportRepository.findAll().stream().map(this::mapToReportDto).toList();

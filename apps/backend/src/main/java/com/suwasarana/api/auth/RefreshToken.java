@@ -28,6 +28,10 @@ public class RefreshToken {
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
+    /** Set when the token has been exchanged for a new one. A used token that shows up again means it was stolen. */
+    @Column(name = "used_at")
+    private Instant usedAt;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -42,4 +46,7 @@ public class RefreshToken {
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    public Instant getUsedAt() { return usedAt; }
+    public void setUsedAt(Instant usedAt) { this.usedAt = usedAt; }
 }

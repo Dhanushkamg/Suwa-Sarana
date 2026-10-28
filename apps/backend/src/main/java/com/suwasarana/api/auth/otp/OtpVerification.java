@@ -14,7 +14,8 @@ public class OtpVerification {
     @Column(nullable = false, length = 20)
     private String phoneNumber;
 
-    @Column(nullable = false, length = 10)
+    /** HMAC-SHA256 hex digest of the code, never the code itself (the accessor keeps its historical name). */
+    @Column(nullable = false, length = 64)
     private String otpCode;
 
     @Column(nullable = false)

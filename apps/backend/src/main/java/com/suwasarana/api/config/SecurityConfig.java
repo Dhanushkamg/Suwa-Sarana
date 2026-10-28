@@ -51,6 +51,8 @@ public class SecurityConfig {
             // Missing/expired JWT must answer 401 (not Spring's default 403) so the frontend knows to refresh the token.
             .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .authorizeHttpRequests(auth -> auth
+                // The only /api/auth endpoint that needs a signed-in user (must precede the permitAll below)
+                .requestMatchers("/api/auth/resend-verification").authenticated()
                 // Public auth endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 // Public read-only data endpoints
