@@ -1,9 +1,7 @@
 package com.suwasarana.api.auth;
 
 import com.suwasarana.api.user.User;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,10 +15,14 @@ import java.util.Optional;
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
-    /** Row-locked lookup used by rotation so two concurrent refreshes with the same token are serialised. */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select t from RefreshToken t where t.tokenHash = :hash")
-    Optional<RefreshToken> findByTokenHashForUpdate(@Param("hash") String hash);
+    /**
+     * Atomically claims a token for rotation: returns 1 for exactly one caller (the token was unused), 0 for everyone
+     * else. This is what makes two concurrent refreshes with the same cookie yield ONE successor, not two.
+     */
+    @Transactional
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update RefreshToken t set t.usedAt = :now where t.tokenHash = :hash and t.usedAt is null")
+    int claim(@Param("hash") String hash, @Param("now") Instant now);
 
     @Modifying
     int deleteByUser(User user);

@@ -64,19 +64,13 @@ public class SessionService {
             throw AuthException.unauthorized(AuthCodes.NOT_SIGNED_IN);
         }
         String hash = AuthService.sha256Hex(rawRefreshToken);
-        RefreshToken token = refreshTokenRepository.findByTokenHashForUpdate(hash)
+        RefreshToken token = refreshTokenRepository.findByTokenHash(hash)
                 .orElseThrow(() -> AuthException.unauthorized(AuthCodes.SESSION_EXPIRED));
         User user = token.getUser();
         Instant now = Instant.now();
 
         if (token.getUsedAt() != null) {
-            Instant graceEnd = token.getUsedAt().plus(Duration.ofSeconds(properties.getRefreshReuseGraceSeconds()));
-            if (now.isAfter(graceEnd)) {
-                refreshTokenRepository.deleteByUser(user);
-                userRepository.bumpTokenVersion(user.getId());
-                auditLog.logRefreshTokenReuse(user.getId(), ipAddress);
-            }
-            throw AuthException.unauthorized(AuthCodes.SESSION_EXPIRED);
+            rejectReuse(token, user, now, ipAddress);
         }
         if (token.getExpiresAt().isBefore(now)) {
             refreshTokenRepository.delete(token);
@@ -87,12 +81,25 @@ public class SessionService {
             throw AuthException.unauthorized(AuthCodes.SESSION_EXPIRED);
         }
 
-        token.setUsedAt(now);
-        refreshTokenRepository.save(token);
+        // Atomic claim: if two requests present the same token at once, exactly one gets here.
+        if (refreshTokenRepository.claim(hash, now) != 1) {
+            throw AuthException.unauthorized(AuthCodes.SESSION_EXPIRED);
+        }
 
         String newRefresh = createRefreshToken(user);
         auditLog.logTokenRefresh(user.getId(), ipAddress);
         return AuthResponse.of(user, accessTokenFor(user), newRefresh);
+    }
+
+    /** A used token came back. Inside the grace window it is a racing tab (refuse); later it is theft (revoke everything). */
+    private void rejectReuse(RefreshToken token, User user, Instant now, String ipAddress) {
+        Instant graceEnd = token.getUsedAt().plus(Duration.ofSeconds(properties.getRefreshReuseGraceSeconds()));
+        if (now.isAfter(graceEnd)) {
+            refreshTokenRepository.deleteByUser(user);
+            userRepository.bumpTokenVersion(user.getId());
+            auditLog.logRefreshTokenReuse(user.getId(), ipAddress);
+        }
+        throw AuthException.unauthorized(AuthCodes.SESSION_EXPIRED);
     }
 
     /** Signs the user out everywhere: deletes every refresh token and invalidates outstanding access tokens. */
