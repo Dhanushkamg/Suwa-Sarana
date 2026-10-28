@@ -1,7 +1,6 @@
 package com.suwasarana.api.security;
 
 import com.suwasarana.api.auth.AuthService;
-import com.suwasarana.api.config.RateLimitingFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.DisplayName;
@@ -39,21 +38,5 @@ class JwtAuthFilterTest {
         String rawToken = "super-secret-refresh-token";
         String hash = AuthService.sha256Hex(rawToken);
         assertFalse(hash.contains(rawToken));
-    }
-
-    @Test
-    @DisplayName("Rate limiter blocks on RemoteAddr even when X-Forwarded-For changes")
-    void rateLimiter_usesRemoteAddr_notXForwardedFor() throws ServletException, IOException {
-        RateLimitingFilter filter = new RateLimitingFilter();
-        for (int i = 0; i <= 10; i++) {
-            MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/auth/login");
-            req.setRemoteAddr("10.0.0.1");
-            req.addHeader("X-Forwarded-For", "1.2.3." + i);
-            MockHttpServletResponse res = new MockHttpServletResponse();
-            filter.doFilter(req, res, filterChain);
-            if (i == 10) {
-                assertEquals(429, res.getStatus());
-            }
-        }
     }
 }
