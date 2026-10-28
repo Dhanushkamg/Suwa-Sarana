@@ -95,6 +95,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/circle/**").permitAll()
                 .requestMatchers("/api/faq/**").permitAll()
                 .requestMatchers("/api/inventory/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/meta/**").permitAll()
                 .requestMatchers("/api/contact/**").permitAll()
                 .requestMatchers("/api/ivr/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/camps/recommended").hasRole("DONOR")

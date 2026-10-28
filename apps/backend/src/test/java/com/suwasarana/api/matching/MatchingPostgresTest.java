@@ -84,7 +84,7 @@ class MatchingPostgresTest {
         // Run every migration with Flyway directly (the same V1..Vn files the application ships), then drop the demo rows
         // that old migrations (V3, V10) insert: nothing here may depend on seeded data.
         String url = "jdbc:postgresql://" + HOST + ":" + PORT + "/" + name;
-        org.flywaydb.core.Flyway.configure().dataSource(url, USER, PASSWORD).locations("classpath:db/migration").load().migrate();
+        org.flywaydb.core.Flyway.configure().dataSource(url, USER, PASSWORD).locations("classpath:db/migration").placeholders(java.util.Map.of("environment", "dev")).load().migrate();
         try (Connection c = DriverManager.getConnection(url, USER, PASSWORD); Statement st = c.createStatement()) {
             st.execute("TRUNCATE users, blood_bank_inventory RESTART IDENTITY CASCADE");
         } catch (Exception e) {

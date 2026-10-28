@@ -154,13 +154,13 @@ class CircleIntegrationTest {
     }
 
     @Test
-    @DisplayName("A pledge is saved; with no notification channel the answer does not claim the requester was notified")
+    @DisplayName("A pledge is saved and the requester gets an in-app notification (inbox), which the answer reports honestly")
     void pledgeHonestAboutNotification() throws Exception {
         mvc.perform(post("/api/circle/" + token + "/respond").contentType(JSON).content(pledgeJson("077 123 4567")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.responderPhone").value("+94771234567"))
-                .andExpect(jsonPath("$.data.requesterNotified").value(false))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("has been notified"))));
+                .andExpect(jsonPath("$.data.requesterNotified").value(true))
+                .andExpect(jsonPath("$.message").isNotEmpty());
         assertEquals(1, pledgeCount());
     }
 
