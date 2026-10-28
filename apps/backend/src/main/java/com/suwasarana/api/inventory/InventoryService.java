@@ -293,17 +293,21 @@ public class InventoryService {
         if (sites.isEmpty()) return List.of();
         List<Long> ids = sites.stream().map(Site::getOwnerUserId).toList();
         LocalDate today = clock.today();
-        List<Unit> batches = unitRepository.findByOwnerUserIdInAndStatus(ids, BatchStatus.ACTIVE);
+        List<Unit> allBatches = unitRepository.findByOwnerUserIdIn(ids);
         List<Threshold> thresholds = thresholdRepository.findByOwnerUserIdIn(ids);
 
         List<StockSignalDto> out = new ArrayList<>();
         for (Site site : sites) {
-            List<Unit> mine = batches.stream().filter(b -> b.getOwnerUserId().equals(site.getOwnerUserId())).toList();
+            List<Unit> mine = allBatches.stream().filter(b -> b.getOwnerUserId().equals(site.getOwnerUserId())).toList();
+            // only blood types this institution has recorded stock for at least once: a threshold alone says nothing about stock
+            java.util.Set<String> recorded = new java.util.HashSet<>();
+            mine.stream().filter(b -> PUBLIC_COMPONENTS.contains(b.getComponent())).forEach(b -> recorded.add(b.getBloodType()));
             List<Threshold> myT = thresholds.stream().filter(t -> t.getOwnerUserId().equals(site.getOwnerUserId())).toList();
             // worst status per blood type across the public components
             Map<String, StockStatus> worst = new TreeMap<>();
             for (LineDto line : buildLines(mine, myT, today, PUBLIC_COMPONENTS)) {
                 if (line.status != StockStatus.LOW && line.status != StockStatus.CRITICAL) continue;
+                if (!recorded.contains(line.bloodType)) continue;
                 worst.merge(line.bloodType, line.status, (a, b) -> a == StockStatus.CRITICAL || b == StockStatus.CRITICAL ? StockStatus.CRITICAL : StockStatus.LOW);
             }
             ZonedDateTime updatedAt = site.getConfirmedAt().atZone(clock.zone());
@@ -399,6 +403,8 @@ public class InventoryService {
     private void evaluate(Long ownerId, String bloodType, Component component) {
         Optional<Threshold> opt = thresholdRepository.findByOwnerUserIdAndBloodTypeAndComponent(ownerId, bloodType, component);
         if (opt.isEmpty()) return;
+        // Stock that was never recorded is unknown, not empty: setting thresholds first must not raise alarms
+        if (!unitRepository.existsByOwnerUserIdAndBloodTypeAndComponent(ownerId, bloodType, component)) return;
         Threshold t = opt.get();
         LocalDate today = clock.today();
         List<Unit> mine = unitRepository.findUsable(ownerId, bloodType, component, today, BatchStatus.ACTIVE);

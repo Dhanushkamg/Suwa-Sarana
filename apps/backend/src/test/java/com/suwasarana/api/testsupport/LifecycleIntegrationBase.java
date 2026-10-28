@@ -51,7 +51,8 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
  *
  * Every test starts and ends with an empty database, so classes can share the H2 instance without disturbing each other.
  */
-@SpringBootTest(properties = "spring.jpa.open-in-view=false")
+// H2 dialect: the PostgreSQL dialect emits "for no key update" for pessimistic locks, which H2 cannot parse
+@SpringBootTest(properties = {"spring.jpa.open-in-view=false", "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"})
 @ActiveProfiles("test")
 public abstract class LifecycleIntegrationBase {
 

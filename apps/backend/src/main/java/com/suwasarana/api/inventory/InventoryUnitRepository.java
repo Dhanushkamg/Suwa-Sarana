@@ -20,6 +20,11 @@ public interface InventoryUnitRepository extends JpaRepository<InventoryModel.Un
 
     List<InventoryModel.Unit> findByOwnerUserIdInAndStatus(Collection<Long> ownerUserIds, BatchStatus status);
 
+    /** Every batch (any status) of these owners: tells "never recorded" apart from "recorded and now empty". */
+    List<InventoryModel.Unit> findByOwnerUserIdIn(Collection<Long> ownerUserIds);
+
+    boolean existsByOwnerUserIdAndBloodTypeAndComponent(Long ownerUserId, String bloodType, Component component);
+
     /** Batches of one type and component that can still be issued, earliest expiry first (first-expiry-first-out). */
     @Query("SELECT u FROM InventoryUnit u WHERE u.ownerUserId = :owner AND u.bloodType = :type AND u.component = :component "
             + "AND u.status = :status AND u.expiresOn >= :today AND u.units > 0 ORDER BY u.expiresOn ASC, u.id ASC")
