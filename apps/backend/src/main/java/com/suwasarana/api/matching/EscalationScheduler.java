@@ -21,19 +21,29 @@ public class EscalationScheduler {
     @Autowired
     private EscalationProcessor escalationProcessor;
 
+    @Autowired
+    private MatchTimeoutProcessor matchTimeoutProcessor;
+
     // Run every 5 minutes. Not transactional: each request is processed in its own transaction.
     @Scheduled(cron = "0 0/5 * * * *")
     public void processEscalations() {
         log.info("Running escalation scheduler...");
 
-        List<BloodRequest> activeRequests = requestRepository.findActiveRequests();
+        // OPEN, ESCALATING and MATCHED: matched requests still have to expire or re-open
+        List<BloodRequest> liveRequests = requestRepository.findLiveRequests();
 
-        for (BloodRequest request : activeRequests) {
+        for (BloodRequest request : liveRequests) {
             try {
                 escalationProcessor.processRequest(request.getId());
             } catch (Exception e) {
                 log.error("Escalation failed for Request {}", request.getId(), e);
             }
+        }
+
+        try {
+            matchTimeoutProcessor.markTimedOutMatches();
+        } catch (Exception e) {
+            log.error("Match response-timeout job failed", e);
         }
     }
 }

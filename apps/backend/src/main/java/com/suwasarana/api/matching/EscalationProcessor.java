@@ -1,9 +1,11 @@
 package com.suwasarana.api.matching;
 
 import com.suwasarana.api.request.BloodRequest;
+import com.suwasarana.api.request.RequestLifecycleService;
 import com.suwasarana.api.request.RequestRepository;
 import com.suwasarana.api.request.RequestStatus;
 import com.suwasarana.api.request.Urgency;
+import com.suwasarana.api.shared.AppClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,12 @@ import java.time.LocalDateTime;
 /**
  * Handles one request per transaction so a failure while escalating one request
  * does not roll back the others (see EscalationScheduler).
+ *
+ * <ul>
+ *   <li>OPEN / ESCALATING: expire when past expiry, otherwise widen the radius on the urgency's schedule and re-run matching.</li>
+ *   <li>MATCHED: expire when past expiry; if the accepted donors were not confirmed within the confirmation window,
+ *       re-open to ESCALATING (see {@link RequestLifecycleService#lapseUnconfirmed}) and look for more donors.</li>
+ * </ul>
  */
 @Service
 public class EscalationProcessor {
@@ -30,20 +38,31 @@ public class EscalationProcessor {
     @Autowired
     private MatchingEngine matchingEngine;
 
+    @Autowired
+    private RequestLifecycleService lifecycle;
+
+    @Autowired
+    private AppClock clock;
+
     @Transactional
     public void processRequest(Long requestId) {
         BloodRequest request = requestRepository.findById(requestId).orElse(null);
-        if (request == null
-                || (request.getStatus() != RequestStatus.OPEN && request.getStatus() != RequestStatus.ESCALATING)) {
+        if (request == null || !request.getStatus().isActive()) {
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = clock.now();
 
         if (request.getExpiresAt().isBefore(now)) {
-            request.setStatus(RequestStatus.EXPIRED);
-            requestRepository.save(request);
-            log.info("Request {} expired", request.getId());
+            lifecycle.expire(request);
+            return;
+        }
+
+        if (request.getStatus() == RequestStatus.MATCHED) {
+            if (lifecycle.confirmationWindowElapsed(request)) {
+                lifecycle.lapseUnconfirmed(request);
+                matchingEngine.runMatchingForRequest(request.getId());
+            }
             return;
         }
 
