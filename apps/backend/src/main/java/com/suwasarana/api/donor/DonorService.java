@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Service
+@Transactional
 public class DonorService {
 
     @Autowired

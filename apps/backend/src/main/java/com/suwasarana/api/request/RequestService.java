@@ -91,7 +91,7 @@ public class RequestService {
                     "You can have at most " + maxActivePerUser + " active requests. Close or fulfil one first.");
         }
 
-        LocalDateTime now = clock.now();
+        LocalDateTime now = clock.utcNow();
         BloodRequest request = new BloodRequest();
         request.setRequester(requester);
         request.setPatientBloodType(dto.getPatientBloodType());
@@ -170,7 +170,7 @@ public class RequestService {
                     .map(r -> mapToDto(r, View.OWNER, true))
                     .toList();
         }
-        return requestRepository.findByStatusInAndExpiresAtAfterOrderByCreatedAtDesc(VISIBLE_TO_DONORS, clock.now()).stream()
+        return requestRepository.findByStatusInAndExpiresAtAfterOrderByCreatedAtDesc(VISIBLE_TO_DONORS, clock.utcNow()).stream()
                 .map(r -> mapToDto(r, View.PUBLIC_LIST, false))
                 .toList();
     }

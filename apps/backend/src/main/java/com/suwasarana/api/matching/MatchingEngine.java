@@ -113,7 +113,7 @@ public class MatchingEngine {
             match.setDonor(candidate);
             match.setStatus(MatchStatus.PENDING);
             match.setDistanceKm(distanceById.get(donorId));
-            match.setCreatedAt(clock.now());
+            match.setCreatedAt(clock.utcNow());
             matchIds.add(requestMatchRepository.save(match).getId());
             log.info("Matched Request {} with Donor {} ({} km)", request.getId(), candidate.getId(), distanceById.get(donorId));
         }

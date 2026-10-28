@@ -51,7 +51,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
  *
  * Every test starts and ends with an empty database, so classes can share the H2 instance without disturbing each other.
  */
-@SpringBootTest
+@SpringBootTest(properties = "spring.jpa.open-in-view=false")
 @ActiveProfiles("test")
 public abstract class LifecycleIntegrationBase {
 
@@ -129,7 +129,7 @@ public abstract class LifecycleIntegrationBase {
 
     protected BloodRequest request(User owner, RequestStatus status, String bloodType, int units, String district) {
         District.Entry c = District.get(district);
-        LocalDateTime now = clock.now();
+        LocalDateTime now = clock.utcNow();
         BloodRequest r = new BloodRequest();
         r.setRequester(owner);
         r.setPatientBloodType(bloodType);
@@ -158,7 +158,7 @@ public abstract class LifecycleIntegrationBase {
         m.setDonor(d);
         m.setStatus(status);
         m.setDistanceKm(new BigDecimal("2.50"));
-        m.setCreatedAt(clock.now().minusMinutes(minutesAgo));
+        m.setCreatedAt(clock.utcNow().minusMinutes(minutesAgo));
         return matchRepository.save(m);
     }
 

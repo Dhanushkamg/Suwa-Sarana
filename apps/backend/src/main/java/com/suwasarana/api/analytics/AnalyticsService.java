@@ -105,7 +105,7 @@ public class AnalyticsService {
 
     @Transactional(readOnly = true)
     public NationalSummaryDto nationalSummary(boolean admin) {
-        LocalDateTime now = clock.now();
+        LocalDateTime now = clock.utcNow();
         LocalDateTime from = now.minusDays(windowDays);
         LoadedCounts loaded = loadDistrictCounts();
 
@@ -183,7 +183,7 @@ public class AnalyticsService {
     }
 
     private LoadedCounts loadDistrictCounts() {
-        LocalDateTime now = clock.now();
+        LocalDateTime now = clock.utcNow();
         LocalDateTime from = now.minusDays(windowDays);
         LocalDate today = clock.today();
         Map<String, Counts> perDistrict = new HashMap<>();

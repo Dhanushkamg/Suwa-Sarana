@@ -33,7 +33,7 @@ public class MatchTimeoutProcessor {
 
     @Transactional
     public int markTimedOutMatches() {
-        LocalDateTime cutoff = clock.now().minusMinutes(responseTimeoutMinutes);
+        LocalDateTime cutoff = clock.utcNow().minusMinutes(responseTimeoutMinutes);
         List<RequestMatch> stale = matchRepository.findByStatusAndCreatedAtBefore(MatchStatus.PENDING, cutoff);
         for (RequestMatch m : stale) {
             m.setStatus(MatchStatus.NO_RESPONSE);

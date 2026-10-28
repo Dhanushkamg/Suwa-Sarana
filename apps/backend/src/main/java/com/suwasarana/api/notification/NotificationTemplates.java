@@ -43,6 +43,8 @@ public final class NotificationTemplates {
         put("notifications.reopened.body", "The donor for your request at {hospital} did not confirm in time. We are looking for more donors.", null, null);
         put("notifications.lowStock.title", "Low blood stock", null, null);
         put("notifications.lowStock.body", "{bloodType} {component} stock is {status}: {units} units available.", null, null);
+        put("notifications.pledge.title", "A friend pledged to donate", null, null);
+        put("notifications.pledge.body", "{volunteerName} ({bloodType}) pledged through your private circle. {pledgeCount} pledge(s) so far.", null, null);
         put("notifications.generic.title", "{title}", null, null);
         put("notifications.generic.body", "{body}", null, null);
     }

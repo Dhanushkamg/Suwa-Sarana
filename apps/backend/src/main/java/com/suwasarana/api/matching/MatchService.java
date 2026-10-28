@@ -65,7 +65,7 @@ public class MatchService {
         }
 
         match.setStatus(response);
-        match.setRespondedAt(clock.now());
+        match.setRespondedAt(clock.utcNow());
         requestMatchRepository.save(match);
 
         if (response == MatchStatus.ACCEPTED) {

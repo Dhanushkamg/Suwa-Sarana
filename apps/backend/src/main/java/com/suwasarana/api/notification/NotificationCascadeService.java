@@ -170,7 +170,7 @@ public class NotificationCascadeService implements NotificationService {
                          NotificationDeliveryStatus status, String recipient, String messageBody) {
         try {
             NotificationLog logEntry = new NotificationLog(donor, request, channel, status, recipient, messageBody);
-            logEntry.setSentAt(clock.now());
+            logEntry.setSentAt(clock.utcNow());
             notificationLogRepository.save(logEntry);
         } catch (Exception e) {
             log.error("Failed to persist notification audit log for donor {} / request {}: {}",

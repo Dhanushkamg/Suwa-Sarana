@@ -282,7 +282,7 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
     @DisplayName("MATCHED requests whose accepted donor was never confirmed re-open after the window, then expire")
     void matched_reopensAfterConfirmationWindow_thenExpires() {
         BloodRequest r = request(requester, RequestStatus.MATCHED, "A+", 1, "Colombo");
-        r.setMatchedAt(clock.now().minusHours(5)); // window is 4 h
+        r.setMatchedAt(clock.utcNow().minusHours(5)); // window is 4 h
         requestRepository.save(r);
         RequestMatch accepted = match(r, donor1, MatchStatus.ACCEPTED);
 
@@ -293,10 +293,10 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
         assertNull(reopened.getMatchedAt());
         assertEquals(MatchStatus.NO_RESPONSE, matchRepository.findById(accepted.getId()).orElseThrow().getStatus());
         assertEquals(1, count("SELECT COUNT(*) FROM user_notifications WHERE user_id = ? AND type = 'REQUEST_REOPENED'", requester.getId()));
-        assertTrue(reopened.getExpiresAt().isAfter(clock.now().plusMinutes(100)), "a re-opened request keeps at least ~2 h");
+        assertTrue(reopened.getExpiresAt().isAfter(clock.utcNow().plusMinutes(100)), "a re-opened request keeps at least ~2 h");
 
         // later, when its time is up, it expires (and the fulfilment-rate denominator sees it)
-        reopened.setExpiresAt(clock.now().minusMinutes(1));
+        reopened.setExpiresAt(clock.utcNow().minusMinutes(1));
         requestRepository.save(reopened);
         escalationProcessor.processRequest(r.getId());
         BloodRequest expired = requestRepository.findById(r.getId()).orElseThrow();
@@ -308,13 +308,13 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
     @Test
     void matched_insideTheWindow_isLeftAlone_andPastExpiryExpires() {
         BloodRequest inside = request(requester, RequestStatus.MATCHED, "A+", 1, "Colombo");
-        inside.setMatchedAt(clock.now().minusMinutes(30));
+        inside.setMatchedAt(clock.utcNow().minusMinutes(30));
         requestRepository.save(inside);
         escalationProcessor.processRequest(inside.getId());
         assertEquals(RequestStatus.MATCHED, requestRepository.findById(inside.getId()).orElseThrow().getStatus());
 
         BloodRequest late = request(requester, RequestStatus.MATCHED, "B+", 1, "Kandy");
-        late.setExpiresAt(clock.now().minusMinutes(5));
+        late.setExpiresAt(clock.utcNow().minusMinutes(5));
         requestRepository.save(late);
         escalationProcessor.processRequest(late.getId());
         assertEquals(RequestStatus.EXPIRED, requestRepository.findById(late.getId()).orElseThrow().getStatus());
@@ -407,7 +407,7 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
         request(requester, RequestStatus.MATCHED, "O+", 1, "Galle");
         request(requester, RequestStatus.CANCELLED, "AB+", 1, "Matara");
         BloodRequest expiredButUnprocessed = request(other, RequestStatus.ESCALATING, "A-", 1, "Jaffna");
-        expiredButUnprocessed.setExpiresAt(clock.now().minusMinutes(2));
+        expiredButUnprocessed.setExpiresAt(clock.utcNow().minusMinutes(2));
         requestRepository.save(expiredButUnprocessed);
 
         JsonNode forDonor = data(mvc.perform(get("/api/requests").with(as(donorUser1))).andExpect(status().isOk()).andReturn());

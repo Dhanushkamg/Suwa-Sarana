@@ -53,7 +53,7 @@ class EscalationSchedulerTest {
     private BloodRequest routineRequest;
 
     private LocalDateTime now() {
-        return clock.now();
+        return clock.utcNow();
     }
 
     @BeforeEach

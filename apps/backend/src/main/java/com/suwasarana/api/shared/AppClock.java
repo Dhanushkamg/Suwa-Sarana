@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 /**
  * Single place the lifecycle code asks "what time is it". Uses the application's {@link Clock} bean when one
@@ -58,8 +59,17 @@ public class AppClock {
         return clock().instant();
     }
 
+    /** Sri Lankan WALL-CLOCK time: for "today", slot start/end times, camp times and quiet hours only. */
     public LocalDateTime now() {
         return LocalDateTime.ofInstant(instant(), zone());
+    }
+
+    /**
+     * A MOMENT as a UTC wall-clock value: use for created/expires/closed/matched timestamps and anything compared with
+     * them (stored in timestamptz columns). Never compare it with {@link #now()}.
+     */
+    public LocalDateTime utcNow() {
+        return LocalDateTime.ofInstant(instant(), ZoneOffset.UTC);
     }
 
     public LocalDate today() {

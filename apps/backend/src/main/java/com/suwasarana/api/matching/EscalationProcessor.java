@@ -51,7 +51,7 @@ public class EscalationProcessor {
             return;
         }
 
-        LocalDateTime now = clock.now();
+        LocalDateTime now = clock.utcNow();
 
         if (request.getExpiresAt().isBefore(now)) {
             lifecycle.expire(request);

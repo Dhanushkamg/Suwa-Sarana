@@ -4,6 +4,7 @@ import com.suwasarana.api.camp.DonationCamp;
 import com.suwasarana.api.camp.DonationCampRepository;
 import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.donor.DeferralService;
+import com.suwasarana.api.donor.DonationRecorder;
 import com.suwasarana.api.donor.DonorProfile;
 import com.suwasarana.api.donor.DonorRepository;
 import com.suwasarana.api.donor.EligibilityResult;
@@ -17,6 +18,10 @@ import com.suwasarana.api.slot.dto.BulkCreateSlotDto;
 import com.suwasarana.api.slot.dto.CreateSlotDto;
 import com.suwasarana.api.slot.dto.DonationSlotDto;
 import com.suwasarana.api.slot.dto.SlotBookingDto;
+import com.suwasarana.api.slot.dto.SlotRosterEntryDto;
+import com.suwasarana.api.shared.AppClock;
+import com.suwasarana.api.shared.CodedApiException;
+import com.suwasarana.api.shared.ErrorCodes;
 import com.suwasarana.api.user.Role;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
@@ -31,6 +36,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,6 +54,8 @@ public class SlotBookingService {
     @Autowired private DonationCampRepository campRepository;
     @Autowired private DeferralService deferralService;
     @Autowired private NotificationService notificationService;
+    @Autowired private DonationRecorder donationRecorder;
+    @Autowired private AppClock clock;
 
     // -------------------------------------------------------------------------
     // Slot Creation
@@ -97,7 +106,7 @@ public class SlotBookingService {
     private DonationCamp loadManagedCamp(Long campId, Long callerId) {
         User caller = loadCaller(callerId);
         DonationCamp camp = campRepository.findById(campId)
-                .orElseThrow(() -> ApiException.notFound("Camp not found: " + campId));
+                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.CAMP_NOT_FOUND, "Camp not found"));
         if (caller.getRole() != Role.ADMIN && !camp.getOrganizer().getId().equals(caller.getId())) {
             throw ApiException.forbidden("You can only manage slots for your own camps");
         }
@@ -131,7 +140,10 @@ public class SlotBookingService {
 
     private DonationSlot buildSlot(LocalDateTime start, LocalDateTime end, int capacity) {
         if (!end.isAfter(start)) {
-            throw ApiException.badRequest("End time must be after start time");
+            throw CodedApiException.badRequest(ErrorCodes.TIME_RANGE_INVALID, "End time must be after start time");
+        }
+        if (!start.isAfter(clock.now())) {
+            throw CodedApiException.badRequest(ErrorCodes.SLOT_IN_PAST, "A slot must start in the future");
         }
         DonationSlot slot = new DonationSlot();
         slot.setStartTime(start);
@@ -142,7 +154,10 @@ public class SlotBookingService {
 
     private List<DonationSlot> generateSlots(BulkCreateSlotDto dto) {
         if (!dto.getOverallEndTime().isAfter(dto.getOverallStartTime())) {
-            throw ApiException.badRequest("Overall end time must be after overall start time");
+            throw CodedApiException.badRequest(ErrorCodes.TIME_RANGE_INVALID, "Overall end time must be after overall start time");
+        }
+        if (!dto.getOverallStartTime().isAfter(clock.now())) {
+            throw CodedApiException.badRequest(ErrorCodes.SLOT_IN_PAST, "Slots must start in the future");
         }
         if (dto.getIntervalMinutes() <= 0) {
             throw ApiException.badRequest("Interval must be greater than 0 minutes");
@@ -169,6 +184,7 @@ public class SlotBookingService {
     // Slot Listing
     // -------------------------------------------------------------------------
 
+    @Transactional(readOnly = true)
     public List<DonationSlotDto> getSlotsForCamp(Long campId, boolean openOnly) {
         List<DonationSlot> slots = openOnly
                 ? slotRepository.findByCampIdAndStatusOrderByStartTimeAsc(campId, SlotStatus.OPEN)
@@ -176,6 +192,7 @@ public class SlotBookingService {
         return slots.stream().map(this::mapSlotToDto).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<DonationSlotDto> getSlotsForHospital(Long hospitalUserId, boolean openOnly) {
         List<DonationSlot> slots = openOnly
                 ? slotRepository.findByHospitalUserIdAndStatusOrderByStartTimeAsc(hospitalUserId, SlotStatus.OPEN)
@@ -196,55 +213,70 @@ public class SlotBookingService {
     public SlotBookingDto bookSlot(Long slotId, Long userId) {
         // 1. Resolve donor profile from the authenticated user's ID
         DonorProfile donor = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Donor profile not found for user: " + userId));
+                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
 
         // 2. Acquire pessimistic write lock — prevents race condition on bookedCount
         DonationSlot slot = slotRepository.findByIdForUpdate(slotId)
                 .orElseThrow(() -> new SlotNotFoundException(slotId));
 
-        // 3. Capacity / status guard
+        // 3. Only future slots can be booked
+        if (!slot.getStartTime().isAfter(clock.now())) {
+            throw CodedApiException.conflict(ErrorCodes.SLOT_IN_PAST, "This slot has already started or ended");
+        }
+
+        // 4. Capacity / status guard
         if (slot.getStatus() != SlotStatus.OPEN || slot.getBookedCount() >= slot.getCapacity()) {
             throw new SlotFullException();
         }
 
-        // 4. Duplicate booking guard (before the DB unique constraint fires).
+        // 5. Duplicate booking guard (before the DB unique constraint fires).
         //    A CANCELLED booking is not a duplicate: its row is reused below, because of UNIQUE(slot_id, donor_id).
         SlotBooking existing = bookingRepository.findBySlotIdAndDonorId(slotId, donor.getId()).orElse(null);
         if (existing != null && existing.getStatus() != BookingStatus.CANCELLED) {
             throw new DuplicateBookingException();
         }
 
-        // 5. NBTS eligibility — correct call site: takes (DonorProfile, LocalDate), returns EligibilityResult
-        EligibilityResult eligibility = deferralService.checkEligibility(donor, LocalDate.now());
+        // 6. A donor cannot be in two places at once
+        if (bookingRepository.countOverlappingBookings(donor.getId(), slot.getStartTime(), slot.getEndTime(), slotId) > 0) {
+            throw CodedApiException.conflict(ErrorCodes.BOOKING_OVERLAP, "You already have a booking that overlaps this time");
+        }
+
+        // 7. NBTS eligibility on the DAY OF THE SLOT (not today): a donor deferred until next week can book next month
+        LocalDate slotDate = slot.getStartTime().toLocalDate();
+        EligibilityResult eligibility = deferralService.checkEligibility(donor, slotDate);
         if (!eligibility.isEligible()) {
             throw new DonorIneligibleException(eligibility.getReasons());
         }
 
-        // 6. Create the booking record, or revive the donor's cancelled one
+        // 8. Create the booking record, or revive the donor's cancelled one
         SlotBooking booking = existing != null ? existing : new SlotBooking();
         booking.setSlot(slot);
         booking.setDonor(donor);
         booking.setStatus(BookingStatus.BOOKED);
-        booking.setBookedAt(Instant.now());
+        booking.setBookedAt(clock.instant());
         booking.setCheckedInAt(null);
-        booking.setEligibleAsOf(LocalDate.now());
+        booking.setEligibleAsOf(slotDate);
         SlotBooking saved = bookingRepository.save(booking);
 
-        // 7. Update slot counters transactionally
+        // 9. Update slot counters transactionally
         slot.setBookedCount(slot.getBookedCount() + 1);
         if (slot.getBookedCount() >= slot.getCapacity()) {
             slot.setStatus(SlotStatus.FULL);
         }
         slotRepository.save(slot);
 
-        // 8. Send booking confirmation via existing SSE → SMS cascade (generic overload)
+        // 10. Booking confirmation through the inbox -> SSE -> SMS cascade (generic overload)
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("host", slot.resolveHostName());
+        params.put("start", slot.getStartTime().toString());
+        params.put("bookingId", saved.getId());
         NotificationMessage msg = new NotificationMessage(
                 "Slot Booked!",
                 "Your donation slot at " + slot.resolveHostName() + " is confirmed for "
                         + slot.getStartTime() + ". See My Bookings for your QR code.",
                 "SLOT_CONFIRMED",
                 saved.getId()
-        );
+        ).withKeys("notifications.slot.confirmed.title", "notifications.slot.confirmed.body", params);
         try {
             notificationService.notify(donor, msg);
         } catch (Exception e) {
@@ -263,7 +295,7 @@ public class SlotBookingService {
     @Transactional
     public SlotBookingDto cancelBooking(Long slotId, Long userId) {
         DonorProfile donor = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> ApiException.notFound("Donor profile not found for user: " + userId));
+                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
 
         // Lock the slot first so two concurrent cancels cannot both release capacity
         DonationSlot slot = slotRepository.findByIdForUpdate(slotId)
@@ -296,35 +328,63 @@ public class SlotBookingService {
     // Check-In
     // -------------------------------------------------------------------------
 
+    /**
+     * Staff mark the donor as arrived. This is the moment the donation is recorded: history row, donor totals,
+     * the 4-month deferral and the reliability reward all happen in {@link DonationRecorder}, the same code path
+     * as confirming a request match.
+     */
     @Transactional
     public SlotBookingDto checkIn(Long slotId, Long bookingId, Long callerId) {
         User caller = loadCaller(callerId);
         SlotBooking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> ApiException.notFound("Booking not found: " + bookingId));
+                .orElseThrow(() -> ApiException.notFound("Booking not found"));
 
         if (!booking.getSlot().getId().equals(slotId)) {
             throw ApiException.badRequest("Booking does not belong to slot " + slotId);
         }
         assertCanManageSlot(booking.getSlot(), caller);
+        if (booking.getSlot().getStatus() == SlotStatus.CANCELLED) {
+            throw ApiException.conflict("This slot was cancelled");
+        }
         if (booking.getStatus() != BookingStatus.BOOKED) {
             throw ApiException.conflict("Cannot check in a booking with status: " + booking.getStatus());
         }
 
         booking.setStatus(BookingStatus.CHECKED_IN);
-        booking.setCheckedInAt(java.time.Instant.now());
+        booking.setCheckedInAt(clock.instant());
         bookingRepository.save(booking);
+        donationRecorder.recordForBooking(booking);
 
         log.info("Checked in booking {} for slot {}", bookingId, slotId);
         return mapBookingToDto(booking);
     }
 
     // -------------------------------------------------------------------------
+    // Organiser view of a slot's bookings
+    // -------------------------------------------------------------------------
+
+    /**
+     * The people booked into one slot, for the camp organiser / hospital / admin who owns it.
+     * Shows first name, last initial, blood type and booking status; no phone number or e-mail.
+     */
+    @Transactional(readOnly = true)
+    public List<SlotRosterEntryDto> getSlotBookings(Long slotId, Long callerId) {
+        User caller = loadCaller(callerId);
+        DonationSlot slot = slotRepository.findById(slotId).orElseThrow(() -> new SlotNotFoundException(slotId));
+        assertCanManageSlot(slot, caller);
+        return bookingRepository.findRosterBySlotId(slotId).stream()
+                .map(SlotRosterEntryDto::from)
+                .collect(Collectors.toList());
+    }
+
+    // -------------------------------------------------------------------------
     // My Bookings (donor view)
     // -------------------------------------------------------------------------
 
+    @Transactional(readOnly = true)
     public List<SlotBookingDto> getMyBookings(Long userId) {
         DonorProfile donor = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Donor profile not found for user: " + userId));
+                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
         return bookingRepository.findByDonorIdOrderByBookedAtDesc(donor.getId())
                 .stream()
                 .map(this::mapBookingToDto)

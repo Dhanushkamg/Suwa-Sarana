@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Runs the matching SQL, the Flyway migrations, the entities and the demo seeder against a REAL
- * PostgreSQL: the dev container {@code suwa-pg-dev} on localhost:5433 (docker start suwa-pg-dev).
+ * PostgreSQL: the dev container {@code suwa-pg-dev} on localhost:55432 (docker start suwa-pg-dev).
  * A scratch database is created for the class and dropped afterwards. When the server cannot be reached the whole class
  * is skipped, so CI without Docker stays green (H2 cannot run earthdistance).
  */
@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MatchingPostgresTest {
 
     private static final String HOST = System.getProperty("suwa.pg.host", "localhost");
-    private static final String PORT = System.getProperty("suwa.pg.port", "5433");
+    private static final String PORT = System.getProperty("suwa.pg.port", "55432");
     private static final String USER = System.getProperty("suwa.pg.user", "postgres");
     private static final String PASSWORD = System.getProperty("suwa.pg.password", "devonly123");
     private static final String ADMIN_URL = "jdbc:postgresql://" + HOST + ":" + PORT + "/postgres";
@@ -178,7 +178,7 @@ class MatchingPostgresTest {
         assertEquals(60, n.getRegisteredDonors());
         assertEquals(25, n.getDistrictsWithData());
         assertEquals(jdbc.queryForObject("SELECT COUNT(*) FROM blood_requests WHERE status IN ('OPEN','ESCALATING','MATCHED') AND expires_at > ?",
-                Long.class, java.sql.Timestamp.valueOf(clock.now())), n.getActiveRequests());
+                Long.class, java.sql.Timestamp.valueOf(clock.utcNow())), n.getActiveRequests());
         // pooled national rate = fulfilled / closed (never an average of district rates)
         assertEquals(AnalyticsServiceAccess.rate(n.getFulfilledRequests(), n.getClosedRequests()), n.getFulfillmentRate());
 
@@ -348,9 +348,9 @@ class MatchingPostgresTest {
         r.setLongitude(LON);
         r.setStatus(RequestStatus.ESCALATING);
         r.setCurrentRadiusKm((short) 5);
-        r.setCreatedAt(clock.now());
-        r.setLastEscalatedAt(clock.now());
-        r.setExpiresAt(clock.now().plusHours(6));
+        r.setCreatedAt(clock.utcNow());
+        r.setLastEscalatedAt(clock.utcNow());
+        r.setExpiresAt(clock.utcNow().plusHours(6));
         return requestRepository.save(r);
     }
 

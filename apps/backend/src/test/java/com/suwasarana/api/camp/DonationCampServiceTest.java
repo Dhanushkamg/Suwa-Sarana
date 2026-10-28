@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.http.HttpStatus;
@@ -51,6 +52,9 @@ public class DonationCampServiceTest {
     @Mock
     private SlotBookingRepository bookingRepository;
 
+    @Spy
+    private com.suwasarana.api.shared.AppClock clock = com.suwasarana.api.shared.AppClock.system();
+
     @InjectMocks
     private DonationCampService campService;
 
@@ -83,7 +87,7 @@ public class DonationCampServiceTest {
         stubDonor("B+");
         DonationCamp onlyAbPos = campFor("o@test.lk", "AB+");
         DonationCamp bAndO = campFor("o@test.lk", "O+, b+");
-        when(campRepository.findByStatusOrderByScheduledDateAsc("SCHEDULED"))
+        when(campRepository.findUpcoming(org.mockito.ArgumentMatchers.eq("SCHEDULED"), org.mockito.ArgumentMatchers.any(java.time.LocalDate.class)))
                 .thenReturn(List.of(onlyAbPos, bAndO));
 
         List<DonationCampDto> result = campService.getRecommendedCamps("donor@test.lk");
@@ -96,7 +100,7 @@ public class DonationCampServiceTest {
         stubDonor(null);
         DonationCamp open = campFor("o@test.lk", null);
         DonationCamp restricted = campFor("o@test.lk", "B+");
-        when(campRepository.findByStatusOrderByScheduledDateAsc("SCHEDULED"))
+        when(campRepository.findUpcoming(org.mockito.ArgumentMatchers.eq("SCHEDULED"), org.mockito.ArgumentMatchers.any(java.time.LocalDate.class)))
                 .thenReturn(List.of(open, restricted));
 
         List<DonationCampDto> result = campService.getRecommendedCamps("donor@test.lk");
@@ -203,7 +207,7 @@ public class DonationCampServiceTest {
         camp.setScheduledDate(LocalDate.now().plusDays(2));
         camp.setOrganizer(organizer);
 
-        when(campRepository.findByStatusOrderByScheduledDateAsc("SCHEDULED"))
+        when(campRepository.findUpcoming(org.mockito.ArgumentMatchers.eq("SCHEDULED"), org.mockito.ArgumentMatchers.any(java.time.LocalDate.class)))
                 .thenReturn(List.of(camp));
 
         List<DonationCampDto> camps = campService.getUpcomingCamps();

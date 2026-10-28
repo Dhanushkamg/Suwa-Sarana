@@ -93,7 +93,7 @@ public class RequestLifecycleService {
         notifyRequester(r, "MATCH_ACCEPTED", "notifications.accepted.title", "notifications.accepted.body",
                 Map.of("hospital", r.getHospitalName(), "accepted", live, "needed", (int) r.getUnitsNeeded()));
         if (live >= r.getUnitsNeeded()) {
-            LocalDateTime now = clock.now();
+            LocalDateTime now = clock.utcNow();
             r.setStatus(RequestStatus.MATCHED);
             r.setMatchedAt(now);
             // Give the accepted donors the confirmation window (+30 min) even if the request would expire sooner
@@ -154,7 +154,7 @@ public class RequestLifecycleService {
     }
 
     private void reopen(BloodRequest r) {
-        LocalDateTime now = clock.now();
+        LocalDateTime now = clock.utcNow();
         r.setStatus(RequestStatus.ESCALATING);
         r.setMatchedAt(null);
         r.setLastEscalatedAt(now);
@@ -169,7 +169,7 @@ public class RequestLifecycleService {
     /** True when a MATCHED request has been waiting longer than the confirmation window. */
     public boolean confirmationWindowElapsed(BloodRequest r) {
         LocalDateTime since = r.getMatchedAt();
-        return since != null && since.plusHours(confirmationWindowHours).isBefore(clock.now());
+        return since != null && since.plusHours(confirmationWindowHours).isBefore(clock.utcNow());
     }
 
     // ---------------------------------------------------------------- helpers
@@ -192,7 +192,7 @@ public class RequestLifecycleService {
 
     private void finish(BloodRequest r, RequestStatus status, String closeReason) {
         r.setStatus(status);
-        r.setClosedAt(clock.now());
+        r.setClosedAt(clock.utcNow());
         r.setCloseReason(closeReason);
         requestRepository.save(r);
     }
