@@ -1,32 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CalendarCheck, Clock, MapPin, AlertCircle, Loader2 } from 'lucide-react';
+import { CalendarCheck, CalendarClock, CheckCircle2, Clock, MapPin, AlertCircle, Loader2, XCircle, Ban, type LucideIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/pub/Alert';
+import { TIME_FORMAT, toDate } from '@/components/pub/dates';
+import { parseApiError } from '@/components/pub/apiErrors';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { SlotBooking } from '@/types';
 
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString([], {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
-function getErrorMessage(err: unknown, fallback: string): string {
-  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
-  return typeof message === 'string' && message ? message : fallback;
-}
-
-const STATUS_CONFIG = {
-  BOOKED:     { labelKey: 'myBookings.upcoming',   color: 'text-emerald-400', bg: 'bg-emerald-400/[0.06] border-emerald-400/25' },
-  CHECKED_IN: { labelKey: 'myBookings.checkedIn',  color: 'text-saffron',     bg: 'bg-saffron/[0.06] border-saffron/25' },
-  NO_SHOW:    { labelKey: 'myBookings.noShow',     color: 'text-ember',       bg: 'bg-ember/[0.07] border-ember/25' },
-  CANCELLED:  { labelKey: 'myBookings.cancelled',  color: 'text-gray-400',    bg: 'bg-foreground/[0.03] border-line-strong' },
-  COMPLETED:  { labelKey: 'myBookings.completed',  color: 'text-gray-300',    bg: 'bg-foreground/[0.03] border-line-strong' },
+/** Status = icon + text + colour. */
+const STATUS_CONFIG: Record<SlotBooking['status'], { labelKey: string; Icon: LucideIcon; color: string; bg: string }> = {
+  BOOKED:     { labelKey: 'myBookings.upcoming',   Icon: CalendarClock, color: 'text-info-text',    bg: 'bg-info-soft border-info/30' },
+  CHECKED_IN: { labelKey: 'myBookings.checkedIn',  Icon: CheckCircle2,  color: 'text-success-text', bg: 'bg-success-soft border-success/30' },
+  NO_SHOW:    { labelKey: 'myBookings.noShow',     Icon: XCircle,       color: 'text-danger-text',  bg: 'bg-danger-soft border-danger/30' },
+  CANCELLED:  { labelKey: 'myBookings.cancelled',  Icon: Ban,           color: 'text-muted',        bg: 'bg-surface border-line-strong' },
+  COMPLETED:  { labelKey: 'myBookings.completed',  Icon: CheckCircle2,  color: 'text-success-text', bg: 'bg-surface border-line-strong' },
 };
 
 type Feedback = { bookingId: number; message: string; type: 'success' | 'error' } | null;
@@ -39,8 +30,11 @@ interface BookingCardProps {
 }
 
 function BookingCard({ booking, feedback, cancelling, onCancel }: BookingCardProps) {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
   const config = STATUS_CONFIG[booking.status];
+  const start = toDate(booking.slot.startTime);
+  const end = toDate(booking.slot.endTime);
+  const checkedIn = toDate(booking.checkedInAt);
   const slotFeedback = feedback?.bookingId === booking.id ? feedback : null;
 
   return (
@@ -50,25 +44,26 @@ function BookingCard({ booking, feedback, cancelling, onCancel }: BookingCardPro
           {/* Host name */}
           <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <span className="flex min-w-0 items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-ember" aria-hidden="true" />
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary-text" aria-hidden="true" />
               <span className="break-words font-display text-xl text-foreground">{booking.slot.hostName}</span>
             </span>
-            <span className={`shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.1em] ${config.bg} ${config.color}`}>
+            <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${config.bg} ${config.color}`}>
+              <config.Icon className="h-3.5 w-3.5" aria-hidden="true" />
               {t(config.labelKey)}
             </span>
           </div>
 
           {/* Time */}
-          <div className="flex flex-wrap items-center gap-2 font-mono text-[13px] text-gray-300">
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[13px] text-foreground">
             <Clock className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden="true" />
-            <span>{formatDateTime(booking.slot.startTime)}</span>
-            <span className="text-gray-600" aria-hidden="true">→</span>
-            <span className="text-gray-400">{new Date(booking.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <span>{start ? format.dateTime(start, { weekday: 'short', month: 'short', day: 'numeric', ...TIME_FORMAT }) : ''}</span>
+            <span className="text-gray-500" aria-hidden="true">→</span>
+            <span className="text-gray-400">{end ? format.dateTime(end, TIME_FORMAT) : ''}</span>
           </div>
 
-          {booking.checkedInAt && (
-            <p className="mt-1.5 text-xs text-saffron">
-              {t('myBookings.checkedInAt', { time: new Date(booking.checkedInAt).toLocaleTimeString() })}
+          {checkedIn && (
+            <p className="mt-1.5 text-xs text-success-text">
+              {t('myBookings.checkedInAt', { time: format.dateTime(checkedIn, { timeStyle: 'short' }) })}
             </p>
           )}
         </div>
@@ -78,6 +73,7 @@ function BookingCard({ booking, feedback, cancelling, onCancel }: BookingCardPro
           <div className="flex flex-col gap-2 items-end">
             {/* Actual QR Code */}
             <div className="flex flex-col items-center">
+              {/* The QR plate stays white in both themes on purpose: scanners need dark-on-light contrast */}
               <div className="mb-1 rounded-xl bg-white p-2">
                 <QRCodeSVG
                   value={JSON.stringify({ s: booking.slotId, b: booking.id })}
@@ -86,11 +82,12 @@ function BookingCard({ booking, feedback, cancelling, onCancel }: BookingCardPro
                   includeMargin={false}
                 />
               </div>
-              <span className="mb-2 font-mono text-[10px] tracking-wider text-gray-400">ID #{booking.id}</span>
+              <span className="mb-2 font-mono text-xs tracking-wider text-gray-400">ID #{booking.id}</span>
             </div>
             <Button
               variant="danger"
               size="sm"
+              className="min-h-11"
               loading={cancelling === booking.id}
               disabled={cancelling === booking.id}
               onClick={() => onCancel(booking)}
@@ -146,7 +143,7 @@ export default function MyBookings() {
       setFeedback({
         bookingId: booking.id,
         type: 'error',
-        message: getErrorMessage(err, t('myBookings.cancelFailed')),
+        message: parseApiError(err, t, { fallback: t('myBookings.cancelFailed') }).message,
       });
     } finally {
       setCancelling(null);
@@ -155,8 +152,8 @@ export default function MyBookings() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-8 text-gray-400 text-sm">
-        <Loader2 className="w-4 h-4 animate-spin" />
+      <div role="status" className="flex items-center gap-2 py-8 text-gray-400 text-sm">
+        <Loader2 className="w-4 h-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
         {t('myBookings.loading')}
       </div>
     );
@@ -164,12 +161,13 @@ export default function MyBookings() {
 
   if (loadError && bookings.length === 0) {
     return (
-      <div role="alert" className="rounded-2xl border border-line border-l-2 border-l-ember bg-ember/[0.05] py-10 text-center">
-        <AlertCircle className="mx-auto mb-3 h-8 w-8 text-ember" aria-hidden="true" />
-        <p className="text-gray-300 text-sm mb-4">{t('myBookings.loadFailed')}</p>
+      <div role="alert" className="rounded-2xl border border-danger/30 bg-danger-soft py-10 text-center">
+        <AlertCircle className="mx-auto mb-3 h-8 w-8 text-danger-text" aria-hidden="true" />
+        <p className="text-foreground text-sm mb-4">{t('myBookings.loadFailed')}</p>
         <Button
           variant="secondary"
           size="sm"
+          className="min-h-11"
           onClick={() => {
             setLoading(true);
             fetchBookings();
@@ -186,8 +184,8 @@ export default function MyBookings() {
 
   if (bookings.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-line-strong bg-foreground/[0.02] px-6 py-12 text-center">
-        <CalendarCheck className="mx-auto mb-4 h-9 w-9 text-gray-600" aria-hidden="true" />
+      <div className="rounded-2xl border border-dashed border-line-strong bg-surface px-6 py-12 text-center">
+        <CalendarCheck className="mx-auto mb-4 h-9 w-9 text-gray-500" aria-hidden="true" />
         <p className="mb-1 font-display text-2xl text-foreground">{t('myBookings.emptyTitle')}</p>
         <p className="text-gray-400 text-sm">{t('myBookings.emptyText')}</p>
       </div>

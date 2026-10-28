@@ -1,59 +1,35 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import CircleResponseClient from './CircleResponseClient';
-import { API_BASE_URL } from '@/lib/constants';
+import { fetchCircleInfo } from '@/components/pub/circleData';
+import { serverTranslator } from '@/components/pub/pageMeta';
 
 interface PageProps {
   params: Promise<{ token: string }>;
 }
 
-async function getCircleData(token: string) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/circle/${token}`, {
-      next: { revalidate: 30 },
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data || null;
-  } catch {
-    return null;
-  }
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { token } = await params;
-  const data = await getCircleData(token);
+  const [data, { t, locale }] = await Promise.all([fetchCircleInfo(token), serverTranslator()]);
 
   if (!data) {
-    return {
-      title: 'Emergency Blood Request | Suwa Sarana',
-      description: 'Urgent blood requisition in Sri Lanka. Click to view details and volunteer.',
-    };
+    return { title: t('pub.meta.circleFallbackTitle'), description: t('pub.meta.circleFallbackDesc') };
   }
 
-  const title = `🚨 URGENT: ${data.patientBloodType} Blood Needed at ${data.hospitalName}`;
-  const description = `Emergency requisition: ${data.unitsNeeded} units of ${data.patientBloodType} blood needed in ${data.district} (${data.urgency} urgency). Please volunteer or share with your contacts.`;
+  const urgent = data.urgency === 'CRITICAL' || data.urgency === 'URGENT';
+  const title = t(urgent ? 'pub.meta.shareTitleUrgent' : 'pub.meta.shareTitleRoutine', { bloodType: data.patientBloodType, hospital: data.hospitalName });
+  const description = t('pub.meta.circleDesc', { units: data.unitsNeeded, bloodType: data.patientBloodType, district: data.district });
 
   return {
-    title: `${title} | Suwa Sarana`,
+    title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      siteName: 'Suwa Sarana Emergency Blood Requisition Network',
-      locale: 'en_LK',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-    },
+    openGraph: { title, description, type: 'website', siteName: 'Suwa Sarana', locale: `${locale}_LK` },
+    twitter: { card: 'summary_large_image', title, description },
   };
 }
 
 export default async function CirclePage({ params }: PageProps) {
   const { token } = await params;
-  const initialData = await getCircleData(token);
+  const initialData = await fetchCircleInfo(token);
 
   return <CircleResponseClient token={token} initialData={initialData} />;
 }

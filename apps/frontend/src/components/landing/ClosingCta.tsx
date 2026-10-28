@@ -26,6 +26,7 @@ export function ClosingCta() {
             {t('cta.button')}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5" aria-hidden="true" />
           </PillLink>
+          {/* Crimson is reserved for the hero's urgent CTA; here the request link stays quiet */}
           <PillLink href="/register?role=REQUESTER" variant="secondary" size="lg">
             {t('hero.requestBlood')}
           </PillLink>

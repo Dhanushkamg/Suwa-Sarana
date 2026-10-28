@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
+import { CONTACT } from '@/components/pub/contactInfo';
 import { LegalDocument, type LegalSection } from '@/components/pub/LegalDocument';
 
-const MAIL_LINK = 'text-ember underline underline-offset-4 transition-colors hover:text-foreground';
+const MAIL_LINK = 'font-medium text-primary-text underline underline-offset-4 transition-colors hover:text-foreground';
 
 export default function PrivacyClient() {
   const { t } = useI18n();
@@ -20,8 +21,8 @@ export default function PrivacyClient() {
       body: (
         <p>
           {t('privacy.s5Desc')}{' '}
-          <a href="mailto:privacy@suwasarana.lk" className={MAIL_LINK}>
-            privacy@suwasarana.lk
+          <a href={`mailto:${CONTACT.privacyEmail}`} className={MAIL_LINK}>
+            {CONTACT.privacyEmail}
           </a>
           .
         </p>
@@ -33,8 +34,8 @@ export default function PrivacyClient() {
       body: (
         <p>
           {t('privacy.s6Desc')}{' '}
-          <a href="mailto:privacy@suwasarana.lk" className={MAIL_LINK}>
-            privacy@suwasarana.lk
+          <a href={`mailto:${CONTACT.privacyEmail}`} className={MAIL_LINK}>
+            {CONTACT.privacyEmail}
           </a>{' '}
           {t('pub.orVisit')}{' '}
           <Link href="/contact" className={MAIL_LINK}>

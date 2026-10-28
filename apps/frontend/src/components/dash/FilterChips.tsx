@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'motion/react';
+import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 export interface ChipOption<T extends string> {
@@ -15,15 +15,15 @@ interface FilterChipsProps<T extends string> {
   onChange: (value: T) => void;
   /** Accessible name of the group. */
   label: string;
-  /** Unique per group on a page: the active pill glides between chips via a shared layoutId. */
-  id: string;
+  /** Kept for call-site compatibility (the pill no longer animates between chips). */
+  id?: string;
 }
 
-/** Pill filter group. The active pill is a flat ember wash that slides between options. */
-export function FilterChips<T extends string>({ options, value, onChange, label, id }: FilterChipsProps<T>) {
-  const reduce = useReducedMotion();
+/** Pill filter group (toggle buttons with aria-pressed). Chips are at least 44px tall and wrap onto several lines. */
+export function FilterChips<T extends string>({ options, value, onChange, label }: FilterChipsProps<T>) {
+  const { format } = useI18n();
   return (
-    <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
+    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -33,20 +33,18 @@ export function FilterChips<T extends string>({ options, value, onChange, label,
             onClick={() => onChange(o.value)}
             aria-pressed={active}
             className={cn(
-              'relative inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
-              active ? 'border-ember/50 text-foreground' : 'border-line text-gray-400 hover:border-foreground/[0.16] hover:text-foreground'
+              'inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+              active
+                ? 'border-primary bg-primary-soft text-primary-text'
+                : 'border-line-strong bg-surface text-gray-400 hover:bg-surface-raised hover:text-foreground'
             )}
           >
-            {active && (
-              <motion.span
-                layoutId={`chip-${id}`}
-                aria-hidden="true"
-                className="absolute inset-0 rounded-full bg-ember/15"
-                transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 40 }}
-              />
+            <span>{o.label}</span>
+            {o.count !== undefined && (
+              <span className={cn('rounded-full px-1.5 text-xs tabular-nums', active ? 'bg-primary/15' : 'bg-foreground/[0.06] text-gray-500')}>
+                {format.number(o.count)}
+              </span>
             )}
-            <span className="relative">{o.label}</span>
-            {o.count !== undefined && <span className="relative font-mono text-[11px] tabular-nums text-gray-500">{o.count}</span>}
           </button>
         );
       })}

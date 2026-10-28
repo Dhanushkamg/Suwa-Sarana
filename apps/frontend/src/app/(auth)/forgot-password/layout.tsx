@@ -1,6 +1,6 @@
-import type { Metadata } from 'next';
+import { localizedMeta } from '@/components/pub/pageMeta';
 
-export const metadata: Metadata = { title: 'Reset password' };
+export const generateMetadata = () => localizedMeta('pub.meta.forgotPassword');
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return children;

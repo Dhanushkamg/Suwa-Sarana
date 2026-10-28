@@ -19,7 +19,7 @@ export function HowItWorks() {
   const reduce = useReducedMotion();
   const listRef = useRef<HTMLOListElement>(null);
 
-  // The ember rail fills as the steps scroll past (transform only)
+  // The primary-colour rail fills as the steps scroll past (transform only)
   const { scrollYProgress } = useScroll({ target: listRef, offset: ['start 70%', 'end 55%'] });
   const fill = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
@@ -48,23 +48,23 @@ export function HowItWorks() {
           <motion.span
             aria-hidden="true"
             style={{ scaleY: reduce ? 1 : fill }}
-            className="absolute bottom-0 left-0 top-0 hidden w-px origin-top bg-ember lg:block"
+            className="absolute bottom-0 left-0 top-0 hidden w-px origin-top bg-primary lg:block"
           />
 
           {STEPS.map((s) => (
             <li key={s.n} className="group/li relative border-t border-line py-10 first:border-t-0 first:pt-0 last:pb-0">
               <span
                 aria-hidden="true"
-                className="absolute -left-12 top-12 hidden h-2 w-2 -translate-x-[3.5px] rounded-full bg-ember group-first/li:top-2 lg:block"
+                className="absolute -left-12 top-12 hidden h-2 w-2 -translate-x-[3.5px] rounded-full bg-primary group-first/li:top-2 lg:block"
               />
               <Reveal>
                 <div className="grid grid-cols-[3.25rem_1fr] gap-x-4 sm:grid-cols-[5.5rem_1fr] sm:gap-x-6">
-                  <span className="font-display text-5xl leading-none text-gray-700 sm:text-7xl" aria-hidden="true">
+                  <span className="font-display text-5xl leading-none text-foreground/20 sm:text-7xl" aria-hidden="true">
                     {s.n}
                   </span>
                   <div className="min-w-0">
                     <p className={`eyebrow ${styles.scriptFix}`}>
-                      <span className="text-ember">{t(s.tag)}</span>
+                      <span className="text-primary-text">{t(s.tag)}</span>
                     </p>
                     <h3 className="font-display mt-3 break-words text-3xl text-foreground sm:text-4xl">{t(s.title)}</h3>
                     <p className="mt-4 max-w-xl text-base leading-relaxed text-gray-400">{t(s.desc)}</p>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/lib/i18n';
+import { CONTACT } from '@/components/pub/contactInfo';
 import { LegalDocument, type LegalSection } from '@/components/pub/LegalDocument';
 
 export default function TermsClient() {
@@ -20,10 +21,10 @@ export default function TermsClient() {
         <p>
           {t('terms.s7Desc')}{' '}
           <a
-            href="mailto:legal@suwasarana.lk"
-            className="text-ember underline underline-offset-4 transition-colors hover:text-foreground"
+            href={`mailto:${CONTACT.legalEmail}`}
+            className="font-medium text-primary-text underline underline-offset-4 transition-colors hover:text-foreground"
           >
-            legal@suwasarana.lk
+            {CONTACT.legalEmail}
           </a>
           .
         </p>

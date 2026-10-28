@@ -34,6 +34,7 @@ export const viewport: Viewport = {
     { media: '(prefers-color-scheme: dark)', color: '#0e1116' },
   ],
   colorScheme: 'light dark',
+  viewportFit: 'cover', // lets safe-area insets apply on notched phones
 };
 
 export const metadata: Metadata = {

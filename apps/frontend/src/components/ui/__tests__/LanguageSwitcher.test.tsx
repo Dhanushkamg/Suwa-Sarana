@@ -4,6 +4,13 @@ import '@testing-library/jest-dom/vitest';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { useI18n } from '@/lib/i18n';
 
+// Real English strings for the keys this component uses; everything else echoes the key
+const MESSAGES: Record<string, string> = {
+  'landing.switchLanguage': 'Switch language',
+  'landing.languageMenu': 'Language',
+};
+const t = (key: string) => MESSAGES[key] ?? key;
+
 // Mock the i18n hook
 vi.mock('@/lib/i18n', () => ({
   useI18n: vi.fn(),
@@ -14,7 +21,7 @@ describe('LanguageSwitcher Component', () => {
     vi.mocked(useI18n).mockReturnValue({
       locale: 'en',
       setLocale: vi.fn(),
-      t: vi.fn((key: string) => key),
+      t: vi.fn(t),
       format: { number: String, date: String, dateTime: String },
     });
 
@@ -32,7 +39,7 @@ describe('LanguageSwitcher Component', () => {
     vi.mocked(useI18n).mockReturnValue({
       locale: 'en',
       setLocale: setLocaleMock,
-      t: vi.fn((key: string) => key),
+      t: vi.fn(t),
       format: { number: String, date: String, dateTime: String },
     });
 
@@ -50,7 +57,7 @@ describe('LanguageSwitcher Component', () => {
     vi.mocked(useI18n).mockReturnValue({
       locale: 'ta',
       setLocale: vi.fn(),
-      t: vi.fn((key: string) => key),
+      t: vi.fn(t),
       format: { number: String, date: String, dateTime: String },
     });
 

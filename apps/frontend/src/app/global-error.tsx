@@ -1,18 +1,38 @@
 'use client';
 
-// Last-resort boundary for errors in the root layout itself. It replaces the whole document,
-// so it cannot use the app's providers or stylesheet — plain inline styles only.
+// Last-resort boundary for errors in the root layout itself. It replaces the whole document, so it
+// re-imports the global stylesheet (semantic tokens, light/dark) and sets the theme before paint.
+// Fonts are not loaded here: the system font stack is used on purpose.
+import './globals.css';
+import { I18nProvider, useI18n } from '@/lib/i18n';
+import { THEME_INIT_SCRIPT } from '@/components/theme/ThemeProvider';
+import { buttonClasses } from '@/components/ui/Button';
+
+function Message({ retry }: { retry: () => void }) {
+  const { t } = useI18n();
+  return (
+    <main id="main-content" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground">
+      <h1 className="text-2xl font-semibold">{t('errors.title')}</h1>
+      <p role="alert" className="max-w-md text-gray-400">
+        {t('errors.description')}
+      </p>
+      <button type="button" onClick={() => retry()} className={buttonClasses('primary', 'lg')}>
+        {t('errors.retry')}
+      </button>
+    </main>
+  );
+}
+
 export default function GlobalError({ retry }: { error: Error & { digest?: string }; retry: () => void }) {
   return (
-    <html lang="en">
-      <body style={{ margin: 0, background: '#0d0d14', color: '#f0f0f5', fontFamily: 'system-ui, sans-serif' }}>
-        <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, textAlign: 'center' }}>
-          <h1 style={{ fontSize: 24, margin: 0 }}>Something went wrong</h1>
-          <p style={{ margin: 0, color: '#9ca3af' }}>Please try again. If the problem continues, come back in a few minutes.</p>
-          <button onClick={() => retry()} style={{ background: '#ef4444', color: '#fff', border: 0, borderRadius: 12, padding: '10px 20px', fontWeight: 600, cursor: 'pointer' }}>
-            Try again
-          </button>
-        </main>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="min-h-full">
+        <I18nProvider>
+          <Message retry={retry} />
+        </I18nProvider>
       </body>
     </html>
   );

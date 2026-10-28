@@ -38,7 +38,7 @@ export function Switch({ checked, onChange, label, description, disabled, id }: 
       >
         <span
           aria-hidden="true"
-          className={cn('inline-block h-5 w-5 rounded-full bg-white shadow transition-transform motion-reduce:transition-none', checked ? 'translate-x-[1.375rem]' : 'translate-x-1')}
+          className={cn('inline-block h-5 w-5 rounded-full shadow transition-transform motion-reduce:transition-none', checked ? 'translate-x-[1.375rem] bg-primary-fg' : 'translate-x-1 bg-muted')}
         />
       </button>
     </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { buttonClasses, type ButtonSize, type ButtonVariant } from '@/components/ui/Button';
 import styles from './landing.module.css';
 
 /** Tiny blood-drop glyph used as a separator (marquee) and bullet. Inherits colour via currentColor. */
@@ -13,10 +14,10 @@ export function DropGlyph({ className }: { className?: string }) {
 }
 
 /**
- * Italic ember accent for a single display word. Noto Serif Sinhala/Tamil have no italic cut,
+ * Italic primary-colour accent for a single display word. Noto Serif Sinhala/Tamil have no italic cut,
  * so the slant is dropped for those scripts and only the colour carries the emphasis.
  */
-export const ACCENT_CLASS = 'italic text-ember [:lang(si)_&]:not-italic [:lang(ta)_&]:not-italic';
+export const ACCENT_CLASS = 'italic text-primary-text [:lang(si)_&]:not-italic [:lang(ta)_&]:not-italic';
 
 /** Splits "Be someone's hero today" into ["Be someone's hero", "today"] so the last word can be accented. */
 export function splitLastWord(text: string): [string, string] {
@@ -42,45 +43,30 @@ export const CTA_CLASS =
 export const SCRIPT_RESET =
   '[:lang(si)_&]:tracking-normal [:lang(si)_&]:normal-case [:lang(ta)_&]:tracking-normal [:lang(ta)_&]:normal-case';
 
-const BASE =
-  'group/btn relative inline-flex items-center justify-center gap-2 rounded-full text-center font-medium tracking-[-0.005em] transition-[background-color,border-color,color,transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember';
-
-const VARIANTS = {
-  primary:
-    'bg-ember text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_6px_20px_-8px_color-mix(in_oklch,var(--ember)_70%,transparent)] hover:bg-[color-mix(in_oklch,var(--ember)_88%,white)]',
-  secondary: 'border border-line-strong bg-foreground/[0.04] text-foreground hover:border-foreground/30 hover:bg-foreground/[0.08]',
-  ghost: 'text-gray-400 hover:bg-foreground/[0.06] hover:text-foreground',
-};
-
-const SIZES = {
-  sm: 'px-4 py-1.5 text-[13px]',
-  md: 'px-6 py-2.5 text-sm',
-  lg: 'px-7 py-3.5 text-[15px] sm:px-8',
-};
-
 interface PillLinkProps {
   href: string;
-  variant?: keyof typeof VARIANTS;
-  size?: keyof typeof SIZES;
+  /** `primary` = the one main action; `brand` = the single urgent "Request blood" call to action; the rest are quiet. */
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   className?: string;
   onClick?: () => void;
   children: ReactNode;
 }
 
-/** The pill button from components/ui/Button, rendered as a link so navigation stays semantic. */
+/** The pill button from components/ui/Button, rendered as a link so navigation stays semantic. Same classes, so it cannot drift. */
 export function PillLink({ href, variant = 'primary', size = 'md', className, onClick, children }: PillLinkProps) {
   return (
-    <Link href={href} onClick={onClick} className={cn(BASE, VARIANTS[variant], SIZES[size], className)}>
+    <Link href={href} onClick={onClick} className={buttonClasses(variant, size, cn('group/btn text-center', className))}>
       {children}
     </Link>
   );
 }
 
-/** Mono eyebrow with a small ember tick, shared by every section header. */
+/** Mono eyebrow with a small primary tick, shared by every section header. */
 export function SectionEyebrow({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <p className={cn('eyebrow', styles.scriptFix, 'inline-flex items-center gap-2.5', className)}>
-      <span aria-hidden="true" className="h-px w-6 bg-ember" />
+      <span aria-hidden="true" className="h-px w-6 bg-primary" />
       {children}
     </p>
   );

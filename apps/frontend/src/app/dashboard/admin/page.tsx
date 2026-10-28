@@ -1,94 +1,89 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { ShieldCheck, ShieldAlert, BarChart3, CheckCircle2, Flag, UserCheck, MapPin, ArrowUpRight } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'motion/react';
-import apiClient from '@/lib/apiClient';
+import { ShieldAlert, BarChart3, Flag, UserCheck, MapPin, ArrowUpRight, Droplets, Users, TrendingUp, CheckCircle2, Activity } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { useLowData } from '@/lib/lowData';
+import { fetchDistrictSummary, fetchFlaggedReports, fetchPendingVerifications, nationalTotals, type DistrictRow } from '@/lib/api/admin';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Reveal } from '@/components/motion/Reveal';
+import { Tabs } from '@/components/ui/Tabs';
+import { Table, Td, Th } from '@/components/ui/Table';
+import { ButtonLink } from '@/components/dash/ButtonLink';
 import { IconTile } from '@/components/dash/IconTile';
 import { Notice } from '@/components/dash/Notice';
 import { PageHeader } from '@/components/dash/PageHeader';
 import { Panel, SectionHeader } from '@/components/dash/Panel';
 import { RefreshButton } from '@/components/dash/RefreshButton';
 import { Rise } from '@/components/dash/Rise';
-import { StatsSkeleton } from '@/components/dash/Skeletons';
+import { RowsSkeleton, StatsSkeleton } from '@/components/dash/Skeletons';
 import { Stat } from '@/components/dash/Stat';
-import { EASE } from '@/components/dash/styles';
+import { CARD, TEXT_LINK } from '@/components/dash/styles';
+import { useAsync } from '@/components/dash/useAsync';
+import { Skeleton } from '@/components/ui/Skeleton';
 
-interface ApiBody<T> {
-  data?: T;
+/** Horizontal bars whose length is proportional to the count (the largest district fills the track). Numbers are always printed. */
+function DistrictBars({ rows, max }: { rows: DistrictRow[]; max: number }) {
+  const { t, format } = useI18n();
+  const ticks = [0, max / 2, max];
+  return (
+    <div>
+      <ul className="space-y-3">
+        {rows.map((r) => (
+          <li key={r.district} className="grid grid-cols-[6.5rem_minmax(0,1fr)_3.5rem] items-center gap-x-3 sm:grid-cols-[9rem_minmax(0,1fr)_4.5rem]">
+            <span className="break-words text-end text-sm leading-snug text-foreground">{r.district}</span>
+            <span aria-hidden="true" className="block h-3 overflow-hidden rounded-full bg-foreground/[0.08]">
+              <span className="block h-full min-w-[3px] rounded-full bg-primary" style={{ width: `${(r.totalRequests / max) * 100}%` }} />
+            </span>
+            <span className="text-end text-sm font-medium tabular-nums text-foreground">{format.number(r.totalRequests)}</span>
+          </li>
+        ))}
+      </ul>
+      {/* Axis: 0, half, max (same columns as the bars) */}
+      <div aria-hidden="true" className="mt-3 grid grid-cols-[6.5rem_minmax(0,1fr)_3.5rem] gap-x-3 sm:grid-cols-[9rem_minmax(0,1fr)_4.5rem]">
+        <span />
+        <span className="flex justify-between border-t border-line pt-1 text-xs tabular-nums text-gray-500">
+          {ticks.map((tick, i) => (
+            <span key={i}>{format.number(tick, { maximumFractionDigits: 1 })}</span>
+          ))}
+        </span>
+        <span />
+      </div>
+      <p className="mt-2 text-sm text-gray-500">{t('dashUi.admin.barsNote')}</p>
+    </div>
+  );
 }
 
-type AnalyticsData = Record<string, number>;
-type Report = {
-  id: number;
-  requestId: number;
-  reason: string;
-  createdAt: string;
-};
-
 export default function AdminDashboardPage() {
-  const { t } = useI18n();
-  const reduce = useReducedMotion();
-  const [analytics, setAnalytics] = useState<AnalyticsData>({});
-  const [reports, setReports] = useState<Report[]>([]);
-  const [verifyUserId, setVerifyUserId] = useState('');
-  const [verifyStatus, setVerifyStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { t, format } = useI18n();
+  const { lowData } = useLowData();
+  const summary = useAsync(fetchDistrictSummary);
+  const reports = useAsync(fetchFlaggedReports);
+  const pending = useAsync(fetchPendingVerifications);
+  const [viewChoice, setViewChoice] = useState<'chart' | 'table' | null>(null);
+  // Low-Data Mode: a table instead of a drawn chart
+  const view = viewChoice ?? (lowData ? 'table' : 'chart');
 
-  const loadAdminData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [analyticsRes, reportsRes] = await Promise.all([
-        apiClient.get<ApiBody<AnalyticsData>>('/admin/analytics'),
-        apiClient.get<ApiBody<Report[]>>('/admin/reports'),
-      ]);
-      const analyticsData = analyticsRes.data?.data;
-      const reportsData = reportsRes.data?.data;
-      setAnalytics(analyticsData || {});
-      setReports(Array.isArray(reportsData) ? reportsData : []);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || '');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const refreshAll = useCallback(async () => {
+    const results = await Promise.all([summary.reload(), reports.reload(), pending.reload()]);
+    return results.every(Boolean);
+  }, [summary, reports, pending]);
 
-  useEffect(() => {
-    loadAdminData();
-  }, [loadAdminData]);
-
-  const maxCount = Math.max(...Object.values(analytics).map((v) => Number(v) || 0), 1);
-
-  const handleVerify = async () => {
-    if (!verifyUserId.trim()) return;
-    setVerifyStatus('loading');
-    try {
-      await apiClient.put(`/admin/verifications/${verifyUserId.trim()}/approve`);
-      setVerifyStatus('success');
-      setTimeout(() => setVerifyStatus('idle'), 3000);
-    } catch {
-      setVerifyStatus('error');
-      setTimeout(() => setVerifyStatus('idle'), 3000);
-    }
-  };
-
-  const totalRequests = Object.values(analytics).reduce((sum, v) => sum + (Number(v) || 0), 0);
+  const rows = useMemo(() => (summary.state.status === 'ready' ? summary.state.data : []), [summary.state]);
+  const totals = useMemo(() => nationalTotals(rows), [rows]);
+  const withRequests = useMemo(() => rows.filter((r) => r.totalRequests > 0).sort((a, b) => b.totalRequests - a.totalRequests), [rows]);
+  const maxCount = withRequests[0]?.totalRequests ?? 0;
+  const summaryLoading = summary.state.status === 'loading';
 
   const hubLinks = [
-    { href: '/dashboard/admin/triage', icon: ShieldAlert, title: t('adminDashboard.triage'), desc: t('adminDashboard.triageDesc') },
     { href: '/dashboard/admin/verifications', icon: UserCheck, title: t('adminDashboard.verifications'), desc: t('adminDashboard.verificationsDesc') },
+    { href: '/dashboard/admin/triage', icon: ShieldAlert, title: t('adminDashboard.triage'), desc: t('adminDashboard.triageDesc') },
     { href: '/dashboard/admin/analytics', icon: BarChart3, title: t('adminDashboard.analytics'), desc: t('adminDashboard.heatmapDesc') },
     { href: '/dashboard/admin/camps', icon: MapPin, title: t('layout.campsMapView'), desc: t('adminDashboard.geospatialTrackingDesc') },
   ];
+
+  const pendingList = pending.state.status === 'ready' ? pending.state.data : [];
+  const reportList = reports.state.status === 'ready' ? reports.state.data : [];
 
   return (
     <div>
@@ -96,54 +91,71 @@ export default function AdminDashboardPage() {
         eyebrow={t('dashUi.eyebrow.admin')}
         title={t('adminDashboard.overview')}
         description={t('adminDashboard.overviewDesc')}
-        actions={<RefreshButton onClick={loadAdminData} loading={loading} />}
+        actions={
+          <>
+            <RefreshButton onClick={refreshAll} />
+            <ButtonLink href="/dashboard/admin/verifications" variant="primary">
+              <UserCheck className="h-4 w-4" aria-hidden="true" />
+              {t('dashUi.admin.reviewVerifications')}
+            </ButtonLink>
+          </>
+        }
       />
 
       <div className="space-y-12">
-        {error !== null && (
+        {summary.state.status === 'error' && (
           <Notice
             tone="error"
             action={
-              <Button type="button" variant="secondary" size="sm" onClick={loadAdminData}>
+              <Button type="button" variant="secondary" onClick={() => void summary.reload()}>
                 {t('dash.retry')}
               </Button>
             }
           >
-            {error || t('dash.loadFailed')}
+            {summary.state.message || t('dash.loadFailed')}
           </Notice>
         )}
 
-        {/* KPIs */}
-        {loading ? (
-          <StatsSkeleton count={3} className="sm:grid-cols-3" />
+        {/* KPIs: national figures are sums of the API's district totals; no data shows "No data", never a made-up number */}
+        {summaryLoading ? (
+          <StatsSkeleton count={4} className="sm:grid-cols-2 lg:grid-cols-4" />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Rise delay={0.04}>
-              <Stat label={t('adminDashboard.distributionTitle')} value={totalRequests} icon={<BarChart3 />} hint={t('common.requests')} className="h-full" />
+              <Stat label={t('adminDashboard.totalRequests')} value={summary.state.status === 'ready' ? totals.totalRequests : null} icon={<Droplets />} hint={t('dashUi.admin.totalHint')} className="h-full" />
             </Rise>
             <Rise delay={0.08}>
-              <Stat label={t('dash.district')} value={Object.keys(analytics).length} tone="saffron" icon={<MapPin />} className="h-full" />
+              <Stat label={t('adminDashboard.activeRequests')} value={summary.state.status === 'ready' ? totals.activeRequests : null} tone="warning" icon={<Activity />} hint={t('adminDashboard.openEmergencies')} className="h-full" />
             </Rise>
             <Rise delay={0.12}>
-              <Stat label={t('adminDashboard.flaggedReports')} value={reports.length} tone={reports.length > 0 ? 'ember' : 'sage'} icon={<Flag />} className="h-full" />
+              <Stat label={t('adminDashboard.availableDonors')} value={summary.state.status === 'ready' ? totals.donors : null} tone="success" icon={<Users />} hint={t('dashUi.admin.donorsHint')} className="h-full" />
+            </Rise>
+            <Rise delay={0.16}>
+              <Stat
+                label={t('adminDashboard.nationalFulfillment')}
+                value={summary.state.status === 'ready' ? totals.fulfillmentRate : null}
+                suffix="%"
+                meter={totals.fulfillmentRate ?? undefined}
+                tone="primary"
+                icon={<TrendingUp />}
+                hint={t('dashUi.admin.fulfilmentHint')}
+                className="h-full"
+              />
             </Rise>
           </div>
         )}
 
-        {/* Hub links */}
+        {/* Hub links (all neutral: the one primary action is in the page header) */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {hubLinks.map((l, i) => (
             <Rise key={l.href} delay={0.1 + i * 0.05}>
-              <Link href={l.href} className="glass-card group flex h-full flex-col justify-between gap-8 rounded-2xl p-5">
+              <Link href={l.href} className={`${CARD} group flex h-full flex-col justify-between gap-6 p-5 transition-colors hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}>
                 <div className="flex items-start justify-between">
-                  <IconTile size="md">
+                  <IconTile size="md" tone="primary">
                     <l.icon />
                   </IconTile>
-                  <span
-                    aria-hidden="true"
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-gray-500 transition-[transform,color,border-color] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-ember/50 group-hover:text-ember"
-                  >
-                    <ArrowUpRight className="h-4 w-4" />
+                  <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-gray-500 transition-colors group-hover:border-primary group-hover:text-primary-text">
+                    <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" />
                   </span>
                 </div>
                 <div>
@@ -156,133 +168,148 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Requests by district */}
-        <Reveal y={12}>
+        <Rise inView>
           <section>
             <SectionHeader
               eyebrow={t('dashUi.section.distribution')}
               title={t('adminDashboard.distributionTitle')}
               action={
-                <Link href="/dashboard/admin/analytics" className="inline-flex items-center gap-1.5 text-sm text-ember transition-colors hover:text-foreground">
-                  {t('adminDashboard.viewMap')} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                <Link href="/dashboard/admin/analytics" className={TEXT_LINK}>
+                  {t('dashUi.admin.openAnalytics')} <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden="true" />
                 </Link>
               }
             />
             <Panel>
-              {loading ? (
+              {summaryLoading ? (
                 <div className="space-y-4" role="status" aria-label={t('common.loading')}>
                   <Skeleton className="h-6 w-full" />
                   <Skeleton className="h-6 w-5/6" />
                   <Skeleton className="h-6 w-2/3" />
                 </div>
-              ) : Object.keys(analytics).length === 0 ? (
-                <p className="py-6 text-center text-sm text-gray-500">{t('adminDashboard.noData')}</p>
+              ) : summary.state.status !== 'ready' ? (
+                <p className="py-6 text-center text-sm text-gray-500">{t('dashUi.noData')}</p>
+              ) : withRequests.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="font-display text-xl text-foreground">{t('dashUi.noData')}</p>
+                  <p className="mx-auto mt-1 max-w-md text-sm text-gray-400">{t('dashUi.admin.noRequestsYet')}</p>
+                </div>
               ) : (
-                <ul className="space-y-3.5">
-                  {Object.entries(analytics)
-                    .sort(([, a], [, b]) => Number(b) - Number(a))
-                    .map(([district, count], i) => {
-                      const numCount = Number(count) || 0;
-                      const pct = Math.round((numCount / maxCount) * 100);
-                      const color = pct > 70 ? 'bg-ember' : pct > 40 ? 'bg-saffron' : 'bg-emerald-400';
-                      return (
-                        <li key={district} className="grid grid-cols-[6.5rem_minmax(0,1fr)_auto] items-center gap-x-4 sm:grid-cols-[9rem_minmax(0,1fr)_auto]">
-                          <span className="break-words text-right text-sm leading-snug text-gray-300">{district}</span>
-                          <span aria-hidden="true" className="block h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
-                            <motion.span
-                              className={`block h-full w-full origin-left rounded-full ${color}`}
-                              initial={reduce ? false : { scaleX: 0 }}
-                              animate={{ scaleX: Math.max(pct, 3) / 100 }}
-                              transition={{ duration: 0.8, ease: EASE, delay: 0.1 + i * 0.03 }}
-                            />
-                          </span>
-                          <span className="min-w-12 text-right font-mono text-xs tabular-nums text-foreground">
-                            {numCount}
-                            <span className="ml-1 hidden text-gray-500 sm:inline">{t('common.requests')}</span>
-                          </span>
-                        </li>
-                      );
-                    })}
-                </ul>
+                <div className="space-y-5">
+                  <Tabs
+                    label={t('dashUi.viewMode')}
+                    value={view}
+                    onChange={(id) => setViewChoice(id as 'chart' | 'table')}
+                    tabs={[
+                      { id: 'chart', label: t('dashUi.viewChart') },
+                      { id: 'table', label: t('dashUi.viewTable') },
+                    ]}
+                  />
+                  <div role="tabpanel" aria-labelledby={`tab-${view}`}>
+                    {view === 'chart' ? (
+                      <DistrictBars rows={withRequests} max={maxCount} />
+                    ) : (
+                      <Table>
+                        <caption className="sr-only">{t('adminDashboard.distributionTitle')}</caption>
+                        <thead>
+                          <tr>
+                            <Th>{t('dash.district')}</Th>
+                            <Th className="text-end">{t('adminDashboard.totalRequests')}</Th>
+                            <Th className="text-end">{t('adminDashboard.activeRequests')}</Th>
+                            <Th className="text-end">{t('adminDashboard.fulfilled')}</Th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {withRequests.map((r) => (
+                            <tr key={r.district}>
+                              <Td className="font-medium">{r.district}</Td>
+                              <Td className="text-end tabular-nums">{format.number(r.totalRequests)}</Td>
+                              <Td className="text-end tabular-nums">{format.number(r.activeRequests)}</Td>
+                              <Td className="text-end tabular-nums">{format.number(r.fulfilledRequests)}</Td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    )}
+                  </div>
+                </div>
               )}
             </Panel>
           </section>
-        </Reveal>
+        </Rise>
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
-          {/* Quick verification */}
-          <Reveal y={12}>
+          {/* Pending verifications (replaces the old raw "type a User ID" box) */}
+          <Rise inView>
             <Panel>
               <SectionHeader
                 eyebrow={t('dashUi.section.verification')}
-                title={t('adminDashboard.quickVerification')}
-                description={t('adminDashboard.quickVerifyDesc')}
+                title={t('dashUi.admin.pendingTitle')}
+                description={t('dashUi.admin.pendingDesc')}
                 action={
-                  <Link href="/dashboard/admin/verifications" className="inline-flex items-center gap-1.5 text-sm text-ember transition-colors hover:text-foreground">
-                    {t('adminDashboard.openQueue')} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                  <Link href="/dashboard/admin/verifications" className={TEXT_LINK}>
+                    {t('dashUi.admin.openQueue')} <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden="true" />
                   </Link>
                 }
               />
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="min-w-0 flex-1">
-                  <Input
-                    type="number"
-                    placeholder={t('adminDashboard.enterUserId')}
-                    aria-label={t('adminDashboard.enterUserId')}
-                    value={verifyUserId}
-                    onChange={(e) => setVerifyUserId(e.target.value)}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleVerify}
-                  disabled={verifyStatus === 'loading'}
-                  className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/20"
-                >
-                  {verifyStatus === 'loading' ? (
-                    <span>{t('adminDashboard.verifying')}</span>
-                  ) : verifyStatus === 'success' ? (
-                    <><CheckCircle2 className="h-4 w-4" aria-hidden="true" /> {t('adminDashboard.verified')}</>
-                  ) : (
-                    <><ShieldCheck className="h-4 w-4" aria-hidden="true" /> {t('adminDashboard.verifyUser')}</>
-                  )}
-                </Button>
-              </div>
-              {verifyStatus === 'error' && (
-                <Notice tone="error" className="mt-3">
-                  {t('adminDashboard.verifyFailed')}
-                </Notice>
+              {pending.state.status === 'loading' ? (
+                <RowsSkeleton rows={2} />
+              ) : pending.state.status === 'error' || pending.state.status === 'unavailable' ? (
+                <Notice tone="error">{pending.state.status === 'error' && pending.state.message ? pending.state.message : t('dash.loadFailed')}</Notice>
+              ) : pendingList.length === 0 ? (
+                <p className="flex items-center gap-2 py-4 text-sm text-gray-400">
+                  <CheckCircle2 className="h-4 w-4 text-success-text" aria-hidden="true" />
+                  {t('adminDashboard.noPendingAccounts')}
+                </p>
+              ) : (
+                <>
+                  <p className="mb-3 text-sm font-medium text-foreground">{t('dashUi.admin.pendingCount', { count: pendingList.length })}</p>
+                  <ul className="divide-y divide-line rounded-xl border border-line">
+                    {pendingList.slice(0, 4).map((u) => (
+                      <li key={u.id} className="px-4 py-3">
+                        <p className="break-words text-sm font-medium text-foreground">{u.fullName || u.organisation || u.email}</p>
+                        <p className="text-sm text-gray-400">{t(`dashUi.role.${u.role}`)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </Panel>
-          </Reveal>
+          </Rise>
 
           {/* Abuse and moderation reports */}
-          <Reveal y={12}>
+          <Rise inView>
             <Panel>
               <SectionHeader
                 eyebrow={t('dashUi.section.moderation')}
-                title={`${t('adminDashboard.flaggedReports')} (${reports.length})`}
+                title={reports.state.status === 'ready' ? t('dashUi.admin.flaggedCount', { count: reportList.length }) : t('adminDashboard.flaggedReports')}
               />
-              {reports.length === 0 ? (
-                <p className="py-6 text-center text-sm text-gray-500">{t('adminDashboard.noReports')}</p>
+              {reports.state.status === 'loading' ? (
+                <RowsSkeleton rows={2} />
+              ) : reports.state.status !== 'ready' ? (
+                <Notice tone="error">{reports.state.status === 'error' && reports.state.message ? reports.state.message : t('dash.loadFailed')}</Notice>
+              ) : reportList.length === 0 ? (
+                <p className="flex items-center gap-2 py-4 text-sm text-gray-400">
+                  <CheckCircle2 className="h-4 w-4 text-success-text" aria-hidden="true" />
+                  {t('adminDashboard.noReports')}
+                </p>
               ) : (
                 <ul className="-mx-5 divide-y divide-line border-t border-line sm:-mx-6">
-                  {reports.map((report) => (
+                  {reportList.map((report) => (
                     <li key={report.id} className="flex items-start gap-3 px-5 py-4 sm:px-6">
-                      <Flag className="mt-0.5 h-4 w-4 shrink-0 text-ember" aria-hidden="true" />
+                      <Flag className="mt-0.5 h-4 w-4 shrink-0 text-warning-text" aria-hidden="true" />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground">
-                          {t('common.request')} <span className="font-mono">#{report.requestId}</span>
+                          {t('common.request')} <Link href={`/dashboard/requests/${report.requestId}`} className="text-primary-text underline-offset-4 hover:underline">#{report.requestId}</Link>
                         </p>
                         <p className="mt-0.5 break-words text-sm leading-relaxed text-gray-400">{report.reason}</p>
-                        <p className="mt-1 font-mono text-xs text-gray-500">{new Date(report.createdAt).toLocaleString()}</p>
+                        {report.createdAt && <p className="mt-1 text-sm text-gray-500">{format.dateTime(report.createdAt)}</p>}
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
             </Panel>
-          </Reveal>
+          </Rise>
         </div>
       </div>
     </div>

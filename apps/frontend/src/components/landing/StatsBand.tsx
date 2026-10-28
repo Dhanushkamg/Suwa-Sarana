@@ -14,7 +14,7 @@ function Tile({ index, label, children, footer }: { index: string; label: string
   return (
     <div className="flex flex-col justify-between gap-8 bg-surface p-6 sm:p-8">
       <div className="flex items-start justify-between gap-4">
-        <span className="font-mono text-xs text-gray-600" aria-hidden="true">
+        <span className="font-mono text-xs text-gray-500" aria-hidden="true">
           {index}
         </span>
         {footer}
@@ -59,12 +59,12 @@ export function StatsBand() {
                 label={t('stats.liveAlerts')}
                 footer={
                   <span className="relative mt-1 flex h-2.5 w-2.5" aria-hidden="true">
-                    <span className="dot-ping absolute inset-0 rounded-full bg-ember" />
-                    <span className="relative h-2.5 w-2.5 rounded-full bg-ember" />
+                    <span className="dot-ping absolute inset-0 rounded-full bg-primary" />
+                    <span className="relative h-2.5 w-2.5 rounded-full bg-primary" />
                   </span>
                 }
               >
-                <span className={`${NUMBER} break-words italic text-ember [:lang(si)_&]:not-italic [:lang(ta)_&]:not-italic`}>{t('stats.liveValue')}</span>
+                <span className={`${NUMBER} break-words italic text-primary-text [:lang(si)_&]:not-italic [:lang(ta)_&]:not-italic`}>{t('stats.liveValue')}</span>
               </Tile>
             </div>
           </div>

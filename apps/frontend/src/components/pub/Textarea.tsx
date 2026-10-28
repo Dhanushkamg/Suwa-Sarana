@@ -15,7 +15,7 @@ export function Textarea({ label, error, className, id, ...props }: TextareaProp
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={fieldId} className="text-sm font-medium text-gray-300">
+        <label htmlFor={fieldId} className="text-sm font-medium text-foreground">
           {label}
         </label>
       )}
@@ -24,15 +24,15 @@ export function Textarea({ label, error, className, id, ...props }: TextareaProp
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
         className={cn(
-          'w-full resize-none rounded-xl border bg-foreground/[0.035] px-4 py-3 text-sm leading-relaxed text-foreground placeholder-gray-600 transition-[border-color,background-color,box-shadow] duration-300',
-          'border-line-strong hover:border-foreground/25 focus:border-ember focus:bg-foreground/[0.06] focus:outline-none focus:ring-4 focus:ring-ember/15',
-          error && 'border-red-500/50',
+          'w-full resize-y rounded-xl border bg-surface px-4 py-3 text-sm leading-relaxed text-foreground placeholder:text-muted transition-[border-color,background-color,box-shadow] duration-300',
+          'border-line-strong hover:border-foreground/25 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20',
+          error && 'border-danger focus:border-danger focus:ring-danger/25',
           className
         )}
         {...props}
       />
       {error && (
-        <p id={errorId} className="text-xs text-red-400">
+        <p id={errorId} role="alert" className="text-xs text-danger-text">
           {error}
         </p>
       )}

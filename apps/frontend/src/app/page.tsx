@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground">
       <LandingNav />
-      <main id="main">
+      <main id="main-content">
         <Hero />
         <BloodTypeStrip />
         <HowItWorks />

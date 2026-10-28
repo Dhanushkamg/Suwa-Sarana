@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, Phone, User as UserIcon, CreditCard, ArrowLeft } from 'lucide-react';
@@ -9,16 +9,19 @@ import { GoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Alert } from '@/components/pub/Alert';
 import { AuthDivider } from '@/components/pub/AuthDivider';
 import { AuthHeading } from '@/components/pub/AuthHeading';
 import { PasswordField } from '@/components/pub/PasswordField';
 import { StepIndicator } from '@/components/pub/StepIndicator';
+import { focusFirstInvalid, parseApiError } from '@/components/pub/apiErrors';
+import { renderRich, richValues } from '@/components/pub/richMessage';
 import { OTP_INPUT_CLASS } from '@/components/pub/otp';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
-import { AuthData, apiMessage, homeForRole, isValidPhone, normalizePhone, toUser, unwrap } from '@/lib/auth';
+import { AuthData, homeForRole, isValidPhone, normalizePhone, toUser, unwrap } from '@/lib/auth';
 import { GOOGLE_TOKEN_KEY } from '../login/googleToken';
 
 interface GoogleVerifyResponse {
@@ -27,6 +30,7 @@ interface GoogleVerifyResponse {
 }
 
 const RESEND_SECONDS = 60;
+const MIN_PASSWORD = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NIC_RE = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
 
@@ -40,6 +44,7 @@ type Form = {
   password: string;
   confirmPassword: string;
   otpCode: string;
+  acceptTerms: boolean;
 };
 
 function RegisterForm() {
@@ -60,6 +65,7 @@ function RegisterForm() {
     password: '',
     confirmPassword: '',
     otpCode: '',
+    acceptTerms: false,
   });
   const [step, setStep] = useState<'info' | 'otp'>('info');
   const [showPassword, setShowPassword] = useState(false);
@@ -67,6 +73,9 @@ function RegisterForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState('');
   const [resendIn, setResendIn] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [focusTick, setFocusTick] = useState(0);
+  const [stepFocusTick, setStepFocusTick] = useState(0);
 
   // Set when a new Google user was sent here from the sign-in page: no email/password needed, the token proves the email.
   const [googleToken, setGoogleToken] = useState('');
@@ -80,6 +89,16 @@ function RegisterForm() {
       // sessionStorage unavailable — fall back to the normal form
     }
   }, [searchParams]);
+
+  // Move keyboard focus to the first invalid field once the errors have rendered
+  useEffect(() => {
+    if (focusTick > 0 && formRef.current) focusFirstInvalid(formRef.current);
+  }, [focusTick]);
+
+  // When the code step appears, focus the code input so keyboard and screen-reader users can type straight away
+  useEffect(() => {
+    if (stepFocusTick > 0 && step === 'otp') document.getElementById('reg-otp')?.focus();
+  }, [stepFocusTick, step]);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -95,7 +114,8 @@ function RegisterForm() {
   ];
 
   const set = (field: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    const value = e.target instanceof HTMLInputElement && e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
@@ -111,11 +131,14 @@ function RegisterForm() {
       if (!form.email) next.email = t('authFlow.emailRequired');
       else if (!EMAIL_RE.test(form.email)) next.email = t('authFlow.emailInvalid');
       if (!form.password) next.password = t('authFlow.passwordRequired');
-      else if (form.password.length < 8) next.password = t('authFlow.passwordShort');
+      else if (form.password.length < MIN_PASSWORD) next.password = t('authFlow.passwordShort');
       if (form.password !== form.confirmPassword) next.confirmPassword = t('authFlow.passwordMismatch');
     }
 
+    if (!form.acceptTerms) next.acceptTerms = t('authFlow.consentRequired');
+
     setErrors(next);
+    if (Object.keys(next).length > 0) setFocusTick((n) => n + 1);
     return Object.keys(next).length === 0;
   };
 
@@ -125,9 +148,15 @@ function RegisterForm() {
     try {
       await apiClient.post('/auth/send-otp', { phoneNumber: normalizePhone(form.phoneNumber) });
       setStep('otp');
+      setStepFocusTick((n) => n + 1);
       setResendIn(RESEND_SECONDS);
     } catch (err: unknown) {
-      setServerError(apiMessage(err, t('authFlow.otpSendFailed')));
+      const parsed = parseApiError(err, t, { fallback: t('authFlow.otpSendFailed') });
+      setServerError(parsed.message);
+      if (Object.keys(parsed.fields).length > 0) {
+        setErrors(parsed.fields);
+        setFocusTick((n) => n + 1);
+      }
     } finally {
       setLoading(false);
     }
@@ -140,6 +169,7 @@ function RegisterForm() {
   const handleVerifyAndRegister = async () => {
     if (!form.otpCode.trim()) {
       setErrors({ otpCode: t('authFlow.otpRequired') });
+      setFocusTick((n) => n + 1);
       return;
     }
     setServerError('');
@@ -156,6 +186,7 @@ function RegisterForm() {
         nicNumber: form.nicNumber || undefined,
         role: form.role,
         otpCode: form.otpCode.trim(),
+        acceptTerms: true,
       };
       const res = isGoogle
         ? await apiClient.post('/auth/google/register', { ...common, idToken: googleToken })
@@ -167,10 +198,25 @@ function RegisterForm() {
       login(auth.accessToken, user);
       router.push(homeForRole(user.role));
     } catch (err: unknown) {
-      setServerError(apiMessage(err, t('authFlow.registerFailed')));
+      const parsed = parseApiError(err, t, { fallback: t('authFlow.registerFailed') });
+      setServerError(parsed.message);
+      const names = Object.keys(parsed.fields);
+      if (names.length > 0) {
+        setErrors(parsed.fields);
+        // Errors on the details step: go back so the fields are visible
+        if (names.some((n) => n !== 'otpCode')) setStep('info');
+        setFocusTick((n) => n + 1);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    if (step === 'info') handleContinue();
+    else handleVerifyAndRegister();
   };
 
   const handleGoogleSignIn = async (idToken: string) => {
@@ -188,7 +234,7 @@ function RegisterForm() {
         router.push(homeForRole(user.role));
       }
     } catch (err: unknown) {
-      setServerError(apiMessage(err, t('authGoogle.googleRegFailed')));
+      setServerError(parseApiError(err, t, { fallback: t('authGoogle.googleRegFailed') }).message);
     } finally {
       setLoading(false);
     }
@@ -206,7 +252,7 @@ function RegisterForm() {
 
       {serverError && <Alert className="mb-6">{serverError}</Alert>}
 
-      <div className="space-y-5">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-5">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={step}
@@ -275,6 +321,7 @@ function RegisterForm() {
                   onChange={set('nicNumber')}
                   error={errors.nicNumber}
                   icon={<CreditCard className="h-4 w-4" />}
+                  autoComplete="off"
                 />
 
                 {!isGoogle && (
@@ -286,6 +333,7 @@ function RegisterForm() {
                       value={form.password}
                       onChange={set('password')}
                       error={errors.password}
+                      hint={t('authFlow.passwordHint', { min: MIN_PASSWORD })}
                       autoComplete="new-password"
                       visible={showPassword}
                       onVisibleChange={setShowPassword}
@@ -304,15 +352,35 @@ function RegisterForm() {
                   </>
                 )}
 
+                <Checkbox
+                  id="reg-accept-terms"
+                  checked={form.acceptTerms}
+                  onChange={set('acceptTerms')}
+                  error={errors.acceptTerms}
+                  required
+                  label={renderRich(t('authFlow.consent', richValues(['terms', 'privacy'])), {
+                    terms: (
+                      <Link href="/terms" target="_blank" rel="noopener" className="font-medium text-primary-text underline underline-offset-4">
+                        {t('auth.termsLink')}
+                      </Link>
+                    ),
+                    privacy: (
+                      <Link href="/privacy" target="_blank" rel="noopener" className="font-medium text-primary-text underline underline-offset-4">
+                        {t('auth.privacyLink')}
+                      </Link>
+                    ),
+                  })}
+                />
+
                 <div className="pt-3">
-                  <Button type="button" size="lg" className="w-full" loading={loading} onClick={handleContinue}>
+                  <Button type="submit" size="lg" className="w-full" loading={loading}>
                     {t('authFlow.sendOtp')}
                   </Button>
                 </div>
               </>
             ) : (
               <>
-                <p className="rounded-xl border border-line bg-foreground/[0.03] px-4 py-3 text-sm leading-relaxed text-gray-300">
+                <p className="rounded-xl border border-line bg-surface-raised px-4 py-3 text-sm leading-relaxed text-foreground">
                   {t('authFlow.otpSent', { phone: normalizePhone(form.phoneNumber) })}
                 </p>
                 <Input
@@ -328,7 +396,7 @@ function RegisterForm() {
                   className={OTP_INPUT_CLASS}
                 />
                 <div className="pt-3">
-                  <Button type="button" size="lg" className="w-full" loading={loading} onClick={handleVerifyAndRegister}>
+                  <Button type="submit" size="lg" className="w-full" loading={loading}>
                     {t('authFlow.verifyCreate')}
                   </Button>
                 </div>
@@ -336,7 +404,7 @@ function RegisterForm() {
                   <button
                     type="button"
                     onClick={() => setStep('info')}
-                    className="group inline-flex items-center gap-2 text-gray-400 transition-colors hover:text-foreground"
+                    className="group inline-flex min-h-11 items-center gap-2 text-gray-400 transition-colors hover:text-foreground"
                   >
                     <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-0.5" aria-hidden="true" />
                     {t('authFlow.backToInfo')}
@@ -345,7 +413,7 @@ function RegisterForm() {
                     type="button"
                     onClick={sendOtp}
                     disabled={resendIn > 0 || loading}
-                    className="text-right text-ember underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:cursor-not-allowed disabled:text-gray-600 disabled:no-underline"
+                    className="min-h-11 text-right text-primary-text underline-offset-4 transition-colors hover:underline disabled:cursor-not-allowed disabled:text-gray-500 disabled:no-underline"
                   >
                     {resendIn > 0 ? t('authFlow.resendIn', { seconds: resendIn }) : t('authFlow.resend')}
                   </button>
@@ -355,18 +423,7 @@ function RegisterForm() {
           </motion.div>
         </AnimatePresence>
 
-        <p className="pt-2 text-center text-xs leading-relaxed text-gray-600">
-          {t('auth.termsNote')}{' '}
-          <Link href="/terms" className="text-gray-400 underline underline-offset-4 transition-colors hover:text-foreground">
-            {t('auth.termsLink')}
-          </Link>{' '}
-          {t('auth.andText')}{' '}
-          <Link href="/privacy" className="text-gray-400 underline underline-offset-4 transition-colors hover:text-foreground">
-            {t('auth.privacyLink')}
-          </Link>
-          .
-        </p>
-      </div>
+      </form>
 
       {!isGoogle && step === 'info' && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
         <>
@@ -382,9 +439,9 @@ function RegisterForm() {
         </>
       )}
 
-      <p className="mt-10 border-t border-line pt-6 text-center text-sm text-gray-500">
+      <p className="mt-10 border-t border-line pt-6 text-center text-sm text-gray-400">
         {t('auth.haveAccount')}{' '}
-        <Link href="/login" className="font-medium text-ember underline-offset-4 transition-colors hover:text-foreground hover:underline">
+        <Link href="/login" className="inline-flex min-h-11 items-center font-medium text-primary-text underline underline-offset-4">
           {t('auth.signInLink')}
         </Link>
       </p>
@@ -393,8 +450,9 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="text-sm text-gray-400">…</div>}>
+    <Suspense fallback={<div role="status" className="text-sm text-gray-400">{t('a11y.loading')}</div>}>
       <RegisterForm />
     </Suspense>
   );

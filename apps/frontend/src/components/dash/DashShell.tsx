@@ -5,25 +5,28 @@ import type { ComponentType, ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut, Menu, X } from 'lucide-react';
-import { motion, useReducedMotion } from 'motion/react';
 import { Logo } from '@/components/brand/Logo';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { User } from '@/types';
 import { EYEBROW } from './styles';
+import { LowDataToggle } from './LowDataToggle';
 
 export interface DashNavItem {
   href: string;
   label: string;
   icon: ComponentType<{ className?: string }>;
+  /** Unread / pending count shown as a pill. `null`/`undefined`/0 hides it. */
+  badge?: number | null;
 }
 
 interface DashShellProps {
   navItems: DashNavItem[];
   user: User;
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
   children: ReactNode;
 }
 
@@ -37,14 +40,15 @@ function activeHref(items: DashNavItem[], pathname: string): string | null {
 }
 
 /**
- * App shell: slim ink sidebar (drawer on mobile) + content area with a faint ember light at the top.
+ * App shell: sidebar (a drawer on mobile) + content area. The language switcher, theme toggle and Low-Data switch sit together:
+ * in a slim bar above the content on desktop, in the drawer footer on mobile.
  * Auth and role guards stay in dashboard/layout.tsx; this only renders chrome.
  */
 export function DashShell({ navItems, user, onLogout, children }: DashShellProps) {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
   const pathname = usePathname();
-  const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const current = activeHref(navItems, pathname);
@@ -70,6 +74,16 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
 
   const closeDrawer = () => setOpen(false);
 
+  const signOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await onLogout();
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile top bar */}
@@ -82,9 +96,9 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
           aria-label={open ? t('dashUi.closeMenu') : t('dashUi.openMenu')}
           aria-expanded={open}
           aria-controls="dash-sidebar"
-          className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-foreground"
+          className="-me-2 flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
         >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
         </button>
       </header>
 
@@ -93,7 +107,7 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
         aria-hidden="true"
         onClick={closeDrawer}
         className={cn(
-          'fixed inset-0 z-40 bg-black/60 transition-opacity duration-300 md:hidden',
+          'fixed inset-0 z-40 bg-foreground/40 transition-opacity duration-300 motion-reduce:transition-none md:hidden',
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         )}
       />
@@ -101,10 +115,9 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
       {/* Sidebar. Closed on mobile it is `invisible` (after the slide-out) so keyboard focus cannot land in it. */}
       <aside
         id="dash-sidebar"
-        aria-label={t('dashUi.mainNavigation')}
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-[17rem] max-w-[85vw] flex-col border-r border-line bg-background transition-[transform,visibility] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:w-60 md:translate-x-0 md:visible',
-          open ? 'visible translate-x-0' : 'invisible -translate-x-full'
+          'fixed inset-y-0 start-0 z-50 flex w-[17rem] max-w-[85vw] flex-col border-e border-line bg-surface transition-[transform,visibility] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none md:w-60 md:translate-x-0 md:visible',
+          open ? 'visible translate-x-0' : 'invisible -translate-x-full rtl:translate-x-full'
         )}
       >
         <div className="flex h-16 shrink-0 items-center justify-between px-5">
@@ -117,9 +130,9 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
               menuButtonRef.current?.focus();
             }}
             aria-label={t('dashUi.closeMenu')}
-            className="-mr-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:text-foreground md:hidden"
+            className="-me-2 flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary md:hidden"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -128,21 +141,15 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
           <div className="flex items-start gap-3">
             <span
               aria-hidden="true"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground/[0.04] font-display text-lg leading-none text-foreground ring-1 ring-ember/60 ring-offset-2 ring-offset-background"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft font-display text-lg leading-none text-primary-text"
             >
               {user.email?.charAt(0).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="break-all text-[13px] leading-snug text-foreground" title={user.email}>
-                {user.email}
-              </p>
-              <p className={cn(EYEBROW, 'mt-1.5 !text-[0.66rem] !leading-snug')}>{t(`dashUi.role.${user.role}`)}</p>
+              <p className="break-all text-sm leading-snug text-foreground">{user.email}</p>
+              <p className={cn(EYEBROW, 'mt-1.5 leading-snug')}>{t(`dashUi.role.${user.role}`)}</p>
               {user.verificationStatus && (
-                <StatusBadge
-                  value={user.verificationStatus}
-                  label={t(`dashUi.verification.${user.verificationStatus}`)}
-                  className="mt-2 !px-2 !py-0 !text-[11px]"
-                />
+                <StatusBadge value={user.verificationStatus} label={t(`dashUi.verification.${user.verificationStatus}`)} className="mt-2" />
               )}
             </div>
           </div>
@@ -150,9 +157,10 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
 
         {/* Navigation */}
         <nav aria-label={t('dashUi.mainNavigation')} className="flex-1 overflow-y-auto px-3 py-3">
-          <ul className="space-y-0.5">
+          <ul className="space-y-1">
             {navItems.map((item) => {
               const active = item.href === current;
+              const badge = item.badge && item.badge > 0 ? item.badge : null;
               return (
                 <li key={item.href}>
                   <Link
@@ -160,28 +168,21 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
                     onClick={closeDrawer}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors duration-200',
-                      active ? 'text-foreground' : 'text-gray-400 hover:text-foreground'
+                      'group relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-primary',
+                      active ? 'bg-primary-soft font-medium text-primary-text' : 'text-gray-400 hover:bg-foreground/[0.05] hover:text-foreground'
                     )}
                   >
-                    {active && (
+                    {active && <span aria-hidden="true" className="absolute inset-y-2 start-0 w-[3px] rounded-full bg-primary" />}
+                    <item.icon className={cn('h-4 w-4 shrink-0', active ? 'text-primary-text' : 'text-gray-500 group-hover:text-foreground')} />
+                    <span className="min-w-0 break-words leading-snug">{item.label}</span>
+                    {badge !== null && (
                       <>
-                        <motion.span
-                          layoutId="dash-nav-pill"
-                          aria-hidden="true"
-                          className="absolute inset-0 rounded-xl bg-foreground/[0.06]"
-                          transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 38 }}
-                        />
-                        <motion.span
-                          layoutId="dash-nav-tick"
-                          aria-hidden="true"
-                          className="absolute inset-y-2 left-0 w-[2px] rounded-full bg-ember"
-                          transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 38 }}
-                        />
+                        <span aria-hidden="true" className="ms-auto min-w-6 rounded-full bg-primary px-2 py-0.5 text-center text-xs font-semibold tabular-nums text-primary-fg">
+                          {badge > 99 ? '99+' : format.number(badge)}
+                        </span>
+                        <span className="sr-only">{t('dashUi.unreadCount', { count: badge })}</span>
                       </>
                     )}
-                    <item.icon className={cn('relative h-4 w-4 shrink-0 transition-colors', active ? 'text-ember' : 'text-gray-500 group-hover:text-gray-300')} />
-                    <span className="relative min-w-0 break-words leading-snug">{item.label}</span>
                   </Link>
                 </li>
               );
@@ -189,29 +190,34 @@ export function DashShell({ navItems, user, onLogout, children }: DashShellProps
           </ul>
         </nav>
 
-        {/* Language + sign out. The switcher's menu is forced to open upwards so it is not clipped by the viewport. */}
-        <div className="shrink-0 space-y-1 border-t border-line p-4">
-          <LanguageSwitcher
-            className="mb-2 [&>button]:w-full [&>button]:justify-start [&_[role=menu]]:bottom-full [&_[role=menu]]:left-0 [&_[role=menu]]:right-auto [&_[role=menu]]:top-auto [&_[role=menu]]:mb-2 [&_[role=menu]]:mt-0 [&_[role=menu]]:w-full"
-          />
+        {/* Preferences (mobile drawer only; on desktop they live in the bar above the content) + sign out */}
+        <div className="shrink-0 space-y-2 border-t border-line p-4">
+          <div className="flex flex-wrap items-center gap-2 md:hidden">
+            <LanguageSwitcher className="[&_[role=menu]]:bottom-full [&_[role=menu]]:left-0 [&_[role=menu]]:right-auto [&_[role=menu]]:top-auto [&_[role=menu]]:mb-2 [&_[role=menu]]:mt-0" />
+            <ThemeToggle />
+            <LowDataToggle className="w-full justify-start" />
+          </div>
           <button
             type="button"
-            onClick={onLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-500 transition-colors duration-200 hover:bg-foreground/[0.04] hover:text-ember"
+            onClick={signOut}
+            disabled={signingOut}
+            aria-busy={signingOut || undefined}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-400 transition-colors duration-200 hover:bg-foreground/[0.05] hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-60"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
-            {t('common.signOut')}
+            {signingOut ? t('dashUi.signingOut') : t('common.signOut')}
           </button>
         </div>
       </aside>
 
       {/* Content. `inert` while the mobile drawer is open so focus stays in the drawer. */}
-      <main id="dash-main" inert={open} className="relative min-h-screen md:pl-60">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-[radial-gradient(55%_100%_at_50%_0%,color-mix(in_oklch,var(--ember)_9%,transparent),transparent)]"
-        />
-        <div className="relative mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 md:px-10 md:py-12">{children}</div>
+      <main id="main-content" tabIndex={-1} inert={open} className="relative min-h-screen focus:outline-none md:ps-60">
+        <div className="mx-auto hidden w-full max-w-6xl items-center justify-end gap-2 px-4 pt-4 sm:px-6 md:flex md:px-10">
+          <LowDataToggle />
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
+        <div className="relative mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 md:px-10 md:py-10">{children}</div>
       </main>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
@@ -10,6 +10,8 @@ import { Reveal } from '@/components/motion/Reveal';
 import { Alert } from '@/components/pub/Alert';
 import { PubFooter } from '@/components/pub/PubFooter';
 import { PubHeader } from '@/components/pub/PubHeader';
+import { CONTACT, telHref } from '@/components/pub/contactInfo';
+import { focusFirstInvalid, parseApiError } from '@/components/pub/apiErrors';
 import { Textarea } from '@/components/pub/Textarea';
 
 export default function ContactPage() {
@@ -18,20 +20,44 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [focusTick, setFocusTick] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (focusTick > 0 && formRef.current) focusFirstInvalid(formRef.current);
+  }, [focusTick]);
+
+  const clear = (field: string) => setFieldErrors((f) => ({ ...f, [field]: '' }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setSubmitStatus('idle');
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = t('pub.contactNameRequired');
+    if (!formData.email.trim()) errors.email = t('authFlow.emailRequired');
+    else if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(formData.email.trim())) errors.email = t('authFlow.emailInvalid');
+    if (!formData.subject.trim()) errors.subject = t('pub.contactSubjectRequired');
+    if (!formData.message.trim()) errors.message = t('pub.contactMessageRequired');
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setFocusTick((n) => n + 1);
+      return;
+    }
+    setLoading(true);
     try {
       await apiClient.post('/contact', formData);
       setSubmitStatus('success');
       setSubmitMessage(t('contact.successMessage'));
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+      const parsed = parseApiError(err, t, { fallback: t('contact.errorMessage') });
       setSubmitStatus('error');
-      setSubmitMessage(typeof message === 'string' && message ? message : t('contact.errorMessage'));
+      setSubmitMessage(parsed.message);
+      if (Object.keys(parsed.fields).length > 0) {
+        setFieldErrors(parsed.fields);
+        setFocusTick((n) => n + 1);
+      }
     } finally {
       setLoading(false);
     }
@@ -41,15 +67,15 @@ export default function ContactPage() {
     {
       icon: Mail,
       label: t('contact.email'),
-      value: 'support@suwasarana.lk',
-      href: 'mailto:support@suwasarana.lk',
+      value: CONTACT.email,
+      href: `mailto:${CONTACT.email}`,
       note: t('pub.contactReply'),
     },
     {
       icon: Phone,
       label: t('contact.hotline'),
-      value: '+94 11 234 5678',
-      href: 'tel:+94112345678',
+      value: CONTACT.phone,
+      href: telHref(CONTACT.phone),
       note: t('contact.hours'),
     },
     {
@@ -65,12 +91,12 @@ export default function ContactPage() {
     <div className="min-h-screen bg-background text-foreground">
       <PubHeader />
 
-      <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-20">
+      <main id="main-content" className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-20">
         <div className="grid gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-20">
           {/* Left: editorial intro + channels */}
           <Reveal y={20}>
             <p className="eyebrow mb-5 flex items-center gap-2.5">
-              <span aria-hidden="true" className="h-px w-8 bg-ember" />
+              <span aria-hidden="true" className="h-px w-8 bg-primary" />
               {t('pub.contactEyebrow')}
             </p>
             <h1 className="font-display break-words text-5xl text-foreground sm:text-6xl lg:text-7xl">{t('contact.title')}</h1>
@@ -82,14 +108,14 @@ export default function ContactPage() {
                 const body = (
                   <>
                     <p className="eyebrow flex items-center gap-2.5">
-                      <Icon className="h-3.5 w-3.5 text-ember" aria-hidden="true" />
+                      <Icon className="h-3.5 w-3.5 text-primary-text" aria-hidden="true" />
                       {item.label}
                     </p>
                     <div className="mt-2 flex items-start justify-between gap-4">
                       <span className="min-w-0 break-words font-display text-2xl text-foreground sm:text-3xl">{item.value}</span>
                       {item.href && (
                         <ArrowUpRight
-                          className="mt-1.5 h-5 w-5 shrink-0 text-gray-600 transition-[transform,color] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ember"
+                          className="mt-1.5 h-5 w-5 shrink-0 text-gray-500 transition-[transform,color] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary-text motion-reduce:transition-none"
                           aria-hidden="true"
                         />
                       )}
@@ -116,7 +142,7 @@ export default function ContactPage() {
           <Reveal y={28} delay={0.1}>
             <div className="glass-card rounded-3xl p-6 sm:p-10">
               <h2 className="font-display text-3xl text-foreground sm:text-4xl">{t('contact.formTitle')}</h2>
-              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <form ref={formRef} onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
                 {submitStatus === 'success' && <Alert tone="success">{submitMessage}</Alert>}
                 {submitStatus === 'error' && <Alert>{submitMessage}</Alert>}
 
@@ -124,38 +150,52 @@ export default function ContactPage() {
                   <Input
                     id="contact-name"
                     type="text"
-                    required
                     label={t('contact.nameLabel')}
+                    autoComplete="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      clear('name');
+                    }}
+                    error={fieldErrors.name}
                     placeholder={t('contact.namePlaceholder')}
                   />
                   <Input
                     id="contact-email"
                     type="email"
-                    required
                     label={t('contact.emailLabel')}
+                    autoComplete="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      clear('email');
+                    }}
+                    error={fieldErrors.email}
                     placeholder={t('contact.emailPlaceholder')}
                   />
                 </div>
                 <Input
                   id="contact-subject"
                   type="text"
-                  required
                   label={t('contact.subjectLabel')}
                   value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, subject: e.target.value });
+                    clear('subject');
+                  }}
+                  error={fieldErrors.subject}
                   placeholder={t('contact.subjectPlaceholder')}
                 />
                 <Textarea
                   id="contact-message"
                   rows={6}
-                  required
                   label={t('contact.messageLabel')}
                   value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, message: e.target.value });
+                    clear('message');
+                  }}
+                  error={fieldErrors.message}
                   placeholder={t('contact.messagePlaceholder')}
                 />
                 <div className="pt-2">

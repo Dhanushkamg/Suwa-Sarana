@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Clock, Users, Loader2, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/pub/Alert';
+import { TIME_FORMAT, toDate } from '@/components/pub/dates';
+import { parseApiError } from '@/components/pub/apiErrors';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
@@ -15,16 +17,16 @@ interface SlotPickerProps {
   onBooked?: (booking: SlotBooking) => void;
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-}
-
 export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerProps) {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
+  const formatTime = (v: unknown) => {
+    const d = toDate(v);
+    return d ? format.dateTime(d, TIME_FORMAT) : '';
+  };
+  const formatDate = (v: unknown) => {
+    const d = toDate(v);
+    return d ? format.date(d, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+  };
   const { user } = useAuthStore();
   const [slots, setSlots] = useState<DonationSlot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,19 +74,15 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
       onBooked?.(booking);
       await fetchSlots(); // refresh capacity immediately
     } catch (err: unknown) {
-      const resp = (err as { response?: { status?: number; data?: { message?: unknown } } })?.response;
-      const status = resp?.status;
-      const msg = typeof resp?.data?.message === 'string' ? resp.data.message : undefined;
-
-      if (status === 409) {
-        setFeedback({ slotId: slot.id, type: 'error', message: msg || t('slotPicker.conflict') });
-      } else if (status === 422) {
-        setFeedback({ slotId: slot.id, type: 'error', message: msg || t('slotPicker.ineligible') });
-      } else if (status === 401) {
-        setFeedback({ slotId: slot.id, type: 'error', message: t('slotPicker.signIn') });
-      } else {
-        setFeedback({ slotId: slot.id, type: 'error', message: msg || t('slotPicker.bookFailed') });
-      }
+      // Prefer our own translation: by error code, then by what the status means for booking, then the server's text
+      const parsed = parseApiError(err, t, { fallback: t('slotPicker.bookFailed') });
+      const byStatus: Record<number, string> = {
+        401: t('slotPicker.signIn'),
+        409: t('slotPicker.conflict'),
+        422: t('slotPicker.ineligible'),
+      };
+      const message = parsed.localised ? parsed.message : (parsed.status !== undefined && byStatus[parsed.status]) || parsed.message;
+      setFeedback({ slotId: slot.id, type: 'error', message });
     } finally {
       setBookingId(null);
     }
@@ -92,8 +90,8 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-4 text-gray-400 text-sm">
-        <Loader2 className="w-4 h-4 animate-spin" />
+      <div role="status" className="flex items-center gap-2 py-4 text-gray-400 text-sm">
+        <Loader2 className="w-4 h-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
         {t('slotPicker.loading')}
       </div>
     );
@@ -101,8 +99,8 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
 
   if (slots.length === 0) {
     return (
-      <div className="py-4 text-center text-sm text-gray-500">
-        <CalendarCheck className="w-6 h-6 mx-auto mb-2 opacity-40" />
+      <div className="py-4 text-center text-sm text-gray-400">
+        <CalendarCheck className="w-6 h-6 mx-auto mb-2 opacity-60" aria-hidden="true" />
         {t('slotPicker.empty')}
       </div>
     );
@@ -125,8 +123,8 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
             key={slot.id}
             className={`rounded-xl border p-3.5 transition-colors duration-300 ${
               isFull || isCancelled
-                ? 'border-line bg-transparent opacity-50'
-                : 'border-line-strong bg-foreground/[0.03] hover:border-ember/40'
+                ? 'border-line bg-transparent opacity-60'
+                : 'border-line-strong bg-surface hover:border-primary/40'
             }`}
           >
             <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -142,7 +140,7 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
                   <Users className="h-3 w-3 shrink-0" aria-hidden="true" />
                   {isFull
                     ? t('slotPicker.fullyBooked')
-                    : t(slot.spotsLeft !== 1 ? 'slotPicker.spotsLeft' : 'slotPicker.spotLeft', { left: slot.spotsLeft, capacity: slot.capacity })}
+                    : t('pub.spotsLeft', { left: slot.spotsLeft, capacity: slot.capacity })}
                 </div>
               </div>
 
@@ -151,19 +149,20 @@ export default function SlotPicker({ hostType, hostId, onBooked }: SlotPickerPro
                 {/* Visual fill bar */}
                 <div className="h-1 w-20 overflow-hidden rounded-full bg-foreground/10" aria-hidden="true">
                   <div
-                    className={`h-full w-full origin-left rounded-full transition-transform duration-500 ${isFull ? 'bg-ember' : 'bg-emerald-400'}`}
+                    className={`h-full w-full origin-left rounded-full transition-transform duration-500 ${isFull ? 'bg-warning' : 'bg-success'}`}
                     style={{ transform: `scaleX(${Math.min(1, slot.capacity > 0 ? slot.bookedCount / slot.capacity : 0)})` }}
                   />
                 </div>
 
                 {isCancelled ? (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-400">
                     {slot.status === 'COMPLETED' ? t('slotPicker.completed') : t('slotPicker.cancelled')}
                   </span>
                 ) : (
                   <Button
                     variant={isFull ? 'secondary' : 'primary'}
                     size="sm"
+                    className="min-h-11"
                     disabled={isFull || isBooking}
                     loading={isBooking}
                     onClick={() => handleBook(slot)}

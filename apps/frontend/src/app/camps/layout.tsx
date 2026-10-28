@@ -1,6 +1,6 @@
-import type { Metadata } from 'next';
+import { localizedMeta } from '@/components/pub/pageMeta';
 
-export const metadata: Metadata = { title: 'Donation camps' };
+export const generateMetadata = () => localizedMeta('pub.meta.camps', 'pub.meta.campsDesc');
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return children;

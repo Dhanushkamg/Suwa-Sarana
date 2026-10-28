@@ -14,7 +14,7 @@ export function StepIndicator({ current, labels }: { current: number; labels: st
           <span key={label} className="relative h-[3px] flex-1 overflow-hidden rounded-full bg-foreground/10">
             <span
               className={cn(
-                'absolute inset-0 origin-left rounded-full bg-ember transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                'absolute inset-0 origin-left rounded-full bg-primary transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
                 i < current ? 'scale-x-100' : 'scale-x-0'
               )}
             />
@@ -25,7 +25,7 @@ export function StepIndicator({ current, labels }: { current: number; labels: st
         <span className="eyebrow">
           {String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}
         </span>
-        <span className="text-right text-sm text-gray-300" aria-current="step">
+        <span className="text-right text-sm text-foreground" aria-current="step">
           {labels[current - 1]}
         </span>
       </div>

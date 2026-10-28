@@ -6,16 +6,17 @@ import { ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { SriLankaMap } from '@/components/brand/SriLankaMap';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { useI18n } from '@/lib/i18n';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
   const reduce = useReducedMotion();
 
   const stats = [
-    { value: '25', label: t('authFlow.statDistricts') },
-    { value: '8', label: t('authFlow.statBloodTypes') },
-    { value: '3', label: t('authFlow.statLanguages') },
+    { value: format.number(25), label: t('authFlow.statDistricts') },
+    { value: format.number(8), label: t('authFlow.statBloodTypes') },
+    { value: format.number(3), label: t('authFlow.statLanguages') },
   ];
 
   return (
@@ -44,7 +45,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
           >
-            <span aria-hidden="true" className="h-px w-6 bg-ember" />
+            <span aria-hidden="true" className="h-px w-6 bg-primary" />
             {t('pub.authEyebrow')}
           </motion.p>
           <motion.p
@@ -77,27 +78,30 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Right: the form */}
       <div className="relative flex min-h-screen flex-col px-5 sm:px-10 lg:px-16">
-        <header className="flex items-center justify-between gap-3 py-5 lg:py-8">
+        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-4 lg:py-8">
           <Logo className="lg:hidden" />
           <Link
             href="/"
-            className="group hidden items-center gap-2 text-sm text-gray-400 transition-colors hover:text-foreground lg:inline-flex"
+            className="group hidden min-h-11 items-center gap-2 text-sm text-gray-400 transition-colors hover:text-foreground lg:inline-flex"
           >
             <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-0.5" aria-hidden="true" />
             {t('authFlow.home')}
           </Link>
-          <LanguageSwitcher />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
         </header>
 
-        <main className="mx-auto my-auto w-full max-w-md py-10 lg:py-14">{children}</main>
+        <main id="main-content" className="mx-auto my-auto w-full max-w-md py-10 lg:py-14">{children}</main>
 
-        <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line py-5 font-mono text-[11px] uppercase tracking-[0.12em] text-gray-600">
+        <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line py-5 text-xs text-gray-500">
           <span>{t('footer.rights')}</span>
-          <span className="flex gap-5">
-            <Link href="/privacy" className="transition-colors hover:text-gray-300">
+          <span className="flex gap-3">
+            <Link href="/privacy" className="inline-flex min-h-11 items-center transition-colors hover:text-foreground">
               {t('footer.privacy')}
             </Link>
-            <Link href="/terms" className="transition-colors hover:text-gray-300">
+            <Link href="/terms" className="inline-flex min-h-11 items-center transition-colors hover:text-foreground">
               {t('footer.terms')}
             </Link>
           </span>

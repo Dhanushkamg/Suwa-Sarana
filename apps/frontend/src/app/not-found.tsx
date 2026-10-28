@@ -11,7 +11,7 @@ export default function NotFound() {
   const { t } = useI18n();
 
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden bg-background">
+    <main id="main-content" className="relative flex min-h-screen flex-col overflow-hidden bg-background">
       {/* Faint island, off to one side */}
       <div aria-hidden="true" className="pointer-events-none absolute -right-16 top-1/2 h-[80vh] -translate-y-1/2 opacity-20 sm:right-[8%] sm:opacity-30">
         <SriLankaMap className="h-full" showLabels={false} />
@@ -24,7 +24,7 @@ export default function NotFound() {
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 items-center px-5 pb-20 sm:px-8">
         <Reveal y={20} className="max-w-xl">
           <p className="eyebrow mb-6 flex items-center gap-2.5">
-            <span aria-hidden="true" className="h-px w-8 bg-ember" />
+            <span aria-hidden="true" className="h-px w-8 bg-primary" />
             404
           </p>
           <h1 className="font-display break-words text-6xl text-foreground sm:text-7xl lg:text-8xl">{t('errors.notFoundTitle')}</h1>

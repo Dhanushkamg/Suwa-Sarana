@@ -20,9 +20,9 @@ interface Card {
 }
 
 const CARDS: Card[] = [
-  { id: 'geo', art: <GeoArt />, title: 'features.geo', desc: 'features.geoDesc', span: 'md:col-span-2 lg:col-span-7', tall: true },
-  { id: 'live', art: <LiveArt />, title: 'features.sse', desc: 'features.sseDesc', span: 'lg:col-span-5', tall: true },
-  { id: 'esc', art: <EscalationArt />, title: 'features.escalation', desc: 'features.escalationDesc', span: 'lg:col-span-4' },
+  { id: 'geo', art: <GeoArt />, title: 'landing.geoTitle', desc: 'landing.geoDesc', span: 'md:col-span-2 lg:col-span-7', tall: true },
+  { id: 'live', art: <LiveArt />, title: 'landing.liveTitle', desc: 'landing.liveDesc', span: 'lg:col-span-5', tall: true },
+  { id: 'esc', art: <EscalationArt />, title: 'landing.escalationTitle', desc: 'landing.escalationDesc', span: 'lg:col-span-4' },
   { id: 'rel', art: <GaugeArt />, title: 'features.reliability', desc: 'features.reliabilityDesc', span: 'lg:col-span-4' },
   { id: 'ai', art: <ChatArt />, title: 'landing.aiTitle', desc: 'landing.aiDesc', span: 'md:col-span-2 lg:col-span-4' },
   { id: 'circle', art: <CircleArt />, title: 'landing.circleTitle', desc: 'landing.circleDesc', span: 'md:col-span-2 lg:col-span-7' },
@@ -46,7 +46,7 @@ export function Features() {
             <li key={c.id} className={cn('flex', c.span)}>
               <Reveal delay={(i % 3) * 0.08} className="flex w-full">
                 <Spotlight className="glass-card flex w-full flex-col overflow-hidden rounded-3xl p-6 sm:p-8">
-                  <div className={cn('w-full', c.tall ? 'h-40 sm:h-44' : 'h-32 sm:h-36')}>{c.art}</div>
+                  <div aria-hidden="true" className={cn('w-full', c.tall ? 'h-40 sm:h-44' : 'h-32 sm:h-36')}>{c.art}</div>
                   <div className="mt-auto pt-10">
                     <h3 className="font-display break-words text-2xl text-foreground sm:text-3xl">{t(c.title)}</h3>
                     <p className="mt-3 break-words text-sm leading-relaxed text-gray-400 sm:text-base">{t(c.desc)}</p>

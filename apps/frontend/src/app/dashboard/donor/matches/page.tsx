@@ -4,17 +4,23 @@ import { useState, useEffect, useCallback } from 'react';
 import { Heart, MapPin, Activity, CheckCircle2, XCircle, Clock, AlertCircle, Droplets } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
+import { apiMessage, asDate, asList } from '@/lib/api/common';
+import { DONOR_PATHS } from '@/lib/api/donors';
+import { lowDataInterval, useLowData } from '@/lib/lowData';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useToast } from '@/components/ui/Toast';
 import { ButtonLink } from '@/components/dash/ButtonLink';
 import { BloodTypeTile } from '@/components/dash/IconTile';
+import { matchStatusLabel, matchStatusTone } from '@/components/dash/matchStatus';
 import { Meta } from '@/components/dash/Meta';
 import { Notice } from '@/components/dash/Notice';
 import { PageHeader } from '@/components/dash/PageHeader';
 import { RefreshButton } from '@/components/dash/RefreshButton';
 import { Rise } from '@/components/dash/Rise';
 import { RowsSkeleton } from '@/components/dash/Skeletons';
+import { CARD } from '@/components/dash/styles';
 import { UrgencyBadge } from '@/components/dash/UrgencyBadge';
 
 interface MatchRequest {
@@ -25,76 +31,79 @@ interface MatchRequest {
   district: string;
   unitsNeeded: number;
   status: string;
-  expiresAt: string;
+  expiresAt: unknown;
 }
 
 interface DonorMatch {
   id: number;
   status: string;
-  createdAt: string;
+  createdAt: unknown;
   request?: MatchRequest | null;
-}
-
-interface ApiBody<T> {
-  data?: T;
 }
 
 const REFRESH_MS = 30_000;
 
-function apiMessage(err: unknown): string | undefined {
-  return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-}
-
 export default function DonorMatchesPage() {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
+  const toast = useToast();
+  const { lowData } = useLowData();
   const [matches, setMatches] = useState<DonorMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [respondingId, setRespondingId] = useState<number | null>(null);
 
-  const loadMatches = useCallback(async (silent = false) => {
+  /** Returns false when the load failed (the RefreshButton shows that). */
+  const loadMatches = useCallback(async (silent = false): Promise<boolean> => {
     if (!silent) {
       setLoading(true);
       setError(null);
     }
     try {
-      const res = await apiClient.get<ApiBody<DonorMatch[]>>('/donors/me/matches');
-      const data = res.data?.data;
+      const res = await apiClient.get(DONOR_PATHS.matches);
       // Only render matches that carry their request details.
-      setMatches(Array.isArray(data) ? data.filter((m) => m.request) : []);
+      setMatches(asList<DonorMatch>(res.data).filter((m) => m.request));
       setError(null);
+      return true;
     } catch (err: unknown) {
       // A background refresh failing should not wipe the list the donor is looking at.
-      if (!silent) setError(apiMessage(err) || '');
+      if (!silent) setError(apiMessage(err, ''));
+      return false;
     } finally {
       if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadMatches();
-    // Simple periodic refresh instead of a long-lived stream.
+    // Simple periodic refresh instead of a long-lived stream; 4x slower in Low-Data Mode.
     const timer = setInterval(() => {
       if (!document.hidden) loadMatches(true);
-    }, REFRESH_MS);
+    }, lowDataInterval(REFRESH_MS, lowData));
     return () => clearInterval(timer);
-  }, [loadMatches]);
+  }, [loadMatches, lowData]);
 
   const respond = async (matchId: number, response: 'ACCEPTED' | 'DECLINED') => {
+    if (respondingId !== null) return;
     setRespondingId(matchId);
     setActionError(null);
     try {
       await apiClient.post(`/matches/${matchId}/respond`, null, { params: { response } });
       setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, status: response } : m)));
+      toast.show(response === 'ACCEPTED' ? t('dashboard.youAccepted') : t('dashboard.youDeclined'), 'success');
     } catch (err: unknown) {
-      setActionError(apiMessage(err) || t('dash.respondFailed'));
+      setActionError(apiMessage(err, t('dash.respondFailed')));
     } finally {
       setRespondingId(null);
     }
   };
 
   const requestStatusLabel = (s: string) => t('request.status' + s.charAt(0) + s.slice(1).toLowerCase());
+  const dateTime = (v: unknown) => {
+    const d = asDate(v);
+    return d ? format.dateTime(d, { dateStyle: 'medium', timeStyle: 'short' }) : t('dashUi.noData');
+  };
 
   return (
     <div className="max-w-4xl">
@@ -104,6 +113,12 @@ export default function DonorMatchesPage() {
         description={t('dashboard.myMatchesDesc')}
         actions={<RefreshButton onClick={() => loadMatches()} loading={loading} />}
       />
+
+      {lowData && (
+        <Notice tone="info" className="mb-6">
+          {t('dashUi.slowRefresh')}
+        </Notice>
+      )}
 
       {actionError && (
         <Notice tone="error" className="mb-6">
@@ -115,37 +130,42 @@ export default function DonorMatchesPage() {
         <RowsSkeleton rows={3} />
       ) : error !== null ? (
         <EmptyState
-          icon={<AlertCircle className="w-10 h-10 text-red-400" />}
+          icon={<AlertCircle className="h-10 w-10 text-danger-text" aria-hidden="true" />}
           title={error || t('dash.loadFailed')}
-          action={<Button variant="secondary" onClick={() => loadMatches()}>{t('dash.retry')}</Button>}
+          action={
+            <Button variant="secondary" onClick={() => loadMatches()}>
+              {t('dash.retry')}
+            </Button>
+          }
         />
       ) : matches.length === 0 ? (
         <EmptyState
-          icon={<Heart className="w-12 h-12" />}
+          icon={<Heart className="h-12 w-12" aria-hidden="true" />}
           title={t('common.noActiveMatches')}
           description={t('dashboard.noActiveMatchesDesc')}
           action={
-            <ButtonLink href="/dashboard/donor" variant="secondary">
-              {t('dashboard.updateDonorProfile')}
+            <ButtonLink href="/dashboard/donor" variant="primary">
+              {t('dashUi.donor.updateProfile')}
             </ButtonLink>
           }
         />
       ) : (
         <Rise delay={0.05}>
-          <ul className="glass-card divide-y divide-line overflow-hidden rounded-2xl">
+          <ul className={`${CARD} divide-y divide-line overflow-hidden`}>
             {matches.map((match) => {
               const req = match.request as MatchRequest;
               const requestActive = req.status === 'OPEN' || req.status === 'ESCALATING';
+              const busy = respondingId === match.id;
               return (
                 <li key={match.id} className="p-5 sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
                     <div className="flex min-w-0 items-center gap-4">
                       <BloodTypeTile type={req.patientBloodType} size="md" />
                       <div className="min-w-0">
-                        <h2 className="break-words text-base font-medium text-foreground">{req.hospitalName}</h2>
+                        <h2 className="break-words text-lg font-medium text-foreground">{req.hospitalName}</h2>
                         <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
                           <Meta icon={<MapPin />}>{req.district}</Meta>
-                          <Meta icon={<Droplets />}>{t('dash.unitsCount', { n: req.unitsNeeded })}</Meta>
+                          <Meta icon={<Droplets />}>{t('dashUi.units', { count: req.unitsNeeded })}</Meta>
                         </div>
                       </div>
                     </div>
@@ -156,21 +176,23 @@ export default function DonorMatchesPage() {
                     </div>
                   </div>
 
-                  <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500">
+                  <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500">
                     <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                      <Clock className="h-4 w-4" aria-hidden="true" />
                       <dt>{t('common.received')}:</dt>
-                      <dd className="font-mono text-gray-300">{new Date(match.createdAt).toLocaleString()}</dd>
+                      <dd className="text-gray-300">{dateTime(match.createdAt)}</dd>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                      <Clock className="h-4 w-4" aria-hidden="true" />
                       <dt>{t('bloodRequests.expires')}:</dt>
-                      <dd className="font-mono text-gray-300">{new Date(req.expiresAt).toLocaleString()}</dd>
+                      <dd className="text-gray-300">{dateTime(req.expiresAt)}</dd>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+                      <Activity className="h-4 w-4" aria-hidden="true" />
                       <dt>{t('bloodRequests.status')}:</dt>
-                      <dd className="font-medium text-foreground">{t(`dash.matchStatus.${match.status}`)}</dd>
+                      <dd>
+                        <StatusBadge value={match.status} label={matchStatusLabel(t, match.status)} tone={matchStatusTone(match.status)} />
+                      </dd>
                     </div>
                   </dl>
 
@@ -180,19 +202,14 @@ export default function DonorMatchesPage() {
                         type="button"
                         variant="secondary"
                         onClick={() => respond(match.id, 'ACCEPTED')}
-                        disabled={respondingId === match.id}
-                        className="flex-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/20"
+                        disabled={respondingId !== null}
+                        loading={busy}
+                        className="flex-1 border-success/40 bg-success-soft text-success-text hover:bg-success-soft hover:brightness-95"
                       >
-                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                        {!busy && <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
                         {t('dashboard.acceptAndDonate')}
                       </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => respond(match.id, 'DECLINED')}
-                        disabled={respondingId === match.id}
-                        className="flex-1 text-gray-300"
-                      >
+                      <Button type="button" variant="secondary" onClick={() => respond(match.id, 'DECLINED')} disabled={respondingId !== null} className="flex-1">
                         <XCircle className="h-4 w-4" aria-hidden="true" />
                         {t('dashboard.decline')}
                       </Button>
@@ -200,7 +217,7 @@ export default function DonorMatchesPage() {
                   )}
 
                   {match.status === 'ACCEPTED' && (
-                    <p className="mt-5 flex items-start gap-2 text-sm font-medium text-emerald-400">
+                    <p className="mt-5 flex items-start gap-2 text-sm font-medium text-success-text">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {t('dashboard.youAccepted')}
                     </p>
                   )}

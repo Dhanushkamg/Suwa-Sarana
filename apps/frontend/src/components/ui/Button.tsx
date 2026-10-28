@@ -20,7 +20,7 @@ export function buttonClasses(variant: ButtonVariant = 'primary', size: ButtonSi
     primary: 'bg-primary text-primary-fg hover:bg-primary-hover',
     brand: 'bg-brand text-brand-fg hover:brightness-110',
     secondary: 'border border-line-strong bg-surface text-foreground hover:bg-surface-raised',
-    danger: 'bg-danger text-white hover:brightness-110',
+    danger: 'bg-danger text-danger-fg hover:brightness-110',
     ghost: 'text-muted hover:bg-foreground/[0.06] hover:text-foreground',
   };
 

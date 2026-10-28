@@ -52,6 +52,7 @@ const PAIRS = [
   ['primary-text', 'background', 4.5, 'links on page'],
   ['primary-text', 'surface', 4.5, 'links on cards'],
   ['brand-fg', 'brand', 4.5, 'text on brand (urgent) button'],
+  ['danger-fg', 'danger', 4.5, 'text on destructive button'],
   ['danger-text', 'surface', 4.5, 'error text on cards'],
   ['danger-text', 'danger-soft', 4.5, 'error badge text'],
   ['warning-text', 'warning-soft', 4.5, 'warning badge text'],

@@ -16,7 +16,7 @@ export default function Error({ error, retry }: { error: Error & { digest?: stri
   }, [error]);
 
   return (
-    <main className="flex min-h-screen flex-col bg-background">
+    <main id="main-content" className="flex min-h-screen flex-col bg-background">
       <header className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8">
         <Logo />
       </header>
@@ -24,7 +24,7 @@ export default function Error({ error, retry }: { error: Error & { digest?: stri
       <div className="mx-auto flex w-full max-w-6xl flex-1 items-center px-5 pb-20 sm:px-8">
         <Reveal y={20} className="max-w-xl">
           <p className="eyebrow mb-6 flex items-center gap-2.5">
-            <span aria-hidden="true" className="h-px w-8 bg-ember" />
+            <span aria-hidden="true" className="h-px w-8 bg-primary" />
             {t('pub.errorEyebrow')}
           </p>
           <h1 className="font-display break-words text-5xl text-foreground sm:text-6xl lg:text-7xl">{t('errors.title')}</h1>

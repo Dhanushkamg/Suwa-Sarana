@@ -14,7 +14,7 @@ export function AuthHeading({ eyebrow, title, subtitle }: { eyebrow: string; tit
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
     >
       <p className="eyebrow mb-4 flex items-center gap-2.5">
-        <span aria-hidden="true" className="h-px w-6 bg-ember" />
+        <span aria-hidden="true" className="h-px w-6 bg-primary" />
         {eyebrow}
       </p>
       <h1 className="font-display break-words text-4xl text-foreground sm:text-5xl">{title}</h1>

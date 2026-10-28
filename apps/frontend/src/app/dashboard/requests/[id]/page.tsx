@@ -2,31 +2,37 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import {
-  MapPin, Activity, Droplets, CheckCircle2,
-  Share2, Copy, Check, Users, Phone, MessageSquare, AlertCircle
-} from 'lucide-react';
+import { MapPin, Activity, Droplets, CheckCircle2, Share2, Copy, Check, Users, Phone, MessageSquare, AlertCircle, ClipboardCheck, CircleX, ShieldOff } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { API_BASE_URL } from '@/lib/constants';
-import { BloodRequest } from '@/types';
-import RequestDistanceMap from '@/components/maps/RequestDistanceMap';
-import { Button } from '@/components/ui/Button';
+import { apiMessage, apiStatus, asDate, asList, unwrap } from '@/lib/api/common';
+import { closeRequest, fetchRequest, fulfilRequest, isRequestLive } from '@/lib/api/requests';
+import { NOTIFICATION_PATHS } from '@/lib/api/notifications';
+import { lowDataInterval, useLowData } from '@/lib/lowData';
+import { buttonClasses, Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Reveal } from '@/components/motion/Reveal';
-import { ButtonLink } from '@/components/dash/ButtonLink';
+import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/dash/ConfirmDialog';
 import { BloodTypeTile, IconTile } from '@/components/dash/IconTile';
+import { MatchesDrawer } from '@/components/dash/MatchesDrawer';
 import { Notice } from '@/components/dash/Notice';
 import { PageHeader } from '@/components/dash/PageHeader';
 import { Panel, SectionHeader, SectionLabel } from '@/components/dash/Panel';
 import { RefreshButton } from '@/components/dash/RefreshButton';
 import { Rise } from '@/components/dash/Rise';
-import { EYEBROW } from '@/components/dash/styles';
+import { BlockSkeleton } from '@/components/dash/Skeletons';
+import { CARD, EYEBROW } from '@/components/dash/styles';
 import { PulseDot, RequestStatusBadge, UrgencyBadge } from '@/components/dash/UrgencyBadge';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { useAuthStore } from '@/store/authStore';
+import type { BloodRequest } from '@/types';
+
+// Leaflet only loads when the map is shown (never in Low-Data Mode)
+const RequestDistanceMap = dynamic(() => import('@/components/maps/RequestDistanceMap'), { ssr: false, loading: () => <BlockSkeleton className="h-64" /> });
 
 interface CircleInviteData {
   requestId: number;
@@ -44,10 +50,6 @@ interface CircleVolunteer {
   respondedAt: string;
 }
 
-interface ApiBody<T> {
-  data?: T;
-}
-
 interface StreamPayload {
   referenceId?: number;
   requestId?: number;
@@ -59,26 +61,27 @@ interface StreamPayload {
 class FatalStreamError extends Error {}
 
 const RETRY_MS = 3000;
-
-function apiStatus(err: unknown): number | undefined {
-  return (err as { response?: { status?: number } })?.response?.status;
-}
-
-function apiMessage(err: unknown): string | undefined {
-  return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-}
+const POLL_MS = 15_000;
 
 export default function RequestLiveStatusPage() {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
+  const toast = useToast();
   const params = useParams();
   const requestId = params.id as string;
+  const { lowData, ready } = useLowData();
   // Only the presence of a token matters; a refreshed token must not restart the stream.
   const hasToken = useAuthStore((s) => !!s.accessToken);
+  const role = useAuthStore((s) => s.user?.role);
 
   const [requestData, setRequestData] = useState<BloodRequest | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadFailed, setLoadFailed] = useState<'error' | 'forbidden' | null>(null);
   const [updates, setUpdates] = useState<string[]>([]);
+  const [showMap, setShowMap] = useState(false);
+
+  // Close-the-loop actions
+  const [action, setAction] = useState<'fulfil' | 'close' | null>(null);
+  const [matchesOpen, setMatchesOpen] = useState(false);
 
   // Circle state
   const [circleInvite, setCircleInvite] = useState<CircleInviteData | null>(null);
@@ -87,14 +90,16 @@ export default function RequestLiveStatusPage() {
   const [circleError, setCircleError] = useState<string | null>(null);
   const [circleForbidden, setCircleForbidden] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
-  const loadRequest = useCallback(async () => {
+  const loadRequest = useCallback(async (): Promise<boolean> => {
     try {
-      const res = await apiClient.get<ApiBody<BloodRequest>>(`/requests/${requestId}`);
-      setRequestData(res.data?.data ?? null);
-      setLoadFailed(false);
-    } catch {
-      setLoadFailed(true);
+      setRequestData(await fetchRequest(requestId));
+      setLoadFailed(null);
+      return true;
+    } catch (err) {
+      setLoadFailed(apiStatus(err) === 403 ? 'forbidden' : 'error');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -103,9 +108,8 @@ export default function RequestLiveStatusPage() {
   /** Returns true when the volunteer list was loaded (which only the request owner can do). */
   const loadCircleResponses = useCallback(async (): Promise<boolean> => {
     try {
-      const res = await apiClient.get<ApiBody<CircleVolunteer[]>>(`/requests/${requestId}/circle/responses`);
-      const data = res.data?.data;
-      setCircleVolunteers(Array.isArray(data) ? data : []);
+      const res = await apiClient.get(`/requests/${requestId}/circle/responses`);
+      setCircleVolunteers(asList<CircleVolunteer>(res.data));
       setCircleForbidden(false);
       return true;
     } catch (err: unknown) {
@@ -117,11 +121,12 @@ export default function RequestLiveStatusPage() {
 
   /** Idempotent: returns the existing invite or creates it (owner only). */
   const fetchInvite = useCallback(async () => {
-    const res = await apiClient.post<ApiBody<CircleInviteData>>(`/requests/${requestId}/circle`);
-    setCircleInvite(res.data?.data ?? null);
+    const res = await apiClient.post(`/requests/${requestId}/circle`);
+    setCircleInvite(unwrap<CircleInviteData | null>(res.data) ?? null);
   }, [requestId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRequest();
     // After a reload the invite is gone from memory: fetch it again whenever the owner already has a circle.
     loadCircleResponses().then((isOwnerWithCircle) => {
@@ -129,12 +134,22 @@ export default function RequestLiveStatusPage() {
     });
   }, [loadRequest, loadCircleResponses, fetchInvite]);
 
+  // Live updates: a server-sent event stream normally; plain slow polling in Low-Data Mode.
   useEffect(() => {
-    if (!hasToken) return;
+    if (!hasToken || !ready) return;
+
+    if (lowData) {
+      const timer = window.setInterval(() => {
+        if (document.hidden) return;
+        loadRequest();
+        loadCircleResponses();
+      }, lowDataInterval(POLL_MS, true));
+      return () => window.clearInterval(timer);
+    }
 
     const abortController = new AbortController();
 
-    fetchEventSource(`${API_BASE_URL}/notifications/stream`, {
+    fetchEventSource(`${API_BASE_URL}${NOTIFICATION_PATHS.stream}`, {
       method: 'GET',
       headers: { Accept: 'text/event-stream' },
       signal: abortController.signal,
@@ -181,9 +196,10 @@ export default function RequestLiveStatusPage() {
     return () => {
       abortController.abort();
     };
-  }, [requestId, hasToken, loadRequest, loadCircleResponses]);
+  }, [requestId, hasToken, ready, lowData, loadRequest, loadCircleResponses]);
 
   const handleGenerateCircle = async () => {
+    if (circleLoading) return;
     setCircleLoading(true);
     setCircleError(null);
     try {
@@ -191,7 +207,7 @@ export default function RequestLiveStatusPage() {
       loadCircleResponses();
     } catch (err: unknown) {
       if (apiStatus(err) === 403) setCircleForbidden(true);
-      setCircleError(apiMessage(err) || t('dash.circleFailed'));
+      setCircleError(apiMessage(err, t('dash.circleFailed')));
     } finally {
       setCircleLoading(false);
     }
@@ -201,10 +217,19 @@ export default function RequestLiveStatusPage() {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      setCopyFailed(false);
       setTimeout(() => setCopied(false), 3000);
     } catch {
-      // Clipboard unavailable (e.g. insecure context): the link is still selectable on screen.
+      // Clipboard unavailable (e.g. insecure context): say so; the link is still selectable on screen.
+      setCopyFailed(true);
     }
+  };
+
+  const runAction = async () => {
+    if (action === 'fulfil') await fulfilRequest(requestId);
+    else if (action === 'close') await closeRequest(requestId);
+    await loadRequest();
+    toast.show(action === 'fulfil' ? t('dashUi.req.fulfilledToast') : t('dashUi.req.closedToast'), 'success');
   };
 
   if (loading) {
@@ -220,18 +245,20 @@ export default function RequestLiveStatusPage() {
   }
 
   if (loadFailed || !requestData) {
+    const forbidden = loadFailed === 'forbidden';
     return (
       <div>
         <PageHeader
           eyebrow={t('dashUi.eyebrow.requestDetail')}
-          title={loadFailed ? t('common.error') : t('bloodRequests.notFound')}
+          title={forbidden ? t('dashUi.req.forbiddenTitle') : loadFailed ? t('common.error') : t('bloodRequests.notFound')}
           backHref="/dashboard/requests"
         />
         <EmptyState
-          icon={<AlertCircle className="w-10 h-10 text-red-400" />}
-          title={loadFailed ? t('common.error') : t('bloodRequests.notFound')}
+          icon={forbidden ? <ShieldOff className="h-10 w-10 text-gray-500" aria-hidden="true" /> : <AlertCircle className="h-10 w-10 text-danger-text" aria-hidden="true" />}
+          title={forbidden ? t('dashUi.req.forbiddenTitle') : loadFailed ? t('common.error') : t('bloodRequests.notFound')}
+          description={forbidden ? t('dashUi.req.forbiddenDesc') : undefined}
           action={
-            loadFailed ? (
+            loadFailed === 'error' ? (
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -256,18 +283,20 @@ export default function RequestLiveStatusPage() {
   const fullInviteUrl = circleInvite
     ? circleInvite.inviteUrl || `${typeof window !== 'undefined' ? window.location.origin : ''}/circle/${circleInvite.inviteToken}`
     : '';
+  const expires = asDate(requestData.expiresAt);
+  const canClose = role !== 'ADMIN' && !circleForbidden && isRequestLive(requestData.status);
 
-  const facts: { label: string; value: ReactNode; big?: boolean }[] = [
+  const facts: { label: string; value: ReactNode }[] = [
     {
       label: t('request.patientBloodType'),
-      value: <span className="font-display text-5xl leading-none text-ember">{requestData.patientBloodType}</span>,
+      value: <span className="font-display text-5xl leading-none text-brand">{requestData.patientBloodType}</span>,
     },
     {
       label: t('request.unitsNeeded'),
       value: (
         <span className="flex items-baseline gap-2">
-          <span className="font-display text-5xl leading-none tabular-nums text-foreground">{requestData.unitsNeeded ?? 0}</span>
-          <Droplets className="h-4 w-4 text-ember" aria-hidden="true" />
+          <span className="font-display text-5xl leading-none tabular-nums text-foreground">{format.number(requestData.unitsNeeded ?? 0)}</span>
+          <Droplets className="h-4 w-4 text-gray-500" aria-hidden="true" />
         </span>
       ),
     },
@@ -275,18 +304,14 @@ export default function RequestLiveStatusPage() {
       label: t('bloodRequests.searchRadius'),
       value: (
         <span className="flex items-baseline gap-1.5">
-          <span className="font-display text-5xl leading-none tabular-nums text-foreground">{requestData.currentRadiusKm}</span>
-          <span className="font-mono text-sm text-gray-500">km</span>
+          <span className="font-display text-5xl leading-none tabular-nums text-foreground">{format.number(requestData.currentRadiusKm)}</span>
+          <span className="text-sm text-gray-500">km</span>
         </span>
       ),
     },
     {
       label: t('bloodRequests.expires'),
-      value: (
-        <span className="font-mono text-sm leading-snug text-foreground">
-          {new Date(requestData.expiresAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-        </span>
-      ),
+      value: <span className="text-base leading-snug text-foreground">{expires ? format.dateTime(expires, { dateStyle: 'medium', timeStyle: 'short' }) : t('dashUi.noData')}</span>,
     },
   ];
 
@@ -307,12 +332,34 @@ export default function RequestLiveStatusPage() {
             <MapPin className="h-4 w-4 text-gray-500" aria-hidden="true" /> {requestData.district}
           </span>
         }
+        actions={
+          role !== 'ADMIN' && !circleForbidden ? (
+            <>
+              <Button type="button" variant="secondary" onClick={() => setMatchesOpen(true)}>
+                <Users className="h-4 w-4" aria-hidden="true" />
+                {t('dashUi.viewMatches')}
+              </Button>
+              {canClose && (
+                <>
+                  <Button type="button" variant="primary" onClick={() => setAction('fulfil')}>
+                    <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                    {t('dashUi.req.markFulfilled')}
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={() => setAction('close')} className="border-danger/40 text-danger-text">
+                    <CircleX className="h-4 w-4" aria-hidden="true" />
+                    {t('dashUi.req.closeRequest')}
+                  </Button>
+                </>
+              )}
+            </>
+          ) : undefined
+        }
       />
 
       <div className="space-y-6">
         {/* Key facts */}
         <Rise delay={0.05}>
-          <dl className="glass-card grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-line md:grid-cols-4">
+          <dl className={`${CARD} grid grid-cols-2 gap-px overflow-hidden bg-line md:grid-cols-4`}>
             {facts.map((f) => (
               <div key={f.label} className="flex flex-col justify-between gap-5 bg-surface p-5">
                 <dt className={EYEBROW}>{f.label}</dt>
@@ -324,7 +371,7 @@ export default function RequestLiveStatusPage() {
 
         {/* Replacement-donor private circle (owner only) */}
         {!circleForbidden && (
-          <Reveal y={12}>
+          <Rise inView>
             <Panel className="sm:p-8">
               <SectionHeader
                 eyebrow={t('bloodRequests.familyAndFriends')}
@@ -337,8 +384,8 @@ export default function RequestLiveStatusPage() {
                 }
                 action={
                   !circleInvite ? (
-                    <Button type="button" variant="primary" size="sm" onClick={handleGenerateCircle} disabled={circleLoading}>
-                      <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    <Button type="button" variant="secondary" onClick={handleGenerateCircle} loading={circleLoading}>
+                      {!circleLoading && <Share2 className="h-4 w-4" aria-hidden="true" />}
                       {circleLoading ? t('bloodRequests.generatingLink') : t('bloodRequests.inviteCircle')}
                     </Button>
                   ) : (
@@ -355,62 +402,59 @@ export default function RequestLiveStatusPage() {
 
               <div className="space-y-6">
                 {circleInvite && (
-                  <div className="flex flex-col justify-between gap-3 rounded-xl border border-line bg-background/60 p-4 lg:flex-row lg:items-center">
-                    <p className="min-w-0 select-all break-all font-mono text-xs leading-relaxed text-gray-300">{fullInviteUrl}</p>
+                  <div className="flex flex-col justify-between gap-3 rounded-xl border border-line bg-surface-raised p-4 lg:flex-row lg:items-center">
+                    <p className="min-w-0 select-all break-all text-sm leading-relaxed text-foreground" dir="ltr">
+                      {fullInviteUrl}
+                    </p>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      <Button type="button" variant="secondary" size="sm" onClick={() => copyToClipboard(fullInviteUrl)}>
-                        {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+                      <Button type="button" variant="secondary" onClick={() => copyToClipboard(fullInviteUrl)}>
+                        {copied ? <Check className="h-4 w-4 text-success-text" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
                         {copied ? t('bloodRequests.copied') : t('bloodRequests.copyLink')}
                       </Button>
-                      <ButtonLink href={`/share/${circleInvite.inviteToken}`} target="_blank" variant="secondary">
-                        <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      <a href={`/share/${circleInvite.inviteToken}`} target="_blank" rel="noopener noreferrer" className={buttonClasses('secondary', 'md')}>
+                        <Share2 className="h-4 w-4" aria-hidden="true" />
                         {t('bloodRequests.previewCard')}
-                      </ButtonLink>
+                      </a>
                       <a
                         href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + fullInviteUrl)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-[13px] font-medium text-emerald-300 transition-colors duration-300 hover:border-emerald-500/50 hover:bg-emerald-500/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember"
+                        className={buttonClasses('secondary', 'md')}
                       >
-                        <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+                        <MessageSquare className="h-4 w-4" aria-hidden="true" />
                         {t('bloodRequests.whatsapp')}
                       </a>
                     </div>
+                    {copyFailed && (
+                      <p role="alert" className="text-sm text-danger-text lg:basis-full">
+                        {t('dashUi.req.copyFailed')}
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {/* Volunteers: shown whenever the circle exists or responses were fetched */}
                 {(circleInvite || circleVolunteers.length > 0) && (
                   <div>
-                    <SectionLabel className="mb-4">
-                      {t('bloodRequests.circleVolunteers')} ({circleVolunteers.length})
-                    </SectionLabel>
+                    <SectionLabel className="mb-4">{t('dashUi.req.volunteers', { count: circleVolunteers.length })}</SectionLabel>
                     {circleVolunteers.length === 0 ? (
-                      <p className="rounded-xl border border-dashed border-foreground/[0.16] px-4 py-8 text-center text-xs text-gray-500">
-                        {t('bloodRequests.noResponsesYet')}
-                      </p>
+                      <p className="rounded-xl border border-dashed border-line-strong px-4 py-8 text-center text-sm text-gray-500">{t('bloodRequests.noResponsesYet')}</p>
                     ) : (
                       <ul className="grid gap-3 sm:grid-cols-2">
                         {circleVolunteers.map((vol) => (
-                          <li key={vol.id} className="space-y-3 rounded-xl border border-line bg-foreground/[0.02] p-4">
+                          <li key={vol.id} className="space-y-3 rounded-xl border border-line bg-surface-raised p-4">
                             <div className="flex items-start justify-between gap-3">
-                              <span className="break-words text-sm font-medium text-foreground">{vol.responderName}</span>
-                              <BloodTypeTile type={vol.bloodType} size="sm" className="h-9 w-9 rounded-lg text-base" />
+                              <span className="break-words text-base font-medium text-foreground">{vol.responderName}</span>
+                              <BloodTypeTile type={vol.bloodType} size="sm" />
                             </div>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
-                              <Phone className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
-                              <a href={`tel:${vol.responderPhone}`} className="font-mono text-emerald-400 hover:underline">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-400">
+                              <Phone className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                              <a href={`tel:${vol.responderPhone}`} dir="ltr" className="inline-flex min-h-11 items-center text-primary-text hover:underline">
                                 {vol.responderPhone}
                               </a>
-                              <span className="font-mono text-gray-500">
-                                {new Date(vol.respondedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
+                              {asDate(vol.respondedAt) && <span className="text-gray-500">{format.dateTime(asDate(vol.respondedAt) as Date, { timeStyle: 'short' })}</span>}
                             </div>
-                            {vol.notes && (
-                              <p className="break-words border-l border-foreground/[0.16] pl-3 text-xs italic leading-relaxed text-gray-400">
-                                &quot;{vol.notes}&quot;
-                              </p>
-                            )}
+                            {vol.notes && <p className="break-words border-s-2 border-line-strong ps-3 text-sm italic leading-relaxed text-gray-400">&quot;{vol.notes}&quot;</p>}
                           </li>
                         ))}
                       </ul>
@@ -419,52 +463,74 @@ export default function RequestLiveStatusPage() {
                 )}
               </div>
             </Panel>
-          </Reveal>
+          </Rise>
         )}
 
         {/* Live updates */}
-        <Reveal y={12}>
+        <Rise inView>
           <Panel className="sm:p-8">
             <SectionHeader
               eyebrow={t('dashUi.section.live')}
               title={t('bloodRequests.liveMatchingTelemetry')}
               action={
-                <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 font-mono text-xs text-gray-300">
-                  <Activity className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
-                  {t('bloodRequests.radius')}: {requestData.currentRadiusKm} km
+                <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 text-sm text-gray-300">
+                  <Activity className="h-4 w-4 text-primary-text" aria-hidden="true" />
+                  {t('bloodRequests.radius')}: {format.number(requestData.currentRadiusKm)} km
                 </span>
               }
             />
 
-            {/* Search perimeter map */}
-            <div className="mb-5 overflow-hidden rounded-xl border border-line">
-              <RequestDistanceMap
-                hospitalName={requestData.hospitalName}
-                district={requestData.district}
-                radiusKm={requestData.currentRadiusKm}
-                latitude={requestData.latitude}
-                longitude={requestData.longitude}
-              />
-            </div>
+            {/* Search perimeter map: skipped in Low-Data Mode unless asked for */}
+            {lowData && !showMap ? (
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface-raised p-4">
+                <p className="min-w-0 text-sm text-gray-400">{t('dashUi.req.searchAreaText', { km: format.number(requestData.currentRadiusKm), hospital: requestData.hospitalName, district: requestData.district })}</p>
+                <Button type="button" variant="secondary" onClick={() => setShowMap(true)}>
+                  {t('dashUi.loadMapAnyway')}
+                </Button>
+              </div>
+            ) : (
+              <div className="mb-5 overflow-hidden rounded-xl border border-line">
+                <RequestDistanceMap
+                  hospitalName={requestData.hospitalName}
+                  district={requestData.district}
+                  radiusKm={requestData.currentRadiusKm}
+                  latitude={requestData.latitude}
+                  longitude={requestData.longitude}
+                />
+              </div>
+            )}
 
             {updates.length === 0 ? (
-              <div className="flex items-center justify-center gap-3 rounded-xl border border-dashed border-foreground/[0.16] px-4 py-6 text-gray-500">
+              <div className="flex items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong px-4 py-6 text-gray-500">
                 <PulseDot />
-                <p className="text-xs">{t('bloodRequests.scanningRadius')}</p>
+                <p className="text-sm">{lowData ? t('dashUi.slowRefresh') : t('bloodRequests.scanningRadius')}</p>
               </div>
             ) : (
               <ul className="divide-y divide-line rounded-xl border border-line" aria-live="polite">
                 {updates.map((msg, idx) => (
                   <li key={idx} className="flex items-start gap-3 px-4 py-3">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-                    <p className="min-w-0 break-words text-sm text-gray-300">{msg || t('dash.newActivity')}</p>
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-text" aria-hidden="true" />
+                    <p className="min-w-0 break-words text-sm text-foreground">{msg || t('dash.newActivity')}</p>
                   </li>
                 ))}
               </ul>
             )}
           </Panel>
-        </Reveal>
+        </Rise>
       </div>
+
+      <MatchesDrawer requestId={matchesOpen ? requestData.id : null} hospitalName={requestData.hospitalName} onClose={() => setMatchesOpen(false)} />
+
+      <ConfirmDialog
+        open={action !== null}
+        onClose={() => setAction(null)}
+        title={action === 'fulfil' ? t('dashUi.req.fulfilTitle') : t('dashUi.req.closeTitle')}
+        description={action === 'fulfil' ? t('dashUi.req.fulfilDesc') : t('dashUi.req.closeDesc')}
+        confirmLabel={action === 'fulfil' ? t('dashUi.req.markFulfilled') : t('dashUi.req.closeRequest')}
+        confirmVariant={action === 'fulfil' ? 'primary' : 'danger'}
+        onConfirm={runAction}
+        errorMessage={(err) => apiMessage(err, t('common.error'))}
+      />
     </div>
   );
 }

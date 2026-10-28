@@ -65,7 +65,7 @@ export function LegalDocument({
     <div className="min-h-screen bg-background text-foreground">
       <PubHeader />
 
-      <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-20">
+      <main id="main-content" className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-20">
         <PageHeading eyebrow={eyebrow} title={title} aside={updated} />
 
         <div className="mt-10 grid gap-10 lg:mt-14 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-20">
@@ -80,8 +80,8 @@ export function LegalDocument({
             <ol className="space-y-1 border-t border-line px-4 py-3">
               {toc.map((item) => (
                 <li key={item.id}>
-                  <a href={`#${item.id}`} className="flex gap-3 py-1.5 text-sm text-gray-400 transition-colors hover:text-foreground">
-                    <span className="font-mono text-xs text-gray-600">{item.num}</span>
+                  <a href={`#${item.id}`} className="flex min-h-11 items-center gap-3 py-1.5 text-sm text-gray-400 transition-colors hover:text-foreground">
+                    <span className="font-mono text-xs text-gray-500">{item.num}</span>
                     <span className="min-w-0 break-words">{item.label}</span>
                   </a>
                 </li>
@@ -100,13 +100,13 @@ export function LegalDocument({
                       href={`#${item.id}`}
                       aria-current={active === item.id ? 'location' : undefined}
                       className={cn(
-                        '-ml-px flex gap-3 border-l py-1.5 pl-4 text-sm transition-colors',
+                        '-ml-px flex min-h-11 items-center gap-3 border-l py-1.5 pl-4 text-sm transition-colors',
                         active === item.id
-                          ? 'border-ember text-foreground'
-                          : 'border-transparent text-gray-500 hover:text-gray-300'
+                          ? 'border-primary text-foreground'
+                          : 'border-transparent text-gray-500 hover:text-foreground'
                       )}
                     >
-                      <span className={cn('font-mono text-xs leading-5', active === item.id ? 'text-ember' : 'text-gray-600')}>
+                      <span className={cn('font-mono text-xs leading-5', active === item.id ? 'text-primary-text' : 'text-gray-500')}>
                         {item.num}
                       </span>
                       <span className="min-w-0 break-words">{item.label}</span>
@@ -132,12 +132,12 @@ export function LegalDocument({
                     )}
                   >
                     <div className="flex gap-5 sm:gap-8">
-                      <span className="w-7 shrink-0 pt-2 font-mono text-xs text-ember sm:w-9">{num}</span>
+                      <span className="w-7 shrink-0 pt-2 font-mono text-xs text-primary-text sm:w-9">{num}</span>
                       <div className="min-w-0">
                         <h2 id={`${section.id}-title`} className="font-display break-words text-3xl text-foreground sm:text-4xl">
                           {label}
                         </h2>
-                        <div className="mt-5 max-w-prose text-base leading-8 text-gray-300">{section.body}</div>
+                        <div className="mt-5 max-w-prose text-base leading-8 text-foreground">{section.body}</div>
                       </div>
                     </div>
                   </section>

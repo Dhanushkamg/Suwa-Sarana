@@ -1,18 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Droplets, Shield, MapPin, Award, Users, Wifi, WifiOff, AlertCircle, LocateFixed, ArrowUpRight } from 'lucide-react';
+import { Droplets, Shield, MapPin, Award, Users, Wifi, WifiOff, AlertCircle, LocateFixed, ArrowUpRight, HandHeart } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
+import { apiMessage, apiStatus, asDateInput, num, unwrap } from '@/lib/api/common';
+import { DONOR_PATHS } from '@/lib/api/donors';
+import { useLowData } from '@/lib/lowData';
 import { DISTRICTS, districtCenter } from '@/lib/districts';
 import MyBookings from '@/components/slots/MyBookings';
-import { Reveal } from '@/components/motion/Reveal';
 import { ButtonLink } from '@/components/dash/ButtonLink';
+import { DonationHistory, EligibilityCard } from '@/components/dash/DonorPanels';
+import { InfoDisclosure } from '@/components/dash/InfoDisclosure';
 import { Notice } from '@/components/dash/Notice';
 import { PageHeader } from '@/components/dash/PageHeader';
 import { Panel, SectionHeader, SectionLabel } from '@/components/dash/Panel';
@@ -20,36 +25,26 @@ import { Rise } from '@/components/dash/Rise';
 import { SettingRow } from '@/components/dash/Switch';
 import { Stat } from '@/components/dash/Stat';
 import { StatsSkeleton } from '@/components/dash/Skeletons';
+import { CARD } from '@/components/dash/styles';
 
+/** GET/PUT /donors/me (DonorProfileDto). Counters can be missing on older servers: they then render as "no data", never as 0. */
 interface DonorProfile {
   bloodType: string;
-  dateOfBirth?: string | null;
+  dateOfBirth?: unknown;
   weightKg?: number | null;
   district: string;
   latitude?: number | null;
   longitude?: number | null;
   available: boolean;
-  reliabilityScore: number;
-  totalDonations: number;
-  livesHelpedEstimate: number;
-}
-
-interface ApiBody<T> {
-  data?: T;
+  reliabilityScore?: number | null;
+  totalDonations?: number | null;
+  livesHelpedEstimate?: number | null;
 }
 
 type CoordSource = 'saved' | 'device' | 'district';
 
 const MIN_AGE = 18;
 const MAX_AGE = 60;
-
-function apiStatus(err: unknown): number | undefined {
-  return (err as { response?: { status?: number } })?.response?.status;
-}
-
-function apiMessage(err: unknown): string | undefined {
-  return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-}
 
 function ageFrom(dob: string): number {
   const d = new Date(dob);
@@ -66,16 +61,22 @@ function yearsAgo(years: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+const optionalNumber = (v: number | null | undefined): number | null => (v == null ? null : num(v));
+
 export default function DonorProfilePage() {
   const { t } = useI18n();
+  const toast = useToast();
+  const { lowData, setLowData } = useLowData();
 
   const [bloodType, setBloodType] = useState('O+');
   const [district, setDistrict] = useState('Colombo');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [weightKg, setWeightKg] = useState('');
   const [isAvailable, setIsAvailable] = useState(true);
+  const [availabilityBusy, setAvailabilityBusy] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [coordSource, setCoordSource] = useState<CoordSource>('district');
+  const [locating, setLocating] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ dob?: string; weight?: string }>({});
 
@@ -84,9 +85,7 @@ export default function DonorProfilePage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadMessage, setLoadMessage] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [lowDataMode, setLowDataMode] = useState(false);
 
   const bloodTypeOptions = [
     { value: 'A+', label: t('bloodTypes.APositive') },
@@ -105,7 +104,7 @@ export default function DonorProfilePage() {
     setProfile(p);
     setBloodType(p.bloodType || 'O+');
     setDistrict(p.district || 'Colombo');
-    setDateOfBirth(p.dateOfBirth ?? '');
+    setDateOfBirth(asDateInput(p.dateOfBirth));
     setWeightKg(p.weightKg != null ? String(p.weightKg) : '');
     setIsAvailable(p.available !== false);
     if (p.latitude != null && p.longitude != null) {
@@ -119,16 +118,17 @@ export default function DonorProfilePage() {
     setLoadFailed(false);
     setLoadMessage(null);
     try {
-      const res = await apiClient.get<ApiBody<DonorProfile>>('/donors/me');
-      if (res.data?.data) applyProfile(res.data.data);
+      const res = await apiClient.get(DONOR_PATHS.me);
+      const data = unwrap<DonorProfile | null>(res.data);
+      if (data) applyProfile(data);
     } catch (err: unknown) {
-      const msg = apiMessage(err);
+      const msg = apiMessage(err, '');
       // A brand-new donor has no profile yet: show the empty form instead of an error.
-      if (apiStatus(err) === 404 || /not found/i.test(msg ?? '')) {
+      if (apiStatus(err) === 404 || /not found/i.test(msg)) {
         setProfile(null);
       } else {
         setLoadFailed(true);
-        setLoadMessage(msg ?? null);
+        setLoadMessage(msg || null);
       }
     } finally {
       setInitialLoading(false);
@@ -136,7 +136,7 @@ export default function DonorProfilePage() {
   }, [applyProfile]);
 
   useEffect(() => {
-    setLowDataMode(localStorage.getItem('lowDataMode') === 'true');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProfile();
   }, [loadProfile]);
 
@@ -150,42 +150,50 @@ export default function DonorProfilePage() {
     }
   };
 
+  /** Separate, explicit control: only this button reads the device location. */
   const detectLocation = () => {
     setLocationNote(null);
     if (!('geolocation' in navigator)) {
       setLocationNote(t('dash.locationDenied'));
       return;
     }
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoords({
-          lat: Number(pos.coords.latitude.toFixed(6)),
-          lng: Number(pos.coords.longitude.toFixed(6)),
-        });
+        setCoords({ lat: Number(pos.coords.latitude.toFixed(6)), lng: Number(pos.coords.longitude.toFixed(6)) });
         setCoordSource('device');
+        setLocating(false);
+        setLocationNote(t('dashUi.donor.locationFound'));
       },
-      () => setLocationNote(t('dash.locationDenied')),
+      () => {
+        setLocating(false);
+        setLocationNote(t('dash.locationDenied'));
+      },
       { timeout: 10000 }
     );
   };
 
-  const toggleAvailability = async () => {
-    const next = !isAvailable;
+  const toggleAvailability = async (next: boolean) => {
+    if (availabilityBusy) return;
+    const previous = isAvailable;
     setIsAvailable(next);
     if (!profile) return; // New donor: applied after the first save.
+    setAvailabilityBusy(true);
     setErrorMessage(null);
     try {
-      await apiClient.patch('/donors/me/availability', { isAvailable: next });
+      await apiClient.patch(DONOR_PATHS.availability, { isAvailable: next });
       setProfile({ ...profile, available: next });
+      toast.show(next ? t('dashUi.donor.availableOn') : t('dashUi.donor.availableOff'), 'success');
     } catch (err: unknown) {
-      setIsAvailable(!next);
-      setErrorMessage(apiMessage(err) || t('dash.availabilityFailed'));
+      setIsAvailable(previous);
+      setErrorMessage(apiMessage(err, t('dash.availabilityFailed')));
+    } finally {
+      setAvailabilityBusy(false);
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(false);
     setErrorMessage(null);
 
     const errors: { dob?: string; weight?: string } = {};
@@ -206,7 +214,7 @@ export default function DonorProfilePage() {
     const isNew = !profile;
     setSaving(true);
     try {
-      const res = await apiClient.put<ApiBody<DonorProfile>>('/donors/me', {
+      const res = await apiClient.put(DONOR_PATHS.me, {
         bloodType,
         dateOfBirth,
         weightKg: weight,
@@ -216,36 +224,27 @@ export default function DonorProfilePage() {
       });
       // New profiles start as available on the server; honour an "unavailable" choice made beforehand.
       if (isNew && !isAvailable) {
-        await apiClient.patch('/donors/me/availability', { isAvailable: false });
+        await apiClient.patch(DONOR_PATHS.availability, { isAvailable: false });
       }
-      if (res.data?.data) {
-        applyProfile({ ...res.data.data, available: isNew ? isAvailable : res.data.data.available });
-      }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      const saved = unwrap<DonorProfile | null>(res.data);
+      if (saved) applyProfile({ ...saved, available: isNew ? isAvailable : saved.available });
+      toast.show(t('donorDashboard.profileSaved'), 'success');
     } catch (err: unknown) {
-      setErrorMessage(apiMessage(err) || t('donorDashboard.updateError'));
+      setErrorMessage(apiMessage(err, t('donorDashboard.updateError')));
     } finally {
       setSaving(false);
     }
   };
 
-  const toggleLowDataMode = () => {
-    const newMode = !lowDataMode;
-    setLowDataMode(newMode);
-    localStorage.setItem('lowDataMode', String(newMode));
-  };
-
-  const reliabilityScore = Number(profile?.reliabilityScore ?? 50);
-  const reliabilityTone = reliabilityScore >= 80 ? 'sage' : reliabilityScore >= 60 ? 'saffron' : 'ember';
-  const reliabilityLabel =
-    reliabilityScore >= 80 ? t('donorDashboard.excellentStanding') :
-    reliabilityScore >= 60 ? t('donorDashboard.goodStanding') : t('donorDashboard.needsImprovement');
+  const score = optionalNumber(profile?.reliabilityScore);
+  const donations = optionalNumber(profile?.totalDonations);
+  const hasHistory = (donations ?? 0) > 0;
+  // A tier is only claimed once there is history behind it; the score alone (everyone starts at 50) proves nothing.
+  const tier = score === null ? null : !hasHistory ? 'new' : score >= 80 ? 'excellent' : score >= 60 ? 'good' : 'building';
+  const tierTone = tier === 'excellent' ? 'success' : tier === 'good' ? 'primary' : tier === 'building' ? 'warning' : 'default';
 
   const locationText =
-    coordSource === 'device' ? t('dash.locationDevice') :
-    coordSource === 'saved' ? t('dash.locationSaved') :
-    t('dash.locationDistrict', { district });
+    coordSource === 'device' ? t('dash.locationDevice') : coordSource === 'saved' ? t('dash.locationSaved') : t('dash.locationDistrict', { district });
 
   return (
     <div>
@@ -255,7 +254,7 @@ export default function DonorProfilePage() {
         description={t('dashboard.donorProfileDesc')}
         actions={
           profile ? (
-            <ButtonLink href="/dashboard/donor/matches" variant="secondary">
+            <ButtonLink href="/dashboard/donor/matches" variant="primary">
               {t('donorDashboard.viewMyMatches')}
               <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
             </ButtonLink>
@@ -263,10 +262,7 @@ export default function DonorProfilePage() {
         }
       />
 
-      <div className="mb-6 space-y-4 empty:hidden">
-        {saved && <Notice tone="success">{t('donorDashboard.profileSaved')}</Notice>}
-        {errorMessage && <Notice tone="error">{errorMessage}</Notice>}
-      </div>
+      <div className="mb-6 space-y-4 empty:hidden">{errorMessage && <Notice tone="error">{errorMessage}</Notice>}</div>
 
       {initialLoading ? (
         <div className="space-y-6">
@@ -275,9 +271,13 @@ export default function DonorProfilePage() {
         </div>
       ) : loadFailed ? (
         <EmptyState
-          icon={<AlertCircle className="w-10 h-10 text-red-400" />}
+          icon={<AlertCircle className="h-10 w-10 text-danger-text" aria-hidden="true" />}
           title={loadMessage || t('donorDashboard.profileError')}
-          action={<Button variant="secondary" onClick={loadProfile}>{t('dash.retry')}</Button>}
+          action={
+            <Button variant="secondary" onClick={loadProfile}>
+              {t('dash.retry')}
+            </Button>
+          }
         />
       ) : (
         <>
@@ -287,37 +287,62 @@ export default function DonorProfilePage() {
             </Notice>
           )}
 
-          {/* Donor stats (hidden in Low-Data Mode) */}
-          {!lowDataMode && profile && (
+          {/* Donor stats: real numbers from the profile, or "no data" */}
+          {profile && (
             <div className="mb-6 grid gap-4 sm:grid-cols-3">
               <Rise delay={0.05}>
                 <Stat
-                  label={t('features.reliability')}
-                  value={reliabilityScore}
-                  tone={reliabilityTone}
-                  meter={reliabilityScore}
+                  label={t('dashUi.donor.reliabilityLabel')}
+                  value={score}
+                  suffix="/ 100"
+                  tone={tierTone}
+                  meter={score ?? undefined}
                   icon={<Shield />}
-                  hint={reliabilityLabel}
+                  hint={tier ? t(`dashUi.donor.tier.${tier}`) : undefined}
+                  footer={
+                    <InfoDisclosure label={t('dashUi.donor.reliabilityHow')} className="mt-2">
+                      <p>{t('dashUi.donor.reliabilityExplain')}</p>
+                      <ul className="mt-2 list-disc space-y-1 ps-5">
+                        <li>{t('dashUi.donor.reliabilityRuleStart')}</li>
+                        <li>{t('dashUi.donor.reliabilityRuleUp')}</li>
+                        <li>{t('dashUi.donor.reliabilityRuleDown')}</li>
+                        <li>{t('dashUi.donor.reliabilityRuleTiers')}</li>
+                      </ul>
+                    </InfoDisclosure>
+                  }
                   className="h-full"
                 />
               </Rise>
               <Rise delay={0.1}>
-                <Stat label={t('donorDashboard.donationsMade')} value={profile.totalDonations ?? 0} icon={<Award />} className="h-full" />
+                <Stat label={t('donorDashboard.donationsMade')} value={donations} icon={<Award />} className="h-full" />
               </Rise>
               <Rise delay={0.15}>
-                <Stat label={t('donorDashboard.livesHelped')} value={profile.livesHelpedEstimate ?? 0} tone="ember" icon={<Users />} className="h-full" />
+                <Stat
+                  label={t('dashUi.donor.livesHelped')}
+                  value={optionalNumber(profile.livesHelpedEstimate)}
+                  hint={t('dashUi.donor.livesHelpedHint')}
+                  tone="primary"
+                  icon={<Users />}
+                  className="h-full"
+                />
               </Rise>
             </div>
           )}
 
+          {profile && (
+            <Rise delay={0.08} className="mb-6">
+              <EligibilityCard />
+            </Rise>
+          )}
+
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
             <Rise delay={0.1}>
-              <form onSubmit={handleSave} noValidate className="glass-card space-y-9 rounded-2xl p-5 sm:p-8">
+              <form onSubmit={handleSave} noValidate className={`${CARD} space-y-9 p-5 sm:p-8`}>
                 <section className="space-y-5">
                   <SectionLabel>{t('dashUi.section.health')}</SectionLabel>
                   <Select
                     id="donor-blood-type"
-                    label={t('dash.yourBloodType')}
+                    label={t('dashUi.donor.bloodType')}
                     options={bloodTypeOptions}
                     value={bloodType}
                     onChange={(e) => setBloodType(e.target.value)}
@@ -334,8 +359,13 @@ export default function DonorProfilePage() {
                         max={yearsAgo(MIN_AGE)}
                         onChange={(e) => setDateOfBirth(e.target.value)}
                         error={fieldErrors.dob}
+                        aria-describedby={fieldErrors.dob ? undefined : 'donor-dob-hint'}
                       />
-                      {!fieldErrors.dob && <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{t('dash.dobHint')}</p>}
+                      {!fieldErrors.dob && (
+                        <p id="donor-dob-hint" className="mt-1.5 text-sm leading-relaxed text-gray-500">
+                          {t('dash.dobHint')}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Input
@@ -349,8 +379,13 @@ export default function DonorProfilePage() {
                         value={weightKg}
                         onChange={(e) => setWeightKg(e.target.value)}
                         error={fieldErrors.weight}
+                        aria-describedby={fieldErrors.weight ? undefined : 'donor-weight-hint'}
                       />
-                      {!fieldErrors.weight && <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{t('dash.weightHint')}</p>}
+                      {!fieldErrors.weight && (
+                        <p id="donor-weight-hint" className="mt-1.5 text-sm leading-relaxed text-gray-500">
+                          {t('dash.weightHint')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </section>
@@ -365,23 +400,28 @@ export default function DonorProfilePage() {
                     onChange={(e) => handleDistrictChange(e.target.value)}
                   />
 
-                  <div className="flex flex-col justify-between gap-3 rounded-xl border border-line bg-foreground/[0.03] p-4 sm:flex-row sm:items-center">
+                  {/* Location is its own explicit control, separate from availability */}
+                  <div className="flex flex-col justify-between gap-3 rounded-xl border border-line bg-surface-raised p-4 sm:flex-row sm:items-center">
                     <div className="flex min-w-0 items-start gap-3">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ember" aria-hidden="true" />
-                      <div className="min-w-0 text-xs leading-relaxed text-gray-400">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-text" aria-hidden="true" />
+                      <div className="min-w-0 text-sm leading-relaxed text-gray-400">
                         <p>{locationText}</p>
-                        {locationNote && <p className="mt-1 text-saffron">{locationNote}</p>}
+                        {locationNote && (
+                          <p role="status" className="mt-1 text-warning-text">
+                            {locationNote}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <Button type="button" variant="secondary" size="sm" onClick={detectLocation} className="shrink-0">
-                      <LocateFixed className="h-3.5 w-3.5" aria-hidden="true" />
+                    <Button type="button" variant="secondary" onClick={detectLocation} loading={locating} className="shrink-0">
+                      {!locating && <LocateFixed className="h-4 w-4" aria-hidden="true" />}
                       {t('dash.useMyLocation')}
                     </Button>
                   </div>
                 </section>
 
                 {/* Save bar: pinned to the bottom of the screen on mobile */}
-                <div className="sticky bottom-3 z-20 rounded-2xl border border-foreground/[0.16] bg-surface-raised p-2 shadow-2xl shadow-black/50 sm:static sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+                <div className="sticky bottom-3 z-20 rounded-2xl border border-line-strong bg-surface-raised p-2 shadow-lg sm:static sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
                   <Button type="submit" size="lg" className="w-full" loading={saving}>
                     {t('common.save')}
                   </Button>
@@ -394,18 +434,21 @@ export default function DonorProfilePage() {
                 <SectionLabel>{t('dashUi.section.preferences')}</SectionLabel>
                 <div className="mt-2 divide-y divide-line">
                   <SettingRow
-                    icon={<Droplets />}
-                    title={t('dashboard.updateAvailability')}
-                    description={t('dashboard.updateAvailabilityDesc')}
+                    id="donor-available"
+                    icon={<HandHeart />}
+                    title={t('dashUi.donor.availableToDonate')}
+                    description={profile ? t('dashUi.donor.availableDesc') : t('dashUi.donor.availableAfterSave')}
                     checked={isAvailable}
                     onChange={toggleAvailability}
+                    disabled={availabilityBusy}
                   />
                   <SettingRow
-                    icon={lowDataMode ? <WifiOff /> : <Wifi />}
+                    id="donor-low-data"
+                    icon={lowData ? <WifiOff /> : <Wifi />}
                     title={t('donorDashboard.lowDataMode')}
-                    description={lowDataMode ? t('donorDashboard.lowDataModeOn') : t('donorDashboard.lowDataModeOff')}
-                    checked={lowDataMode}
-                    onChange={toggleLowDataMode}
+                    description={lowData ? t('dashUi.lowDataOnDesc') : t('donorDashboard.lowDataModeOff')}
+                    checked={lowData}
+                    onChange={setLowData}
                   />
                 </div>
               </Panel>
@@ -413,10 +456,15 @@ export default function DonorProfilePage() {
           </div>
 
           {profile && (
-            <Reveal y={12} className="mt-12">
-              <SectionHeader eyebrow={t('dashUi.section.schedule')} title={t('slot.myBookings')} />
-              <MyBookings />
-            </Reveal>
+            <div className="mt-12 space-y-12">
+              <Rise inView>
+                <DonationHistory />
+              </Rise>
+              <Rise inView>
+                <SectionHeader eyebrow={t('dashUi.section.schedule')} title={t('slot.myBookings')} />
+                <MyBookings />
+              </Rise>
+            </div>
           )}
         </>
       )}

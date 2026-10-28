@@ -3,27 +3,30 @@
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useCalm } from './useCalm';
 
-/** Small ember dot that pulses softly (the `.dot-ping` keyframes are disabled for reduced-motion users in globals.css). */
-export function PulseDot({ className, tone = 'ember', still = false }: { className?: string; tone?: 'ember' | 'sage' | 'saffron'; still?: boolean }) {
-  const color = tone === 'sage' ? 'bg-emerald-400' : tone === 'saffron' ? 'bg-saffron' : 'bg-ember';
+const DOT = {
+  primary: 'bg-primary',
+  success: 'bg-success',
+  warning: 'bg-warning',
+  danger: 'bg-danger',
+} as const;
+
+/** Small status dot that pulses softly (still for reduced motion and Low-Data Mode). Decorative: always sits next to text. */
+export function PulseDot({ className, tone = 'primary', still = false }: { className?: string; tone?: keyof typeof DOT; still?: boolean }) {
+  const calm = useCalm();
   return (
     <span aria-hidden="true" className={cn('relative inline-flex h-2 w-2 shrink-0', className)}>
-      {!still && <span className={cn('dot-ping absolute inset-0 rounded-full', color)} />}
-      <span className={cn('relative h-2 w-2 rounded-full', color)} />
+      {!still && !calm && <span className={cn('dot-ping absolute inset-0 rounded-full', DOT[tone])} />}
+      <span className={cn('relative h-2 w-2 rounded-full', DOT[tone])} />
     </span>
   );
 }
 
-/** Urgency pill. CRITICAL gets a pulsing ember dot in front of it. */
+/** Urgency pill (icon + text + colour). */
 export function UrgencyBadge({ urgency, className }: { urgency: string; className?: string }) {
   const { t } = useI18n();
-  return (
-    <span className={cn('inline-flex items-center gap-1.5', className)}>
-      {urgency === 'CRITICAL' && <PulseDot />}
-      <StatusBadge value={urgency} label={t(`dash.urgency.${urgency}`)} />
-    </span>
-  );
+  return <StatusBadge value={urgency} label={t(`dash.urgency.${urgency}`)} className={className} />;
 }
 
 /** Localised request status pill (OPEN, MATCHED ...). */

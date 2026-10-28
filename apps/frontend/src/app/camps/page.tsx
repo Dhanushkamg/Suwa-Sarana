@@ -14,6 +14,7 @@ import { Reveal } from '@/components/motion/Reveal';
 import { PageHeading } from '@/components/pub/PageHeading';
 import { PubFooter } from '@/components/pub/PubFooter';
 import { PubHeader } from '@/components/pub/PubHeader';
+import { TIME_FORMAT, toDate, toTimeOfDay } from '@/components/pub/dates';
 import { cn } from '@/lib/utils';
 
 interface Camp {
@@ -29,58 +30,51 @@ interface Camp {
   status?: string;
 }
 
-/** Splits an ISO date ("2026-10-14") into the pieces for the mono date block; null when it cannot be parsed. */
-function dateParts(iso: string, locale: string) {
-  const d = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  const tag = locale === 'en' ? 'en-GB' : locale;
-  return {
-    month: d.toLocaleDateString(tag, { month: 'short' }),
-    day: d.toLocaleDateString(tag, { day: '2-digit' }),
-    year: d.toLocaleDateString(tag, { year: 'numeric' }),
-  };
-}
-
 function CampCard({ camp, expanded, onToggle }: { camp: Camp; expanded: boolean; onToggle: () => void }) {
-  const { t, locale } = useI18n();
-  const parts = dateParts(camp.scheduledDate, locale);
+  const { t, format } = useI18n();
+  const date = toDate(camp.scheduledDate);
+  const start = toTimeOfDay(camp.startTime);
+  const end = toTimeOfDay(camp.endTime);
   const groups = camp.requiredBloodGroups
     ? camp.requiredBloodGroups.split(',').map((g) => g.trim()).filter(Boolean)
     : [];
+  const statusKey = camp.status ? `pub.campStatus.${camp.status}` : '';
+  const statusLabel = camp.status && t(statusKey) !== statusKey ? t(statusKey) : undefined;
+  const panelId = `camp-slots-${camp.id}`;
 
   return (
     <article className="glass-card flex flex-col rounded-2xl p-6">
       <div className="flex items-start gap-5">
         {/* Date block */}
-        <div className="w-[4.25rem] shrink-0 rounded-xl border border-line-strong bg-surface-raised py-2.5 text-center font-mono">
-          {parts ? (
+        <div className="w-[4.5rem] shrink-0 rounded-xl border border-line-strong bg-surface-raised px-1 py-2.5 text-center">
+          {date ? (
             <>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-ember">{parts.month}</div>
-              <div className="my-0.5 text-2xl leading-none text-foreground">{parts.day}</div>
-              <div className="text-[10px] tracking-wider text-gray-500">{parts.year}</div>
+              <div className="text-xs font-semibold uppercase text-primary-text">{format.date(date, { month: 'short' })}</div>
+              <div className="my-0.5 font-mono text-2xl leading-none text-foreground">{format.date(date, { day: '2-digit' })}</div>
+              <div className="font-mono text-[11px] text-gray-500">{format.date(date, { year: 'numeric' })}</div>
             </>
           ) : (
-            <div className="px-1 text-[11px] leading-tight text-gray-300">{camp.scheduledDate}</div>
+            <div className="px-1 text-xs leading-tight text-gray-400">{String(camp.scheduledDate)}</div>
           )}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <p className="eyebrow">{camp.district}</p>
-            {camp.status && <StatusBadge value={camp.status} />}
+            {camp.status && <StatusBadge value={camp.status} label={statusLabel} />}
           </div>
           <h2 className="mt-2 font-display break-words text-2xl text-foreground sm:text-[1.65rem]">{camp.name}</h2>
         </div>
       </div>
 
-      <dl className="mt-6 space-y-3 text-sm text-gray-300">
+      <dl className="mt-6 space-y-3 text-sm text-foreground">
         <div className="flex items-start gap-3">
           <dt className="shrink-0">
             <Clock className="mt-0.5 h-4 w-4 text-gray-500" aria-hidden="true" />
             <span className="sr-only">{t('publicPages.time')}</span>
           </dt>
           <dd className="font-mono text-[13px] tracking-wide">
-            {camp.startTime} – {camp.endTime}
+            {start && end ? `${format.dateTime(start, TIME_FORMAT)} – ${format.dateTime(end, TIME_FORMAT)}` : `${camp.startTime} – ${camp.endTime}`}
           </dd>
         </div>
         <div className="flex items-start gap-3">
@@ -96,10 +90,8 @@ function CampCard({ camp, expanded, onToggle }: { camp: Camp; expanded: boolean;
         <div className="mt-5 flex flex-wrap items-center gap-2">
           <span className="eyebrow mr-1">{t('camps.requires')}</span>
           {groups.map((g) => (
-            <span
-              key={g}
-              className="rounded-full border border-ember/30 bg-ember/10 px-2.5 py-0.5 font-mono text-xs font-medium text-ember"
-            >
+            // Blood-type badges are one of the few places the brand crimson is used
+            <span key={g} className="rounded-full border border-brand/30 bg-brand-soft px-2.5 py-0.5 font-mono text-xs font-semibold text-brand">
               {g}
             </span>
           ))}
@@ -107,32 +99,68 @@ function CampCard({ camp, expanded, onToggle }: { camp: Camp; expanded: boolean;
       )}
 
       {/* Slot booking toggle */}
-      <div className="mt-6 border-t border-line pt-4">
+      <div className="mt-6 border-t border-line pt-2">
         <button
           type="button"
           aria-expanded={expanded}
+          aria-controls={panelId}
           onClick={onToggle}
-          className="group flex w-full items-center justify-between gap-3 text-left text-sm font-medium text-foreground transition-colors hover:text-ember"
+          className="group flex min-h-11 w-full items-center justify-between gap-3 text-left text-sm font-medium text-foreground transition-colors hover:text-primary-text"
         >
           <span>{expanded ? t('camps.hideSlots') : t('camps.showSlots')}</span>
           <ChevronDown
-            className={cn('h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 group-hover:text-ember', expanded && 'rotate-180')}
+            className={cn('h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 group-hover:text-primary-text motion-reduce:transition-none', expanded && 'rotate-180')}
             aria-hidden="true"
           />
         </button>
-        {expanded && <SlotPicker hostType="camp" hostId={camp.id} />}
+        <div id={panelId}>{expanded && <SlotPicker hostType="camp" hostId={camp.id} />}</div>
       </div>
     </article>
   );
 }
 
+/** Same footprint as CampCard so the page does not jump when data arrives. */
+function CampCardSkeleton() {
+  return (
+    <div className="glass-card flex flex-col rounded-2xl p-6" aria-hidden="true">
+      <div className="flex items-start gap-5">
+        <Skeleton className="h-[5.5rem] w-[4.5rem] shrink-0" />
+        <div className="min-w-0 flex-1 space-y-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-7 w-full" />
+          <Skeleton className="h-7 w-2/3" />
+        </div>
+      </div>
+      <div className="mt-6 space-y-3">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-4 w-56" />
+      </div>
+      <div className="mt-5 flex gap-2">
+        <Skeleton className="h-6 w-10 rounded-full" />
+        <Skeleton className="h-6 w-10 rounded-full" />
+        <Skeleton className="h-6 w-10 rounded-full" />
+      </div>
+      <div className="mt-6 border-t border-line pt-4">
+        <Skeleton className="h-5 w-48" />
+      </div>
+    </div>
+  );
+}
+
 export default function CampsPage() {
   const { t } = useI18n();
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const initialize = useAuthStore((s) => s.initialize);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
   const [camps, setCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [expandedCampId, setExpandedCampId] = useState<number | null>(null);
+
+  // Restore the session after a reload so a signed-in donor sees recommended camps and can book (audit F14)
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   // Depend on the primitive role (not the whole user object) to avoid refetch loops
   const role = user?.role;
@@ -143,7 +171,9 @@ export default function CampsPage() {
     try {
       const endpoint = role === 'DONOR' ? '/camps/recommended' : '/camps';
       const response = await apiClient.get(endpoint);
-      setCamps(response.data);
+      const body = response.data;
+      const list = Array.isArray(body) ? body : body?.data;
+      setCamps(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error('Failed to load camps', err);
       setError(true);
@@ -152,15 +182,16 @@ export default function CampsPage() {
     }
   }, [role]);
 
+  // Wait for the session restore so we do not fetch the generic list and immediately refetch the donor list
   useEffect(() => {
-    fetchCamps();
-  }, [fetchCamps]);
+    if (isInitialized) fetchCamps();
+  }, [fetchCamps, isInitialized]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PubHeader />
 
-      <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-20">
+      <main id="main-content" className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-20">
         <PageHeading
           eyebrow={t('camps.communityDrives')}
           title={role === 'DONOR' ? t('camps.recommendedCamps') : t('camps.upcomingCamps')}
@@ -170,16 +201,16 @@ export default function CampsPage() {
 
         <div className="mt-10 sm:mt-14">
           {loading ? (
-            <div role="status" className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div role="status" aria-busy="true" className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
               {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-72 rounded-2xl" />
+                <CampCardSkeleton key={i} />
               ))}
               <span className="sr-only">{t('camps.loadingCamps')}</span>
             </div>
           ) : error ? (
             <div role="alert">
               <EmptyState
-                icon={<AlertCircle className="h-10 w-10 text-ember" />}
+                icon={<AlertCircle className="h-10 w-10 text-danger-text" aria-hidden="true" />}
                 title={t('camps.loadFailed')}
                 description={t('camps.loadFailedDesc')}
                 action={
@@ -191,7 +222,7 @@ export default function CampsPage() {
             </div>
           ) : camps.length === 0 ? (
             <EmptyState
-              icon={<CalendarX2 className="h-10 w-10" />}
+              icon={<CalendarX2 className="h-10 w-10" aria-hidden="true" />}
               title={t('camps.noScheduledCamps')}
               description={t('camps.noScheduledCampsDesc')}
             />

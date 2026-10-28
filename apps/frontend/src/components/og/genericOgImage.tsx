@@ -32,11 +32,11 @@ export function genericOgImage(size: { width: number; height: number }) {
           }}
         >
           <OgLogoMark size={176} />
-          <div style={{ display: 'flex', fontSize: 120, fontWeight: 700, letterSpacing: -4, color: OG.bone }}>
+          <div style={{ display: 'flex', fontSize: 120, fontWeight: 700, letterSpacing: -4, color: OG.text }}>
             <span>Suwa&nbsp;</span>
-            <span style={{ color: 'rgba(244, 238, 228, 0.6)' }}>Sarana</span>
+            <span style={{ color: OG.muted }}>Sarana</span>
           </div>
-          <div style={{ display: 'flex', width: 120, height: 3, backgroundColor: OG.ember }} />
+          <div style={{ display: 'flex', width: 120, height: 3, backgroundColor: OG.primary }} />
           <OgEyebrow size={30}>Blood donation platform</OgEyebrow>
         </div>
         <div
@@ -49,7 +49,7 @@ export function genericOgImage(size: { width: number; height: number }) {
           }}
         >
           <OgEyebrow size={22}>Sri Lanka</OgEyebrow>
-          <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: OG.ember, letterSpacing: 1 }}>{siteHost()}</div>
+          <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: OG.primary, letterSpacing: 1 }}>{siteHost()}</div>
         </div>
       </OgCanvas>
     ),

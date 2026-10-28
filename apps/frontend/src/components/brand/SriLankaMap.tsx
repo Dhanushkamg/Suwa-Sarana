@@ -2,12 +2,13 @@
 
 import { useMemo, useRef } from 'react';
 import { DISTRICT_COORDS } from '@/lib/districts';
+import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 /**
  * Sri Lanka drawn as a field of dots, with the island's main cities pulsing like a heartbeat.
  * Purely decorative (aria-hidden): a simplified coastline, not a survey-grade map.
- * Drag the cursor across it and the dots under it light up in ember.
+ * Move the pointer across it and the dots under it light up in the primary colour; the city pulses are brand crimson.
  */
 
 // Coarse coastline, [longitude, latitude], clockwise from the northern tip.
@@ -56,6 +57,7 @@ function Dots({ dots, fill }: { dots: [number, number][]; fill: string }) {
 }
 
 export function SriLankaMap({ className, showLabels = true }: { className?: string; showLabels?: boolean }) {
+  const { t, locale } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
 
   const dots = useMemo(() => {
@@ -94,16 +96,16 @@ export function SriLankaMap({ className, showLabels = true }: { className?: stri
       className={cn('relative aspect-[250/410] select-none', className)}
       style={{ ['--mx' as string]: '-200px', ['--my' as string]: '-200px' }}
     >
-      {/* base layer: quiet bone dots */}
+      {/* base layer: quiet neutral dots */}
       <div className="absolute inset-0 opacity-30">
         <Dots dots={dots} fill="var(--foreground)" />
       </div>
-      {/* light layer: ember dots revealed only under the cursor */}
+      {/* light layer: primary dots revealed only under the pointer */}
       <div
         className="absolute inset-0"
-        style={{ maskImage: 'radial-gradient(circle 70px at var(--mx) var(--my), #000 20%, transparent 100%)', WebkitMaskImage: 'radial-gradient(circle 70px at var(--mx) var(--my), #000 20%, transparent 100%)' }}
+        style={{ maskImage: 'radial-gradient(circle 70px at var(--mx) var(--my), currentColor 20%, transparent 100%)', WebkitMaskImage: 'radial-gradient(circle 70px at var(--mx) var(--my), currentColor 20%, transparent 100%)' }}
       >
-        <Dots dots={dots} fill="var(--ember)" />
+        <Dots dots={dots} fill="var(--primary)" />
       </div>
 
       <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="absolute inset-0 h-full w-full overflow-visible">
@@ -119,8 +121,8 @@ export function SriLankaMap({ className, showLabels = true }: { className?: stri
                 key={c.name}
                 d={`M${origin.x} ${origin.y} Q${mx} ${my} ${c.x} ${c.y}`}
                 fill="none"
-                stroke="var(--ember)"
-                strokeOpacity={0.35}
+                stroke="var(--primary)"
+                strokeOpacity={0.55}
                 strokeWidth={0.6}
                 strokeDasharray="2 3"
                 style={{ animationDelay: `${i * 0.2}s` }}
@@ -130,24 +132,24 @@ export function SriLankaMap({ className, showLabels = true }: { className?: stri
 
         {cities.map((c, i) => (
           <g key={c.name}>
-            <circle cx={c.x} cy={c.y} r={3} fill="var(--ember)" className="dot-ping" style={{ animationDelay: `${i * 0.35}s` }} />
-            <circle cx={c.x} cy={c.y} r={2.4} fill="var(--ember)" />
-            <circle cx={c.x} cy={c.y} r={0.9} fill="var(--background)" />
+            <circle cx={c.x} cy={c.y} r={3} fill="var(--brand)" className="dot-ping" style={{ animationDelay: `${i * 0.35}s` }} />
+            <circle cx={c.x} cy={c.y} r={2.4} fill="var(--brand)" />
+            <circle cx={c.x} cy={c.y} r={0.9} fill="var(--brand-fg)" />
             {showLabels && (
             <text
               x={c.x + (c.side === 'r' ? 7 : -7)}
               y={c.y + 2.4}
               textAnchor={c.side === 'r' ? 'start' : 'end'}
               fill="var(--foreground)"
-              fillOpacity={0.62}
+              fillOpacity={0.8}
               fontSize={6.5}
               stroke="var(--background)"
               strokeWidth={2.6}
               strokeLinejoin="round"
               paintOrder="stroke"
-              style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase' }}
+              style={{ fontFamily: 'var(--font-mono)', letterSpacing: locale === 'en' ? '0.08em' : '0', textTransform: locale === 'en' ? 'uppercase' : 'none' }}
             >
-              {c.name}
+              {t(`landing.mapCity.${c.name}`)}
             </text>
             )}
           </g>

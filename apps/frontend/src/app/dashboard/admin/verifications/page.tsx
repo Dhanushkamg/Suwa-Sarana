@@ -1,101 +1,56 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { ShieldCheck, ShieldX, AlertCircle, Hospital, User, Phone, Mail } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ShieldCheck, ShieldX, AlertCircle, Building2, User, Phone, Mail, CalendarClock, Search, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Input } from '@/components/ui/Input';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useToast } from '@/components/ui/Toast';
 import { ButtonLink } from '@/components/dash/ButtonLink';
+import { ConfirmDialog } from '@/components/dash/ConfirmDialog';
 import { IconTile } from '@/components/dash/IconTile';
 import { Notice } from '@/components/dash/Notice';
 import { PageHeader } from '@/components/dash/PageHeader';
 import { RefreshButton } from '@/components/dash/RefreshButton';
 import { Rise } from '@/components/dash/Rise';
 import { RowsSkeleton } from '@/components/dash/Skeletons';
-import { ROW_HOVER, TH } from '@/components/dash/styles';
-import { PulseDot } from '@/components/dash/UrgencyBadge';
-import { cn } from '@/lib/utils';
+import { CARD } from '@/components/dash/styles';
+import { useAsync } from '@/components/dash/useAsync';
 import { useAuthStore } from '@/store/authStore';
-import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
-
-interface PendingUser {
-  id: number;
-  email: string;
-  phoneNumber: string;
-  role: string;
-  verificationStatus: string;
-}
+import { apiMessage } from '@/lib/api/common';
+import {
+  decideVerification,
+  EndpointUnavailableError,
+  fetchPendingVerifications,
+  type PendingVerification,
+  type VerificationDecision,
+} from '@/lib/api/admin';
 
 export default function AdminVerificationsPage() {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
+  const toast = useToast();
   const { user } = useAuthStore();
-  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  const list = useAsync(fetchPendingVerifications);
+  const [query, setQuery] = useState('');
+  const [deciding, setDeciding] = useState<{ user: PendingVerification; decision: VerificationDecision } | null>(null);
 
-  // This endpoint returns a bare array (not wrapped in ApiResponse).
-  const fetchPendingUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setLoadError(null);
-    try {
-      const response = await apiClient.get<PendingUser[]>('/admin/verifications/pending');
-      setPendingUsers(Array.isArray(response.data) ? response.data : []);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setLoadError(msg || '');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const pending = useMemo(() => (list.state.status === 'ready' ? list.state.data : []), [list.state]);
 
-  useEffect(() => {
-    fetchPendingUsers();
-  }, [fetchPendingUsers]);
-
-  const handleApprove = async (userId: number, email: string) => {
-    setProcessingId(userId);
-    setError(null);
-    try {
-      await apiClient.put(`/admin/verifications/${userId}/approve`);
-      setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
-      setActionSuccess(t('dash.approvedMsg', { email }));
-      setTimeout(() => setActionSuccess(null), 4000);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || t('dash.approveFailed');
-      setError(msg);
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleReject = async (userId: number, email: string) => {
-    setProcessingId(userId);
-    setError(null);
-    try {
-      await apiClient.put(`/admin/verifications/${userId}/reject`);
-      setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
-      setActionSuccess(t('dash.rejectedMsg', { email }));
-      setTimeout(() => setActionSuccess(null), 4000);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || t('dash.rejectFailed');
-      setError(msg);
-    } finally {
-      setProcessingId(null);
-    }
-  };
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return pending;
+    return pending.filter((u) =>
+      [u.fullName, u.organisation, u.email, u.phoneNumber, t(`dashUi.role.${u.role}`)].some((v) => v?.toLowerCase().includes(q))
+    );
+  }, [pending, query, t]);
 
   if (!user || user.role !== 'ADMIN') {
     return (
       <div className="mx-auto max-w-xl py-12">
         <EmptyState
-          icon={<ShieldX className="w-12 h-12 text-red-400" />}
+          icon={<ShieldX className="h-12 w-12 text-danger-text" aria-hidden="true" />}
           title={t('adminDashboard.accessDenied')}
           description={t('adminDashboard.accessDeniedDesc')}
           action={
@@ -108,6 +63,21 @@ export default function AdminVerificationsPage() {
     );
   }
 
+  const confirm = async (reason: string) => {
+    if (!deciding) return;
+    const { user: target, decision } = deciding;
+    await decideVerification(target.id, decision, reason);
+    list.mutate((rows) => rows.filter((r) => r.id !== target.id));
+    const name = target.fullName || target.organisation || target.email;
+    toast.show(decision === 'APPROVE' ? t('dash.approvedMsg', { email: name }) : t('dash.rejectedMsg', { email: name }), 'success');
+  };
+
+  const errorFor = (err: unknown) =>
+    err instanceof EndpointUnavailableError ? t('dashUi.admin.decisionUnavailable') : apiMessage(err, deciding?.decision === 'APPROVE' ? t('dash.approveFailed') : t('dash.rejectFailed'));
+
+  const approving = deciding?.decision === 'APPROVE';
+  const targetName = deciding ? deciding.user.fullName || deciding.user.organisation || deciding.user.email : '';
+
   return (
     <div>
       <PageHeader
@@ -115,118 +85,121 @@ export default function AdminVerificationsPage() {
         title={t('adminDashboard.verificationsTitle')}
         description={t('adminDashboard.verificationsDesc')}
         backHref="/dashboard/admin"
-        actions={<RefreshButton onClick={fetchPendingUsers} loading={loading} />}
+        actions={<RefreshButton onClick={list.reload} loading={list.state.status === 'loading'} />}
       />
 
-      <div className="mb-6 space-y-3 empty:hidden">
-        {actionSuccess && <Notice tone="success">{actionSuccess}</Notice>}
-        {error && <Notice tone="error">{error}</Notice>}
-      </div>
-
-      {loading ? (
+      {list.state.status === 'loading' ? (
         <div role="status" aria-label={t('adminDashboard.loadingPending')}>
           <RowsSkeleton rows={3} />
         </div>
-      ) : loadError !== null ? (
+      ) : list.state.status === 'error' || list.state.status === 'unavailable' ? (
         <EmptyState
-          icon={<AlertCircle className="w-10 h-10 text-red-400" />}
-          title={loadError || t('dash.loadFailed')}
-          action={<Button variant="secondary" onClick={fetchPendingUsers}>{t('dash.retry')}</Button>}
+          icon={<AlertCircle className="h-10 w-10 text-danger-text" aria-hidden="true" />}
+          title={(list.state.status === 'error' && list.state.message) || t('dash.loadFailed')}
+          action={
+            <Button variant="secondary" onClick={() => void list.reload()}>
+              {t('dash.retry')}
+            </Button>
+          }
         />
-      ) : pendingUsers.length === 0 ? (
+      ) : pending.length === 0 ? (
         <EmptyState
-          icon={<ShieldCheck className="w-10 h-10 text-emerald-400" />}
+          icon={<ShieldCheck className="h-10 w-10 text-success-text" aria-hidden="true" />}
           title={t('adminDashboard.verificationsClear')}
           description={t('adminDashboard.noPendingAccounts')}
         />
       ) : (
-        <Rise delay={0.04}>
-          <div className="glass-card overflow-hidden rounded-2xl">
-            {/* The table scrolls inside this container, never the page */}
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[56rem] text-left text-sm text-gray-300">
-                <caption className="sr-only">{t('adminDashboard.verificationsTitle')}</caption>
-                <thead className="border-b border-line">
-                  <tr>
-                    <th scope="col" className={TH}>{t('adminDashboard.accountDetails')}</th>
-                    <th scope="col" className={TH}>{t('publicPages.contact')}</th>
-                    <th scope="col" className={TH}>{t('adminDashboard.roleScope')}</th>
-                    <th scope="col" className={TH}>{t('bloodRequests.status')}</th>
-                    <th scope="col" className={cn(TH, 'text-right')}>{t('common.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {pendingUsers.map((u) => {
-                    const isHospital = u.role === 'HOSPITAL_REQUESTER';
-                    const isProcessing = processingId === u.id;
-
-                    return (
-                      <tr key={u.id} className={ROW_HOVER}>
-                        <td className="whitespace-nowrap px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <IconTile size="md" tone={isHospital ? 'saffron' : 'muted'}>
-                              {isHospital ? <Hospital /> : <User />}
-                            </IconTile>
-                            <div>
-                              <div className="font-medium text-foreground">{u.email}</div>
-                              <div className="font-mono text-xs text-gray-500">ID #{u.id}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-5 py-4">
-                          <div className="flex items-center gap-1.5 text-xs text-gray-300">
-                            <Phone className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
-                            {u.phoneNumber || t('dash.notAvailable')}
-                          </div>
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
-                            <Mail className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
-                            {u.email}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-5 py-4">
-                          <span className="inline-flex items-center rounded-full border border-foreground/[0.16] px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wide text-gray-300">
-                            {u.role.replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-5 py-4">
-                          <span className="inline-flex items-center gap-2">
-                            <PulseDot tone="saffron" />
-                            <StatusBadge value={u.verificationStatus} label={t(`dashUi.verification.${u.verificationStatus}`)} />
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-5 py-4 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/20"
-                              disabled={isProcessing}
-                              onClick={() => handleApprove(u.id, u.email)}
-                            >
-                              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-                              {t('common.approve')}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="border-red-500/30 bg-red-500/10 text-red-300 hover:border-red-500/50 hover:bg-red-500/20"
-                              disabled={isProcessing}
-                              onClick={() => handleReject(u.id, u.email)}
-                            >
-                              <ShieldX className="h-4 w-4" aria-hidden="true" />
-                              {t('common.reject')}
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+        <div className="space-y-5">
+          <div className="max-w-md">
+            <Input
+              type="search"
+              icon={<Search className="h-4 w-4" aria-hidden="true" />}
+              label={t('dashUi.admin.searchPending')}
+              placeholder={t('dashUi.admin.searchPendingHint')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
-        </Rise>
+          <p role="status" className="text-sm text-gray-500">
+            {t('dashUi.admin.pendingShown', { shown: filtered.length, total: pending.length })}
+          </p>
+
+          {filtered.length === 0 ? (
+            <EmptyState icon={<Inbox className="h-10 w-10" aria-hidden="true" />} title={t('dash.noResults')} />
+          ) : (
+            <Rise delay={0.04}>
+              <ul className={`${CARD} divide-y divide-line overflow-hidden`}>
+                {filtered.map((u) => {
+                  const isOrg = u.role === 'HOSPITAL_REQUESTER' || u.role === 'BLOOD_BANK_REQUESTER';
+                  const name = u.fullName || u.organisation || u.email;
+                  return (
+                    <li key={u.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex min-w-0 items-start gap-4">
+                        <IconTile size="md" tone={isOrg ? 'primary' : 'muted'}>
+                          {isOrg ? <Building2 /> : <User />}
+                        </IconTile>
+                        <div className="min-w-0 space-y-1.5">
+                          <p className="break-words text-base font-medium text-foreground">{name}</p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                            <StatusBadge value="PENDING" tone="pending" label={t('dashUi.verification.PENDING')} />
+                            <span className="text-sm text-gray-400">
+                              {t(`dashUi.role.${u.role}`)}
+                              {u.organisation && u.fullName ? ` · ${u.organisation}` : ''}
+                            </span>
+                          </div>
+                          <p className="flex items-center gap-1.5 break-all text-sm text-gray-400">
+                            <Mail className="h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+                            {u.email}
+                          </p>
+                          <p className="flex items-center gap-1.5 text-sm text-gray-400">
+                            <Phone className="h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+                            <span dir="ltr">{u.phoneNumber || t('dash.notAvailable')}</span>
+                          </p>
+                          <p className="flex items-center gap-1.5 text-sm text-gray-500">
+                            <CalendarClock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                            {u.submittedAt ? t('dashUi.admin.submitted', { date: format.date(u.submittedAt, { dateStyle: 'medium' }) }) : t('dashUi.admin.submittedUnknown')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-3 lg:shrink-0">
+                        <Button type="button" variant="primary" onClick={() => setDeciding({ user: u, decision: 'APPROVE' })} aria-label={`${t('common.approve')}: ${name}`}>
+                          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                          {t('common.approve')}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => setDeciding({ user: u, decision: 'REJECT' })}
+                          aria-label={`${t('common.reject')}: ${name}`}
+                          className="border-danger/40 text-danger-text"
+                        >
+                          <ShieldX className="h-4 w-4" aria-hidden="true" />
+                          {t('common.reject')}
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Rise>
+          )}
+        </div>
       )}
+
+      <ConfirmDialog
+        open={deciding !== null}
+        onClose={() => setDeciding(null)}
+        title={approving ? t('dashUi.admin.approveTitle', { name: targetName }) : t('dashUi.admin.rejectTitle', { name: targetName })}
+        description={approving ? t('dashUi.admin.approveDesc') : t('dashUi.admin.rejectDesc')}
+        confirmLabel={approving ? t('common.approve') : t('common.reject')}
+        confirmVariant={approving ? 'primary' : 'danger'}
+        reasonLabel={t('dashUi.admin.reasonLabel')}
+        reasonHelp={approving ? t('dashUi.admin.reasonHelpApprove') : t('dashUi.admin.reasonHelpReject')}
+        reasonRequired
+        onConfirm={confirm}
+        errorMessage={errorFor}
+      />
+      {list.state.status === 'ready' && <Notice tone="info" className="mt-6">{t('dashUi.admin.decisionNote')}</Notice>}
     </div>
   );
 }

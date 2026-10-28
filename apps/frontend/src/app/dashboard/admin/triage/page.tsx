@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { Bot, AlertTriangle, CheckCircle2, Check, Eye, MapPin, Droplets } from 'lucide-react';
-import apiClient from '@/lib/apiClient';
+import { Bot, AlertTriangle, CheckCircle2, Check, Eye, MapPin, Droplets, CircleAlert, TriangleAlert, ShieldCheck, ListChecks } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
-import { BloodRequest } from '@/types';
+import { fetchTriageQueue, reviewTriage } from '@/lib/api/admin';
+import { apiMessage } from '@/lib/api/common';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
 import { ButtonLink } from '@/components/dash/ButtonLink';
 import { BloodTypeTile } from '@/components/dash/IconTile';
 import { Meta } from '@/components/dash/Meta';
@@ -16,81 +17,57 @@ import { PageHeader } from '@/components/dash/PageHeader';
 import { RefreshButton } from '@/components/dash/RefreshButton';
 import { Rise } from '@/components/dash/Rise';
 import { RowsSkeleton } from '@/components/dash/Skeletons';
-import { EYEBROW } from '@/components/dash/styles';
-import { PulseDot, UrgencyBadge } from '@/components/dash/UrgencyBadge';
+import { CARD, EYEBROW } from '@/components/dash/styles';
+import { UrgencyBadge } from '@/components/dash/UrgencyBadge';
+import { useAsync } from '@/components/dash/useAsync';
 import { cn } from '@/lib/utils';
 
-interface ApiBody<T> {
-  data?: T;
-}
-
-interface TriagedRequest extends BloodRequest {
-  fraudRiskScore?: number;
-  aiFlagReason?: string;
-  triagedAt?: string;
-}
+type RiskFilter = 'ALL' | 'HIGH' | 'MODERATE' | 'LOW';
 
 export default function AdminTriageQueuePage() {
-  const { t } = useI18n();
-  const [requests, setRequests] = useState<TriagedRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'HIGH' | 'MODERATE' | 'LOW'>('ALL');
+  const { t, format } = useI18n();
+  const toast = useToast();
+  const queue = useAsync(fetchTriageQueue);
+  const [filter, setFilter] = useState<RiskFilter>('ALL');
   const [resolvingId, setResolvingId] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const loadTriageQueue = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await apiClient.get<ApiBody<TriagedRequest[]>>('/admin/triage/queue');
-      const data = res.data?.data;
-      setRequests(Array.isArray(data) ? data : []);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || '');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadTriageQueue();
-  }, [loadTriageQueue]);
+  const requests = useMemo(() => (queue.state.status === 'ready' ? queue.state.data : []), [queue.state]);
 
   const handleResolve = async (id: number) => {
+    if (resolvingId !== null) return;
     setResolvingId(id);
     setActionError(null);
     try {
-      await apiClient.put(`/admin/triage/${id}/review`, {
-        notes: 'Dismissed by administrator from triage console.',
-      });
-      loadTriageQueue();
+      await reviewTriage(id, t('dashUi.admin.dismissNote'));
+      // The server zeroes the score but keeps the row: show it as reviewed straight away
+      queue.mutate((rows) => rows.map((r) => (r.id === id ? { ...r, fraudRiskScore: 0, aiFlagReason: undefined } : r)));
+      toast.show(t('dashUi.admin.flagDismissed'), 'success');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setActionError(msg || t('dash.dismissFailed'));
+      setActionError(apiMessage(err, t('dash.dismissFailed')));
     } finally {
       setResolvingId(null);
     }
   };
 
-  const highRiskCount = requests.filter((r) => (r.fraudRiskScore || 0) >= 70).length;
-  const moderateRiskCount = requests.filter((r) => (r.fraudRiskScore || 0) >= 40 && (r.fraudRiskScore || 0) < 70).length;
-  const lowRiskCount = requests.filter((r) => (r.fraudRiskScore || 0) < 40).length;
+  const scoreOf = (r: { fraudRiskScore?: number }) => r.fraudRiskScore || 0;
+  const highRiskCount = requests.filter((r) => scoreOf(r) >= 70).length;
+  const moderateRiskCount = requests.filter((r) => scoreOf(r) >= 40 && scoreOf(r) < 70).length;
+  const lowRiskCount = requests.filter((r) => scoreOf(r) < 40).length;
 
   const filtered = requests.filter((r) => {
-    const score = r.fraudRiskScore || 0;
+    const score = scoreOf(r);
     if (filter === 'HIGH') return score >= 70;
     if (filter === 'MODERATE') return score >= 40 && score < 70;
     if (filter === 'LOW') return score < 40;
     return true;
   });
 
-  const tiles: { value: typeof filter; label: string; count: number; dot: ReactNode; tone: string }[] = [
-    { value: 'ALL', label: t('adminDashboard.totalTriaged'), count: requests.length, dot: null, tone: 'text-foreground' },
-    { value: 'HIGH', label: t('adminDashboard.highRisk'), count: highRiskCount, dot: <PulseDot />, tone: 'text-ember' },
-    { value: 'MODERATE', label: t('adminDashboard.moderateRisk'), count: moderateRiskCount, dot: <PulseDot tone="saffron" still />, tone: 'text-saffron' },
-    { value: 'LOW', label: t('adminDashboard.lowRisk'), count: lowRiskCount, dot: <PulseDot tone="sage" still />, tone: 'text-emerald-400' },
+  const tiles: { value: RiskFilter; label: string; count: number; icon: ReactNode; tone: string }[] = [
+    { value: 'ALL', label: t('adminDashboard.totalTriaged'), count: requests.length, icon: <ListChecks className="h-4 w-4" />, tone: 'text-foreground' },
+    { value: 'HIGH', label: t('adminDashboard.highRisk'), count: highRiskCount, icon: <CircleAlert className="h-4 w-4" />, tone: 'text-danger-text' },
+    { value: 'MODERATE', label: t('adminDashboard.moderateRisk'), count: moderateRiskCount, icon: <TriangleAlert className="h-4 w-4" />, tone: 'text-warning-text' },
+    { value: 'LOW', label: t('adminDashboard.lowRisk'), count: lowRiskCount, icon: <ShieldCheck className="h-4 w-4" />, tone: 'text-success-text' },
   ];
 
   return (
@@ -100,7 +77,7 @@ export default function AdminTriageQueuePage() {
         title={t('adminDashboard.triageTitle')}
         description={t('adminDashboard.triageDesc')}
         backHref="/dashboard/admin"
-        actions={<RefreshButton onClick={loadTriageQueue} loading={loading} label={t('adminDashboard.refreshQueue')} />}
+        actions={<RefreshButton onClick={queue.reload} loading={queue.state.status === 'loading'} label={t('adminDashboard.refreshQueue')} />}
       />
 
       <div className="space-y-6">
@@ -123,15 +100,18 @@ export default function AdminTriageQueuePage() {
                   onClick={() => setFilter(tile.value)}
                   aria-pressed={active}
                   className={cn(
-                    'glass-card block h-full w-full rounded-2xl p-4 text-left transition-colors duration-200 sm:p-5',
-                    active && 'border-ember/50 bg-ember/[0.05]'
+                    CARD,
+                    'block h-full w-full p-4 text-start transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:p-5',
+                    active && 'border-primary bg-primary-soft'
                   )}
                 >
                   <span className={cn(EYEBROW, 'flex items-center gap-2')}>
-                    {tile.dot}
+                    <span aria-hidden="true" className={tile.tone}>
+                      {tile.icon}
+                    </span>
                     {tile.label}
                   </span>
-                  <span className={cn('mt-4 block font-display text-5xl tabular-nums', tile.tone)}>{tile.count}</span>
+                  <span className={cn('mt-4 block font-display text-5xl tabular-nums', tile.tone)}>{format.number(tile.count)}</span>
                 </button>
               </Rise>
             );
@@ -139,79 +119,77 @@ export default function AdminTriageQueuePage() {
         </div>
 
         {/* Triage list */}
-        {loading ? (
+        {queue.state.status === 'loading' ? (
           <div role="status" aria-label={t('adminDashboard.evaluatingQueue')}>
             <RowsSkeleton rows={3} />
           </div>
-        ) : error !== null ? (
+        ) : queue.state.status !== 'ready' ? (
           <EmptyState
-            icon={<AlertTriangle className="w-10 h-10 text-red-400" />}
-            title={error || t('dash.loadFailed')}
-            action={<Button variant="secondary" onClick={loadTriageQueue}>{t('dash.retry')}</Button>}
+            icon={<AlertTriangle className="h-10 w-10 text-danger-text" aria-hidden="true" />}
+            title={(queue.state.status === 'error' && queue.state.message) || t('dash.loadFailed')}
+            action={
+              <Button variant="secondary" onClick={() => void queue.reload()}>
+                {t('dash.retry')}
+              </Button>
+            }
           />
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon={<CheckCircle2 className="w-12 h-12 text-emerald-400 opacity-60" />}
+            icon={<CheckCircle2 className="h-12 w-12 text-success-text" aria-hidden="true" />}
             title={t('adminDashboard.queueClear')}
             description={t('adminDashboard.noThreshold')}
           />
         ) : (
           <Rise delay={0.1}>
-            <ul className="glass-card divide-y divide-line overflow-hidden rounded-2xl">
+            <ul className={`${CARD} divide-y divide-line overflow-hidden`}>
               {filtered.map((req) => {
-                const score = req.fraudRiskScore || 0;
+                const score = scoreOf(req);
                 const isHigh = score >= 70;
                 const isMod = score >= 40 && score < 70;
-                const scoreTone = isHigh ? 'text-ember' : isMod ? 'text-saffron' : 'text-emerald-400';
-                const scoreBar = isHigh ? 'bg-ember' : isMod ? 'bg-saffron' : 'bg-emerald-400';
+                const scoreTone = isHigh ? 'text-danger-text' : isMod ? 'text-warning-text' : 'text-success-text';
+                const scoreBar = isHigh ? 'bg-danger' : isMod ? 'bg-warning' : 'bg-success';
+                const level = isHigh ? t('adminDashboard.highRisk') : isMod ? t('adminDashboard.moderateRisk') : t('adminDashboard.lowRisk');
 
                 return (
-                  <li key={req.id} className={cn('relative p-5 sm:p-6', isHigh && 'bg-ember/[0.04]')}>
-                    {isHigh && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-ember" />}
+                  <li key={req.id} className={cn('relative p-5 sm:p-6', isHigh && 'bg-danger-soft')}>
                     <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
                       <div className="flex min-w-0 items-center gap-4">
                         <BloodTypeTile type={req.patientBloodType} size="md" />
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                            <h2 className="break-words text-base font-medium text-foreground">{req.hospitalName}</h2>
-                            <span className="font-mono text-xs text-gray-500">#{req.id}</span>
+                            <h2 className="break-words text-lg font-medium text-foreground">{req.hospitalName}</h2>
+                            <span className="text-sm text-gray-500">#{req.id}</span>
                           </div>
                           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                             <Meta icon={<MapPin />}>{req.district}</Meta>
-                            <Meta icon={<Droplets />}>{t('dash.unitsCount', { n: req.unitsNeeded ?? 0 })}</Meta>
+                            <Meta icon={<Droplets />}>{t('dashUi.units', { count: req.unitsNeeded ?? 0 })}</Meta>
                             <UrgencyBadge urgency={req.urgency} />
                           </div>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-                        <div className="min-w-[7.5rem]">
+                        <div className="min-w-[8rem]">
                           <p className="flex items-baseline justify-between gap-3">
                             <span className={EYEBROW}>{t('adminDashboard.riskScore')}</span>
-                            <span className={cn('font-mono text-sm tabular-nums', scoreTone)}>{score}/100</span>
+                            <span className={cn('text-sm font-medium tabular-nums', scoreTone)}>{t('dashUi.admin.scoreOf100', { score: format.number(score) })}</span>
                           </p>
-                          <span aria-hidden="true" className="mt-2 block h-px bg-line">
-                            <span className={cn('block h-px origin-left', scoreBar)} style={{ width: `${Math.min(score, 100)}%` }} />
+                          <span aria-hidden="true" className="mt-2 block h-1.5 overflow-hidden rounded-full bg-foreground/[0.08]">
+                            <span className={cn('block h-full rounded-full', scoreBar)} style={{ width: `${Math.min(score, 100)}%` }} />
                           </span>
+                          <span className="sr-only">{level}</span>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
                           <ButtonLink href={`/dashboard/requests/${req.id}`} variant="secondary">
-                            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                            <Eye className="h-4 w-4" aria-hidden="true" />
                             {t('common.view')}
                           </ButtonLink>
 
                           {score > 0 && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleResolve(req.id)}
-                              disabled={resolvingId === req.id}
-                              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-500/20"
-                            >
-                              <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                              {resolvingId === req.id ? t('common.loading') : t('adminDashboard.dismissFlag')}
+                            <Button type="button" variant="secondary" onClick={() => handleResolve(req.id)} loading={resolvingId === req.id} disabled={resolvingId !== null}>
+                              {resolvingId !== req.id && <Check className="h-4 w-4" aria-hidden="true" />}
+                              {t('adminDashboard.dismissFlag')}
                             </Button>
                           )}
                         </div>
@@ -220,11 +198,11 @@ export default function AdminTriageQueuePage() {
 
                     {/* AI explainable flag reason */}
                     {req.aiFlagReason && (
-                      <div className="mt-5 flex items-start gap-3 border-l border-ember/50 pl-4 text-xs">
+                      <div className="mt-5 flex items-start gap-3 border-s-2 border-line-strong ps-4">
                         <Bot className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
                         <div className="min-w-0">
                           <span className={EYEBROW}>{t('adminDashboard.aiDiagnosticHint')}</span>
-                          <p className="mt-1.5 break-words text-sm leading-relaxed text-gray-300">{req.aiFlagReason}</p>
+                          <p className="mt-1.5 break-words text-sm leading-relaxed text-foreground">{req.aiFlagReason}</p>
                         </div>
                       </div>
                     )}

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Heart, MapPin, Activity, Droplets, Share2, Copy, Check,
-  MessageSquare, Send, AlertCircle, Clock, Smartphone, Download, Hospital
+  Heart, MapPin, Droplets, Share2, Copy, Check,
+  MessageSquare, Send, AlertCircle, Clock, Smartphone, Download, Hospital, BadgeCheck, CheckCircle2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
@@ -11,26 +11,21 @@ import apiClient from '@/lib/apiClient';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Logo } from '@/components/brand/Logo';
 import { Reveal } from '@/components/motion/Reveal';
+import { Alert } from '@/components/pub/Alert';
 import { UrgencyBadge } from '@/components/pub/UrgencyBadge';
 import { linkButtonClass } from '@/components/pub/linkButton';
-
-interface CircleInfo {
-  inviteToken: string;
-  patientBloodType: string;
-  unitsNeeded: number;
-  urgency: string;
-  hospitalName: string;
-  district: string;
-  expiresAt: string;
-  isExpired: boolean;
-}
+import { toDate } from '@/components/pub/dates';
+import { isCircleExpired, type CircleInfo } from '@/components/pub/circleData';
 
 interface Props {
   token: string;
   initialData?: CircleInfo | null;
 }
+
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk';
 
 export default function ShareCardClient({ token, initialData }: Props) {
   const { t } = useI18n();
@@ -38,6 +33,8 @@ export default function ShareCardClient({ token, initialData }: Props) {
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>('');
 
   const loadInfo = useCallback(async () => {
@@ -59,27 +56,32 @@ export default function ShareCardClient({ token, initialData }: Props) {
     loadInfo();
   }, [loadInfo]);
 
+  const expired = info ? isCircleExpired(info) : false;
+
   useEffect(() => {
-    if (!info?.expiresAt || info.isExpired) return;
+    const expiresAt = toDate(info?.expiresAt);
+    if (!expiresAt || expired) return;
 
     const calculateTimeLeft = () => {
-      const difference = new Date(info.expiresAt).getTime() - new Date().getTime();
-      
+      const difference = expiresAt.getTime() - Date.now();
       if (difference <= 0) {
         setTimeLeft(t('share.expired'));
         return;
       }
-
-      const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((difference / 1000 / 60) % 60);
-      setTimeLeft(t('share.timeLeftValue', { hours, minutes }));
+      const minutesTotal = Math.floor(difference / 60000);
+      const days = Math.floor(minutesTotal / 1440);
+      const hours = Math.floor((minutesTotal % 1440) / 60);
+      const minutes = minutesTotal % 60;
+      if (days > 0) setTimeLeft(t('pub.timeLeftDays', { days, hours }));
+      else if (hours > 0) setTimeLeft(t('pub.timeLeftHours', { hours, minutes }));
+      else setTimeLeft(t('pub.timeLeftMinutes', { minutes }));
     };
 
     calculateTimeLeft();
     const timer = setInterval(calculateTimeLeft, 60000); // Update every minute
 
     return () => clearInterval(timer);
-  }, [info?.expiresAt, info?.isExpired, t]);
+  }, [info?.expiresAt, expired, t]);
 
   // Translate the urgency enum when a label exists, otherwise show the raw value
   const urgencyLabel = (u: string) => {
@@ -88,21 +90,26 @@ export default function ShareCardClient({ token, initialData }: Props) {
     return label === key ? u : label;
   };
 
-  const circleUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/circle/${token}`
-    : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk'}/circle/${token}`;
+  const circleUrl = typeof window !== 'undefined' ? `${window.location.origin}/circle/${token}` : `${SITE}/circle/${token}`;
 
   const shareText = info
-    ? `🚨 EMERGENCY: ${info.unitsNeeded} Units of ${info.patientBloodType} blood needed URGENTLY at ${info.hospitalName} (${info.district}). Your donation can save a life today. Please volunteer or share this message:`
-    : '🚨 EMERGENCY: Urgent blood needed. Please volunteer or share:';
+    ? t('pub.shareText', { units: info.unitsNeeded, bloodType: info.patientBloodType, hospital: info.hospitalName, district: info.district })
+    : t('pub.shareTextGeneric');
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(`${shareText}\n\n${circleUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+  const copyLink = async () => {
+    setCopyFailed(false);
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n\n${circleUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      // Clipboard blocked (insecure context, denied permission): tell the user instead of failing silently
+      setCopyFailed(true);
+    }
   };
 
   const downloadImage = async () => {
+    setDownloadError(false);
     try {
       const res = await fetch(`/share/${token}/opengraph-image?t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch image');
@@ -117,7 +124,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
       document.body.removeChild(a);
     } catch (err) {
       console.error('Download failed:', err);
-      alert(t('share.downloadFailed'));
+      setDownloadError(true);
     }
   };
 
@@ -146,31 +153,39 @@ export default function ShareCardClient({ token, initialData }: Props) {
 
   const facts = info
     ? [
-        { icon: Clock, label: t('share.timeLeft'), value: timeLeft || t('share.expired'), tone: 'text-foreground' },
+        { icon: Clock, label: t('share.timeLeft'), value: expired ? t('share.expired') : timeLeft || t('share.expired'), tone: 'text-foreground' },
         { icon: MapPin, label: t('share.location'), value: info.district, tone: 'text-foreground' },
-        { icon: Droplets, label: t('share.required'), value: t('circle.unitsCount', { count: info.unitsNeeded }), tone: 'text-foreground' },
-        { icon: Activity, label: t('share.status'), value: t('share.accepting'), tone: 'text-emerald-400' },
+        { icon: Droplets, label: t('share.required'), value: t('pub.unitsCount', { count: info.unitsNeeded }), tone: 'text-foreground' },
+        {
+          icon: expired ? AlertCircle : CheckCircle2,
+          label: t('share.status'),
+          value: expired ? t('share.expired') : t('share.accepting'),
+          tone: expired ? 'text-danger-text' : 'text-success-text',
+        },
       ]
     : [];
 
   return (
-    <main className="flex min-h-screen flex-col bg-background text-foreground">
+    <main id="main-content" className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="border-b border-line">
-        <div className="mx-auto flex h-16 w-full max-w-xl items-center justify-between gap-3 px-5">
+        <div className="mx-auto flex min-h-16 w-full max-w-xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2">
           <Logo />
-          <LanguageSwitcher />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 
       <div className="mx-auto w-full max-w-xl flex-1 space-y-6 px-5 py-8 sm:py-12">
         {loading ? (
           <div role="status" className="glass-card rounded-3xl p-12 text-center">
-            <div className="mx-auto mb-5 h-7 w-7 animate-spin rounded-full border-2 border-line-strong border-t-ember" aria-hidden="true" />
+            <div className="mx-auto mb-5 h-7 w-7 animate-spin motion-reduce:animate-none rounded-full border-2 border-line-strong border-t-primary" aria-hidden="true" />
             <p className="text-sm text-gray-400">{t('share.loading')}</p>
           </div>
         ) : error || !info ? (
           <div role="alert" className="glass-card rounded-3xl p-8 text-center sm:p-12">
-            <AlertCircle className="mx-auto mb-5 h-9 w-9 text-ember" aria-hidden="true" />
+            <AlertCircle className="mx-auto mb-5 h-9 w-9 text-danger-text" aria-hidden="true" />
             <h1 className="font-display text-4xl text-foreground">{t('share.cardUnavailable')}</h1>
             {error && <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-gray-400">{error}</p>}
             <Link href="/" className={linkButtonClass('secondary', 'md', 'mt-8')}>
@@ -183,28 +198,29 @@ export default function ShareCardClient({ token, initialData }: Props) {
             <Reveal y={20}>
               <article className="glass-card overflow-hidden rounded-3xl">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4 sm:px-8">
-                  <span className="eyebrow flex items-center gap-2.5">
-                    <span className="relative flex h-2 w-2" aria-hidden="true">
-                      <span className="dot-ping absolute inset-0 rounded-full bg-ember" />
-                      <span className="relative h-2 w-2 rounded-full bg-ember" />
-                    </span>
-                    {t('share.verifiedBroadcast')}
+                  <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+                    {t('pub.appealLabel')}
+                    {/* Only claim "verified" when the API says so */}
+                    {info.requesterVerified === true && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-success-text">
+                        <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                        {t('pub.verifiedRequester')}
+                      </span>
+                    )}
                   </span>
                   <UrgencyBadge label={urgencyLabel(info.urgency)} critical={info.urgency === 'CRITICAL'} />
                 </div>
 
                 <div className="px-6 pb-8 pt-8 sm:px-8 sm:pt-10">
-                  <p
-                    className="font-display text-[7.5rem] leading-[0.85] text-foreground sm:text-[10rem]"
-                    aria-label={info.patientBloodType}
-                  >
+                  {/* The blood type is one of the places the brand crimson is used */}
+                  <p className="font-display text-[7.5rem] leading-[0.9] text-brand sm:text-[10rem]" aria-label={info.patientBloodType}>
                     {info.patientBloodType}
                   </p>
-                  <h1 className="mt-6 font-display break-words text-3xl text-foreground sm:text-4xl">
-                    <span className="text-ember">{t('circle.unitsCount', { count: info.unitsNeeded })}</span>{' '}
+                  <h1 className="mt-6 font-display break-words text-3xl leading-snug text-foreground sm:text-4xl">
+                    <span className="text-primary-text">{t('pub.unitsCount', { count: info.unitsNeeded })}</span>{' '}
                     {t('share.ofNeeded', { bloodType: info.patientBloodType })}
                   </h1>
-                  <p className="mt-3 flex items-start gap-2.5 break-words text-base text-gray-300">
+                  <p className="mt-3 flex items-start gap-2.5 break-words text-base text-foreground">
                     <Hospital className="mt-1 h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
                     {info.hospitalName}
                   </p>
@@ -222,7 +238,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
                           <Icon className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden="true" />
                           <span className="min-w-0">{fact.label}</span>
                         </dt>
-                        <dd className={cn('mt-2 break-words font-mono text-sm', fact.tone)}>{fact.value}</dd>
+                        <dd className={cn('mt-2 break-words text-sm font-medium', fact.tone)}>{fact.value}</dd>
                       </div>
                     );
                   })}
@@ -256,10 +272,11 @@ export default function ShareCardClient({ token, initialData }: Props) {
                         href={c.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group flex items-center gap-3 rounded-2xl border border-line-strong px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-ember/50 hover:bg-ember/[0.05]"
+                        className="group flex min-h-11 items-center gap-3 rounded-2xl border border-line-strong px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft"
                       >
-                        <Icon className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-ember" aria-hidden="true" />
+                        <Icon className="h-4 w-4 shrink-0 text-gray-400 transition-colors group-hover:text-primary-text" aria-hidden="true" />
                         {c.name}
+                        <span className="sr-only">{t('pub.opensNewTab')}</span>
                       </a>
                     );
                   })}
@@ -271,10 +288,12 @@ export default function ShareCardClient({ token, initialData }: Props) {
                     {t('share.downloadImage')}
                   </Button>
                   <Button type="button" variant="secondary" size="lg" onClick={copyLink} className="w-full">
-                    {copied ? <Check className="h-4 w-4 text-emerald-400" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+                    {copied ? <Check className="h-4 w-4 text-success-text" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
                     {copied ? t('share.copied') : t('share.copyLink')}
                   </Button>
                 </div>
+                {downloadError && <Alert className="mt-4">{t('share.downloadFailed')}</Alert>}
+                {copyFailed && <Alert className="mt-4">{t('pub.copyFailed')}</Alert>}
                 <p className="sr-only" role="status">
                   {copied ? t('share.copied') : ''}
                 </p>
@@ -284,7 +303,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
             <p className="text-center">
               <Link
                 href={`/circle/${token}`}
-                className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-foreground"
+                className="inline-flex min-h-11 items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-foreground"
               >
                 {t('share.volunteerForm')} <span aria-hidden="true">→</span>
               </Link>
@@ -294,7 +313,7 @@ export default function ShareCardClient({ token, initialData }: Props) {
       </div>
 
       <footer className="border-t border-line px-5 py-6 text-center">
-        <p className="font-mono text-xs text-gray-400">{(process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk').replace(/^https?:\/\//, '')}</p>
+        <p className="text-xs text-gray-400">{SITE.replace(/^https?:\/\//, '')}</p>
         <p className="eyebrow mt-1.5">{t('share.network')}</p>
       </footer>
     </main>

@@ -32,10 +32,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(THEME_KEY) as ThemeMode | null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the stored choice after hydration is the point of this effect
       if (saved === 'light' || saved === 'dark' || saved === 'system') setModeState(saved);
     } catch {
       // storage unavailable: keep following the system
     }
+  }, []);
+
+  // Keep several open tabs in step when the choice changes in one of them
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== THEME_KEY) return;
+      if (e.newValue === 'light' || e.newValue === 'dark' || e.newValue === 'system') setModeState(e.newValue);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   // Apply the choice, and follow the OS while in "system" mode

@@ -1,19 +1,18 @@
+import { AlertCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/** Calm urgency marker: a small pulsing dot and mono label. CRITICAL uses ember, everything else saffron. */
+/** Urgency marker: icon + label + colour. CRITICAL is semantic red, anything else amber. */
 export function UrgencyBadge({ label, critical, className }: { label: string; critical: boolean; className?: string }) {
+  const Icon = critical ? AlertCircle : AlertTriangle;
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.14em]',
-        critical ? 'border-ember/30 bg-ember/10 text-ember' : 'border-saffron/30 bg-saffron/10 text-saffron',
+        'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
+        critical ? 'border-danger/30 bg-danger-soft text-danger-text' : 'border-warning/30 bg-warning-soft text-warning-text',
         className
       )}
     >
-      <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
-        <span className={cn('dot-ping absolute inset-0 rounded-full', critical ? 'bg-ember' : 'bg-saffron')} />
-        <span className={cn('relative h-1.5 w-1.5 rounded-full', critical ? 'bg-ember' : 'bg-saffron')} />
-      </span>
+      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       {label}
     </span>
   );

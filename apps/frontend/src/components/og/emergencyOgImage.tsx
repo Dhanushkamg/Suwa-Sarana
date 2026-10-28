@@ -15,10 +15,10 @@ interface EmergencyOgProps {
   cta: string;
 }
 
-/** Shared emergency card for /share and /circle: ink background, giant bone blood type, ember accents. */
+/** Shared emergency card for /share and /circle: light background, giant crimson blood type, primary accents. */
 export function emergencyOgImage({ size, bloodType, hospitalName, district, urgency, unitsNeeded, eyebrow, cta }: EmergencyOgProps) {
   const isCritical = urgency === 'CRITICAL';
-  const accent = isCritical ? OG.ember : OG.saffron;
+  const accent = isCritical ? OG.brand : OG.warning;
   const unitsLabel = `${unitsNeeded} ${unitsNeeded === 1 ? 'unit' : 'units'}`;
 
   return new ImageResponse(
@@ -56,7 +56,7 @@ export function emergencyOgImage({ size, bloodType, hospitalName, district, urge
 
         {/* Hero */}
         <div style={{ display: 'flex', flexDirection: 'column', padding: '56px 72px 0 72px', flex: 1 }}>
-          <OgEyebrow color={OG.ember}>{eyebrow}</OgEyebrow>
+          <OgEyebrow color={OG.primary}>{eyebrow}</OgEyebrow>
           <div
             style={{
               display: 'flex',
@@ -64,15 +64,15 @@ export function emergencyOgImage({ size, bloodType, hospitalName, district, urge
               fontWeight: 700,
               lineHeight: 0.92,
               letterSpacing: -18,
-              color: OG.bone,
+              color: OG.brand,
               marginTop: 8,
             }}
           >
             {bloodType}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 22, marginTop: 16 }}>
-            <div style={{ display: 'flex', fontSize: 72, fontWeight: 700, color: OG.ember, letterSpacing: -2 }}>{unitsLabel}</div>
-            <div style={{ display: 'flex', fontSize: 52, color: OG.bone, letterSpacing: -1 }}>needed urgently</div>
+            <div style={{ display: 'flex', fontSize: 72, fontWeight: 700, color: OG.primary, letterSpacing: -2 }}>{unitsLabel}</div>
+            <div style={{ display: 'flex', fontSize: 52, color: OG.text, letterSpacing: -1 }}>needed urgently</div>
           </div>
         </div>
 
@@ -87,7 +87,7 @@ export function emergencyOgImage({ size, bloodType, hospitalName, district, urge
             borderTop: `2px solid ${OG.line}`,
           }}
         >
-          <div style={{ display: 'flex', fontSize: 48, fontWeight: 700, color: OG.bone, letterSpacing: -1 }}>{hospitalName}</div>
+          <div style={{ display: 'flex', fontSize: 48, fontWeight: 700, color: OG.text, letterSpacing: -1 }}>{hospitalName}</div>
           {district ? <OgEyebrow size={24}>{`${district} District`}</OgEyebrow> : <div style={{ display: 'flex' }} />}
         </div>
 
@@ -98,8 +98,8 @@ export function emergencyOgImage({ size, bloodType, hospitalName, district, urge
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '30px 72px',
-            backgroundColor: OG.ember,
-            color: OG.ink,
+            backgroundColor: OG.brand,
+            color: OG.onBrand,
           }}
         >
           <div style={{ display: 'flex', fontSize: 34, fontWeight: 700, letterSpacing: -0.5 }}>{cta}</div>

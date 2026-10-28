@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { EYEBROW } from './styles';
+import { CARD, EYEBROW } from './styles';
 
-/** The standard dashboard surface: hairline panel from `.glass-card`. `flush` removes padding (for lists and tables). */
+/** The standard dashboard surface. `flush` removes padding (for lists and tables). */
 export function Panel({ children, className, flush = false }: { children: ReactNode; className?: string; flush?: boolean }) {
-  return <div className={cn('glass-card rounded-2xl', flush ? 'overflow-hidden' : 'p-5 sm:p-6', className)}>{children}</div>;
+  return <div className={cn(CARD, flush ? 'overflow-hidden' : 'p-5 sm:p-6', className)}>{children}</div>;
 }
 
 interface SectionHeaderProps {
@@ -18,7 +18,7 @@ interface SectionHeaderProps {
   as?: 'h2' | 'h3';
 }
 
-/** Title block for a panel or a page section: optional mono eyebrow, serif title, action on the right. */
+/** Title block for a panel or a page section: optional caption, serif title, action on the right. */
 export function SectionHeader({ eyebrow, title, description, action, icon, className, as: Tag = 'h2' }: SectionHeaderProps) {
   return (
     <div className={cn('mb-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-3', className)}>
@@ -26,7 +26,7 @@ export function SectionHeader({ eyebrow, title, description, action, icon, class
         {icon}
         <div className="min-w-0">
           {eyebrow && <p className={cn(EYEBROW, 'mb-1.5')}>{eyebrow}</p>}
-          <Tag className="font-display text-2xl text-foreground">{title}</Tag>
+          <Tag className="font-display break-words text-2xl text-foreground">{title}</Tag>
           {description && <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-gray-400">{description}</p>}
         </div>
       </div>
@@ -35,7 +35,7 @@ export function SectionHeader({ eyebrow, title, description, action, icon, class
   );
 }
 
-/** Mono section label with a hairline running to the edge: separates groups inside a form. */
+/** Caption with a hairline running to the edge: separates groups inside a form. */
 export function SectionLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={cn('flex items-center gap-3', className)}>

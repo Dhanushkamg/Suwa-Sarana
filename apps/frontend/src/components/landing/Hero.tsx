@@ -44,10 +44,10 @@ function FloatChip({
             }
       }
     >
-      <span className="mt-0.5 shrink-0 text-ember" aria-hidden="true">
+      <span className="mt-0.5 shrink-0 text-primary-text" aria-hidden="true">
         {icon}
       </span>
-      <span className={`font-mono text-[10.5px] uppercase leading-snug tracking-[0.1em] text-gray-300 sm:text-[11px] ${SCRIPT_RESET}`}>{children}</span>
+      <span className={`font-mono text-xs uppercase leading-relaxed tracking-[0.08em] text-gray-300 ${SCRIPT_RESET}`}>{children}</span>
     </motion.div>
   );
 }
@@ -76,13 +76,13 @@ export function Hero() {
             initial={reduce ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: EASE }}
-            className={`eyebrow ${styles.scriptFix} mb-7 inline-flex items-center gap-2.5 rounded-full border border-line px-3.5 py-1.5`}
+            className={`eyebrow ${styles.scriptFix} mb-7 inline-flex items-center gap-2.5 rounded-2xl border border-line px-3.5 py-1.5`}
           >
             <span className="relative flex h-2 w-2" aria-hidden="true">
-              <span className="dot-ping absolute inset-0 rounded-full bg-ember" />
-              <span className="relative h-2 w-2 rounded-full bg-ember" />
+              <span className="dot-ping absolute inset-0 rounded-full bg-primary" />
+              <span className="relative h-2 w-2 rounded-full bg-primary" />
             </span>
-            {t('hero.badge')}
+            {t('landing.heroBadge')}
           </motion.p>
 
           <h1 className={H1_CLASS}>
@@ -125,7 +125,8 @@ export function Hero() {
               {t('hero.registerDonor')}
               <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5" aria-hidden="true" />
             </PillLink>
-            <PillLink href="/register?role=REQUESTER" variant="secondary" size="lg">
+            {/* The single urgent call to action on the page's first screen: brand crimson */}
+            <PillLink href="/register?role=REQUESTER" variant="brand" size="lg">
               {t('hero.requestBlood')}
             </PillLink>
           </motion.div>
@@ -135,7 +136,7 @@ export function Hero() {
         <div className="relative mx-auto w-full max-w-[22rem] sm:max-w-sm lg:col-span-5 lg:max-w-none">
           <div
             aria-hidden="true"
-            className={`${styles.emberLight} pointer-events-none absolute left-1/2 top-1/2 -z-10 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2`}
+            className={`${styles.mapLight} pointer-events-none absolute left-1/2 top-1/2 -z-10 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2`}
           />
 
           <motion.div

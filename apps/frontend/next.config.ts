@@ -10,6 +10,15 @@ const apiOrigin = (() => {
   }
 })();
 
+// Custom map tile provider (optional): allow its origin to serve images
+const tileOrigin = (() => {
+  try {
+    return process.env.NEXT_PUBLIC_MAP_TILE_URL ? new URL(process.env.NEXT_PUBLIC_MAP_TILE_URL.replace(/\{[^}]*\}/g, 'x')).origin : '';
+  } catch {
+    return '';
+  }
+})();
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
@@ -80,7 +89,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
               "font-src 'self' https://fonts.gstatic.com",
               `connect-src 'self' ${apiOrigin} https://accounts.google.com/gsi/`,
-              "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org https://lh3.googleusercontent.com https://*.googleusercontent.com",
+              `img-src 'self' data: blob: ${tileOrigin} https://*.tile.openstreetmap.org https://*.openstreetmap.org https://lh3.googleusercontent.com https://*.googleusercontent.com`,
               "frame-src 'self' https://accounts.google.com/gsi/",
               "object-src 'none'",
               "base-uri 'self'",

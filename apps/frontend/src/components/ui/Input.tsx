@@ -40,7 +40,7 @@ export function Input({ label, error, icon, className, id, ...props }: InputProp
         />
       </div>
       {error && (
-        <p id={errorId} className="text-xs text-danger-text">
+        <p id={errorId} role="alert" className="text-xs text-danger-text">
           {error}
         </p>
       )}

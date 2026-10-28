@@ -1,25 +1,40 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { AlertCircle, Bell, CheckCircle2, ListOrdered, Plus, Radio } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import { homeForRole } from '@/lib/auth';
-import { Bell, ArrowUpRight, Plus, ListOrdered } from 'lucide-react';
-import Link from 'next/link';
-import { SriLankaMap } from '@/components/brand/SriLankaMap';
-import { Reveal } from '@/components/motion/Reveal';
-import { IconTile } from '@/components/dash/IconTile';
-import { PageHeader } from '@/components/dash/PageHeader';
-import { Rise } from '@/components/dash/Rise';
+import { fetchRequests } from '@/lib/api/requests';
+import { useUnreadCount } from '@/lib/api/notifications';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ButtonLink } from '@/components/dash/ButtonLink';
-import { EYEBROW } from '@/components/dash/styles';
-import { cn } from '@/lib/utils';
+import { MatchesDrawer } from '@/components/dash/MatchesDrawer';
+import { PageHeader } from '@/components/dash/PageHeader';
+import { RefreshButton } from '@/components/dash/RefreshButton';
+import { RequestRow } from '@/components/dash/RequestRow';
+import { Rise } from '@/components/dash/Rise';
+import { RowsSkeleton, StatsSkeleton } from '@/components/dash/Skeletons';
+import { SectionHeader } from '@/components/dash/Panel';
+import { Stat } from '@/components/dash/Stat';
+import { CARD, TEXT_LINK } from '@/components/dash/styles';
+import { useAsync } from '@/components/dash/useAsync';
+import { Users } from 'lucide-react';
+import type { BloodRequest } from '@/types';
 
+const fetchOwn = () => fetchRequests(false);
+
+/** Home for plain requesters (patients and families): their request numbers, the latest requests, and one clear next step. */
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { t } = useI18n();
+  const requests = useAsync(fetchOwn);
+  const unread = useUnreadCount();
+  const [matchesFor, setMatchesFor] = useState<BloodRequest | null>(null);
 
   useEffect(() => {
     // Only plain requesters stay here; every other role has its own home.
@@ -27,27 +42,11 @@ export default function DashboardPage() {
     if (user && home !== '/dashboard') router.replace(home);
   }, [user, router]);
 
-  const actions = [
-    {
-      href: '/dashboard/requests/new',
-      icon: Plus,
-      title: t('dashboard.newBloodRequest'),
-      desc: t('dashboard.newBloodRequestDesc'),
-      primary: true,
-    },
-    {
-      href: '/dashboard/requests',
-      icon: ListOrdered,
-      title: t('dashboard.activeRequests'),
-      desc: t('dashboard.activeRequestsDesc'),
-    },
-    {
-      href: '/dashboard/notifications',
-      icon: Bell,
-      title: t('dashboard.notifications'),
-      desc: t('dashboard.notificationsDesc'),
-    },
-  ];
+  const list = requests.state.status === 'ready' ? requests.state.data : [];
+  const ready = requests.state.status === 'ready';
+  const active = list.filter((r) => r.status === 'OPEN' || r.status === 'ESCALATING' || r.status === 'MATCHED').length;
+  const fulfilled = list.filter((r) => r.status === 'FULFILLED').length;
+  const recent = list.slice(0, 3);
 
   return (
     <div>
@@ -55,58 +54,87 @@ export default function DashboardPage() {
         eyebrow={t('dashUi.eyebrow.overview')}
         title={t('dashboard.welcome')}
         description={t('dashboard.requesterSubtitle')}
+        actions={
+          <>
+            <RefreshButton onClick={requests.reload} loading={requests.state.status === 'loading'} />
+            <ButtonLink href="/dashboard/requests/new" variant="primary">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {t('dashboard.newBloodRequest')}
+            </ButtonLink>
+          </>
+        }
       />
 
-      {/* Quick actions */}
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
-        {actions.map((a, i) => (
-          <Rise key={a.href} delay={0.05 + i * 0.06}>
-            <Link
-              href={a.href}
-              className={cn(
-                'glass-card group flex h-full flex-col justify-between gap-10 rounded-2xl p-6 transition-colors duration-300',
-                a.primary && 'border-ember/30 hover:border-ember/60'
-              )}
-            >
-              <div className="flex items-start justify-between">
-                <IconTile size="md" tone={a.primary ? 'ember' : 'muted'}>
-                  <a.icon />
-                </IconTile>
-                <span
-                  aria-hidden="true"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-gray-500 transition-[transform,color,border-color] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-ember/50 group-hover:text-ember"
-                >
-                  <ArrowUpRight className="h-4 w-4" />
-                </span>
-              </div>
-              <div>
-                <h2 className="font-display text-2xl text-foreground">{a.title}</h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-gray-400">{a.desc}</p>
-              </div>
-            </Link>
-          </Rise>
-        ))}
+      <div className="space-y-12">
+        {requests.state.status === 'loading' ? (
+          <StatsSkeleton count={3} className="sm:grid-cols-3" />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Rise delay={0.04}>
+              <Stat label={t('dashboard.activeRequests')} value={ready ? active : null} tone="primary" icon={<Radio />} className="h-full" />
+            </Rise>
+            <Rise delay={0.08}>
+              <Stat label={t('dash.fulfilledRequests')} value={ready ? fulfilled : null} tone="success" icon={<CheckCircle2 />} className="h-full" />
+            </Rise>
+            <Rise delay={0.12}>
+              <Link href="/dashboard/notifications" className="block h-full rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                <Stat label={t('common.notifications')} value={unread} icon={<Bell />} hint={unread === null ? undefined : t('dashUi.notif.unreadHint')} className="h-full transition-colors hover:border-line-strong" />
+              </Link>
+            </Rise>
+          </div>
+        )}
+
+        <section>
+          <SectionHeader
+            eyebrow={t('dashUi.eyebrow.requests')}
+            title={t('dashUi.req.latest')}
+            action={
+              <Link href="/dashboard/requests" className={TEXT_LINK}>
+                <ListOrdered className="h-4 w-4" aria-hidden="true" />
+                {t('hospitalDashboard.viewAllRequests')}
+              </Link>
+            }
+          />
+          {requests.state.status === 'loading' ? (
+            <RowsSkeleton rows={2} />
+          ) : requests.state.status !== 'ready' ? (
+            <EmptyState
+              icon={<AlertCircle className="h-10 w-10 text-danger-text" aria-hidden="true" />}
+              title={(requests.state.status === 'error' && requests.state.message) || t('dash.loadFailed')}
+              action={
+                <Button variant="secondary" onClick={() => void requests.reload()}>
+                  {t('dash.retry')}
+                </Button>
+              }
+            />
+          ) : recent.length === 0 ? (
+            <EmptyState
+              icon={<Plus className="h-10 w-10" aria-hidden="true" />}
+              title={t('bloodRequests.noActiveRequests')}
+              description={t('dashUi.req.emptyHome')}
+            />
+          ) : (
+            <ul className={`${CARD} divide-y divide-line overflow-hidden`}>
+              {recent.map((req) => (
+                <li key={req.id}>
+                  <RequestRow
+                    req={req}
+                    cta={t('bloodRequests.manageCircle')}
+                    actions={
+                      <Button type="button" variant="secondary" onClick={() => setMatchesFor(req)} aria-label={`${t('dashUi.viewMatches')}: ${req.hospitalName} #${req.id}`}>
+                        <Users className="h-4 w-4" aria-hidden="true" />
+                        {t('dashUi.viewMatches')}
+                      </Button>
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
 
-      {/* Platform note */}
-      <Reveal y={12} delay={0.05}>
-        <div className="glass-card relative overflow-hidden rounded-2xl p-6 sm:p-8">
-          <div className="relative z-10 flex flex-col gap-6 md:max-w-[65%]">
-            <p className={EYEBROW}>{t('dashUi.platform')}</p>
-            <h2 className="font-display text-3xl text-foreground">{t('dashboard.platformStatus')}</h2>
-            <p className="text-sm leading-relaxed text-gray-400">{t('dashboard.platformDesc')}</p>
-            <div>
-              <ButtonLink href="/dashboard/requests/new" variant="primary">
-                {t('dashboard.newRequest')}
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </ButtonLink>
-            </div>
-          </div>
-          <div aria-hidden="true" className="pointer-events-none absolute -right-4 top-1/2 hidden w-44 -translate-y-1/2 opacity-60 md:block">
-            <SriLankaMap />
-          </div>
-        </div>
-      </Reveal>
+      <MatchesDrawer requestId={matchesFor?.id ?? null} hospitalName={matchesFor?.hospitalName} onClose={() => setMatchesFor(null)} />
     </div>
   );
 }

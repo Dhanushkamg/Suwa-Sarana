@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * Quiet inline message: hairline border, a thin vertical accent rule and a faint tint.
+ * Inline message: icon + text + colour (never colour alone).
  * `error` uses role="alert" (announced immediately), `success` uses role="status".
  */
 export function Alert({
@@ -15,19 +16,17 @@ export function Alert({
   className?: string;
 }) {
   const isError = tone === 'error';
+  const Icon = isError ? AlertCircle : CheckCircle2;
   return (
     <div
       role={isError ? 'alert' : 'status'}
       className={cn(
-        'flex items-start gap-3 rounded-xl border border-line border-l-2 px-4 py-3 text-sm leading-relaxed text-gray-200',
-        isError ? 'border-l-ember bg-ember/[0.07]' : 'border-l-emerald-400 bg-emerald-400/[0.07]',
+        'flex items-start gap-3 rounded-xl border px-4 py-3 text-sm leading-relaxed text-foreground',
+        isError ? 'border-danger/30 bg-danger-soft' : 'border-success/30 bg-success-soft',
         className
       )}
     >
-      <span
-        aria-hidden="true"
-        className={cn('mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full', isError ? 'bg-ember' : 'bg-emerald-400')}
-      />
+      <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', isError ? 'text-danger-text' : 'text-success-text')} aria-hidden="true" />
       <div className="min-w-0 break-words">{children}</div>
     </div>
   );

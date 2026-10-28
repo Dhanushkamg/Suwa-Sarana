@@ -25,11 +25,11 @@ export function LandingFooter() {
             <p className="text-sm leading-relaxed text-gray-400">{t('landing.footerTagline')}</p>
           </div>
 
-          <nav aria-label="Footer">
-            <ul className="flex flex-wrap gap-x-8 gap-y-3">
+          <nav aria-label={t('landing.footerNavLabel')}>
+            <ul className="flex flex-wrap gap-x-8 gap-y-1">
               {LINKS.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="rounded text-sm text-gray-300 transition-colors hover:text-ember">
+                  <Link href={l.href} className="inline-flex min-h-11 items-center rounded text-sm text-gray-400 underline-offset-4 transition-colors hover:text-primary-text hover:underline">
                     {t(l.key)}
                   </Link>
                 </li>
@@ -39,7 +39,7 @@ export function LandingFooter() {
         </div>
       </div>
 
-      {/* Oversized wordmark: hairline outline that lights up in ember on hover */}
+      {/* Oversized wordmark: hairline outline that lights up in the primary colour on hover */}
       <div aria-hidden="true" className={`${styles.outlineWrap} mx-auto mt-12 max-w-[96rem] select-none text-center`}>
         <span className={`${styles.outline} font-display block whitespace-nowrap pb-2 text-[20vw] min-[1360px]:text-[17rem]`}>
           Suwa <span className="italic">Sarana</span>

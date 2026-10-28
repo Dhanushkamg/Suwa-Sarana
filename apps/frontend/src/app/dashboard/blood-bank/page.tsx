@@ -1,16 +1,23 @@
 'use client';
 
+import { Package, TriangleAlert } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import CampManagerDashboard from '@/components/camps/CampManagerDashboard';
 import { useI18n } from '@/lib/i18n';
+import { fetchStock, stockLevel } from '@/lib/api/inventory';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { ButtonLink } from '@/components/dash/ButtonLink';
 import { PageHeader } from '@/components/dash/PageHeader';
+import { Rise } from '@/components/dash/Rise';
+import { StatsSkeleton } from '@/components/dash/Skeletons';
+import { Stat } from '@/components/dash/Stat';
+import { useAsync } from '@/components/dash/useAsync';
 import { VerificationBadge } from '@/components/dash/VerificationBadge';
-import { Reveal } from '@/components/motion/Reveal';
 
 export default function BloodBankDashboardPage() {
   const { user } = useAuthStore();
   const { t } = useI18n();
+  const stock = useAsync(fetchStock);
 
   if (!user) {
     return (
@@ -22,6 +29,10 @@ export default function BloodBankDashboardPage() {
     );
   }
 
+  const ready = stock.state.status === 'ready';
+  const rows = stock.state.status === 'ready' ? stock.state.data : [];
+  const below = rows.filter((r) => ['low', 'out'].includes(stockLevel(r))).length;
+
   return (
     <div>
       <PageHeader
@@ -29,12 +40,40 @@ export default function BloodBankDashboardPage() {
         badges={<VerificationBadge status={user.verificationStatus} verifiedLabel={t('dashboard.verifiedOrg')} />}
         title={t('dashboard.bloodBankCommandCenter')}
         description={t('dashboard.bloodBankCommandCenterDesc')}
+        actions={
+          <ButtonLink href="/dashboard/inventory" variant="primary">
+            <Package className="h-4 w-4" aria-hidden="true" />
+            {t('dashUi.inv.manage')}
+          </ButtonLink>
+        }
       />
 
-      {/* Donation camp management */}
-      <Reveal y={12}>
-        <CampManagerDashboard />
-      </Reveal>
+      <div className="space-y-12">
+        {/* Inventory summary: real numbers from the inventory API, or "no data" */}
+        {stock.state.status === 'loading' ? (
+          <StatsSkeleton count={2} className="sm:grid-cols-2" />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Rise delay={0.04}>
+              <Stat
+                label={t('dashUi.inv.totalUnits')}
+                value={ready && rows.length ? rows.reduce((sum, r) => sum + r.units, 0) : null}
+                icon={<Package />}
+                hint={stock.state.status === 'unavailable' ? t('dashUi.inv.unavailableTitle') : undefined}
+                className="h-full"
+              />
+            </Rise>
+            <Rise delay={0.08}>
+              <Stat label={t('dashUi.inv.belowMinimum')} value={ready && rows.length ? below : null} tone={below ? 'warning' : 'success'} icon={<TriangleAlert />} className="h-full" />
+            </Rise>
+          </div>
+        )}
+
+        {/* Donation camp management */}
+        <Rise inView>
+          <CampManagerDashboard />
+        </Rise>
+      </div>
     </div>
   );
 }
