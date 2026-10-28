@@ -6,14 +6,24 @@ on:
   pull_request:
     branches: [ main, master ]
 
+# Least privilege for the default GITHUB_TOKEN; individual jobs raise it only where needed.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-tests:
-    name: Backend Tests (Spring Boot & JUnit)
+    name: Backend (unit + PostgreSQL integration tests)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # Must match <java.version> in apps/backend/pom.xml.
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -21,11 +31,110 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run Backend Tests
+      # ubuntu-latest runners ship a Docker daemon, which Testcontainers uses to start postgres:16-alpine.
+      # REQUIRE_DOCKER=true turns "Docker not available" into a failure instead of silently skipping the
+      # tests that run every Flyway migration and the native geo query on a real database.
+      - name: Run backend tests
         working-directory: ./apps/backend
+        env:
+          REQUIRE_DOCKER: 'true'
+          TESTCONTAINERS_RYUK_DISABLED: 'false'
         run: |
           chmod +x mvnw
-          ./mvnw clean test
+          ./mvnw -B verify
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-surefire-reports
+          path: apps/backend/target/surefire-reports
+          if-no-files-found: ignore
+          retention-days: 7
+
+  backend-image:
+    name: Backend Docker image (build + scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build only (no push): proves the multi-stage Dockerfile works. Deploy workflows push to ECR.
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/backend
+          push: false
+          load: true
+          tags: suwasarana-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Non-blocking for now (exit-code 0): findings are listed in the job log and the uploaded report so they can be
+      # triaged before the gate is switched to exit-code '1' for HIGH/CRITICAL.
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        continue-on-error: true
+        with:
+          image-ref: suwasarana-backend:ci
+          format: table
+          output: trivy-image.txt
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Show Trivy report
+        if: always()
+        run: cat trivy-image.txt 2>/dev/null || echo "no report"
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-report
+          path: trivy-image.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+  dependency-scan:
+    name: Dependency scan (Trivy filesystem)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Scans pom.xml and the pnpm lockfile for known-vulnerable dependencies and committed secrets.
+      # Non-blocking initially; flip exit-code to '1' once the baseline is clean.
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        continue-on-error: true
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          format: table
+          output: trivy-fs.txt
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Show Trivy report
+        if: always()
+        run: cat trivy-fs.txt 2>/dev/null || echo "no report"
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-fs-report
+          path: trivy-fs.txt
+          if-no-files-found: ignore
+          retention-days: 14
 
   frontend:
     name: Frontend (lint, types, tests, build)

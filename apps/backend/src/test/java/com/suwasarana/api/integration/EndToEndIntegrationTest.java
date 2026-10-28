@@ -4,23 +4,12 @@ import com.jayway.jsonpath.JsonPath;
 import com.suwasarana.api.support.PostgresIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -44,60 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class EndToEndIntegrationTest extends PostgresIntegrationTest {
 
-    private static final Pattern OTP = Pattern.compile("(?<![0-9])([0-9]{6})(?![0-9])");
-    private static final AtomicInteger IP_SEQ = new AtomicInteger(1);
-    private static final String PASSWORD = "Str0ng-Passw0rd!";
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    /** Unique 10-digit local number per call so the shared database never collides between tests. */
-    private static String uniquePhone() {
-        long n = Math.abs(UUID.randomUUID().getMostSignificantBits()) % 90_000_000L + 10_000_000L;
-        return "07" + n;
-    }
-
-    private static RequestPostProcessor freshClientIp() {
-        int n = IP_SEQ.getAndIncrement();
-        return request -> {
-            request.setRemoteAddr("10.77." + (n / 250) + "." + (n % 250 + 1));
-            return request;
-        };
-    }
-
     private String body(String template, Object... args) {
         return template.formatted(args);
-    }
-
-    /** Registers a user through the real OTP flow and returns [accessToken, userId, email]. */
-    private String[] registerViaOtp(String role, String phone) throws Exception {
-        String email = role.toLowerCase() + "." + UUID.randomUUID().toString().substring(0, 8) + "@example.org";
-
-        mockMvc.perform(post("/api/auth/send-otp").with(freshClientIp())
-                        .contentType(MediaType.APPLICATION_JSON).content(body("{\"phoneNumber\":\"%s\"}", phone)))
-                .andExpect(status().isOk());
-
-        ArgumentCaptor<String> message = ArgumentCaptor.forClass(String.class);
-        verify(smsProvider, atLeastOnce()).sendSms(eq(phone), message.capture());
-        Matcher m = OTP.matcher(message.getValue());
-        assertThat(m.find()).as("the SMS contains a 6-digit code").isTrue();
-        String otp = m.group(1);
-
-        mockMvc.perform(post("/api/auth/verify-otp").with(freshClientIp())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body("{\"phoneNumber\":\"%s\",\"otpCode\":\"%s\"}", phone, otp)))
-                .andExpect(status().isOk());
-
-        String response = mockMvc.perform(post("/api/auth/register").with(freshClientIp())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body("""
-                                {"email":"%s","phoneNumber":"%s","password":"%s","firstName":"E2E","lastName":"%s",
-                                 "role":"%s","otpCode":"%s"}""", email, phone, PASSWORD, role, role, otp)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andReturn().getResponse().getContentAsString();
-        return new String[] {JsonPath.read(response, "$.data.accessToken"),
-                String.valueOf((Object) JsonPath.read(response, "$.data.userId")), email};
     }
 
     private void saveDonorProfile(String token, String bloodType, String district, double lat, double lon) throws Exception {
@@ -126,7 +63,7 @@ class EndToEndIntegrationTest extends PostgresIntegrationTest {
         String[] requester = registerViaOtp("REQUESTER", requesterPhone);
         String loginResponse = mockMvc.perform(post("/api/auth/login").with(freshClientIp())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body("{\"email\":\"%s\",\"password\":\"%s\"}", requester[2], PASSWORD)))
+                        .content(body("{\"email\":\"%s\",\"password\":\"%s\"}", requester[2], TEST_PASSWORD)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.role").value("REQUESTER"))
                 .andReturn().getResponse().getContentAsString();

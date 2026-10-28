@@ -29,10 +29,14 @@ public final class SharedPostgres {
 
     private SharedPostgres() {}
 
-    /** True when a database can be provided (external URL configured or Docker reachable). */
+    /**
+     * True when a database can be provided (external URL configured or Docker reachable).
+     * {@code PGTEST_DISABLE=true} pretends Docker is absent (to exercise the skip / REQUIRE_DOCKER paths).
+     */
     public static synchronized boolean isAvailable() {
         if (available == null) {
-            available = externalUrl() != null || dockerReachable();
+            available = !"true".equalsIgnoreCase(System.getenv("PGTEST_DISABLE"))
+                    && (externalUrl() != null || dockerReachable());
         }
         return available;
     }

@@ -1,0 +1,55 @@
+# Dependabot opens PRs for outdated/vulnerable dependencies. Security updates are always enabled on GitHub;
+# this file adds routine version updates. Review PRs with the CI results (tests + Trivy reports) before merging.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /apps/backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Colombo
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot:*", "org.springframework.*"]
+      testcontainers:
+        patterns: ["org.testcontainers:*"]
+    commit-message:
+      prefix: "chore(backend)"
+
+  - package-ecosystem: docker
+    directory: /apps/backend
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(docker)"
+
+  - package-ecosystem: docker
+    directory: /apps/frontend
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(docker)"
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(docker)"
+
+  - package-ecosystem: npm
+    directory: /apps/frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(frontend)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"

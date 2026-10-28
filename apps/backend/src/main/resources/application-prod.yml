@@ -5,6 +5,8 @@
 # Logs are JSON (see logback-spring.xml) so CloudWatch Logs Insights can filter on requestId / level / logger.
 # =====================================================================================================
 spring:
+  main:
+    banner-mode: off   # keep stdout pure JSON for log shippers
   flyway:
     placeholders:
       environment: ${APP_ENV:prod}
