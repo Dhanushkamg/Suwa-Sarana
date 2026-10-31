@@ -146,7 +146,8 @@ class RateLimitFilterChainTest {
         JsonNode body = mapper.readTree(blocked.body());
         assertFalse(body.get("success").asBoolean());
         assertEquals("rate.limited", body.get("code").asText());
-        assertTrue(body.has("data") && body.get("data").isNull());
+        assertEquals(Long.parseLong(blocked.headers().firstValue("Retry-After").get()), body.get("data").get("retryAfterSeconds").asLong(),
+                "data.retryAfterSeconds repeats the Retry-After header (same shape as the account-lockout 429)");
         assertFalse(body.get("message").asText().isBlank());
         assertTrue(body.hasNonNull("timestamp"));
     }

@@ -9,8 +9,7 @@ import com.suwasarana.api.request.RequestLifecycleService;
 import com.suwasarana.api.request.dto.RequestMatchDto;
 import com.suwasarana.api.request.dto.RequestMatchesDto;
 import com.suwasarana.api.shared.AppClock;
-import com.suwasarana.api.shared.CodedApiException;
-import com.suwasarana.api.shared.ErrorCodes;
+import com.suwasarana.api.common.ErrorCodes;
 import com.suwasarana.api.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -49,7 +48,7 @@ public class MatchService {
         }
 
         RequestMatch match = requestMatchRepository.findById(matchId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.MATCH_NOT_FOUND, "Match not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.MATCH_NOT_FOUND, "Match not found"));
 
         if (!match.getDonor().getUser().getId().equals(donorUserId)) {
             throw ApiException.forbidden("Unauthorized to respond to this match");
@@ -57,11 +56,11 @@ public class MatchService {
 
         BloodRequest request = match.getRequest();
         if (match.getStatus() != MatchStatus.PENDING) {
-            throw CodedApiException.conflict(ErrorCodes.MATCH_ALREADY_ANSWERED, "This match has already been responded to");
+            throw ApiException.conflict(ErrorCodes.MATCH_ALREADY_ANSWERED, "This match has already been responded to");
         }
         if (request.getStatus() != com.suwasarana.api.request.RequestStatus.OPEN
                 && request.getStatus() != com.suwasarana.api.request.RequestStatus.ESCALATING) {
-            throw CodedApiException.conflict(ErrorCodes.REQUEST_NOT_ACTIVE, "This request is no longer active");
+            throw ApiException.conflict(ErrorCodes.REQUEST_NOT_ACTIVE, "This request is no longer active");
         }
 
         match.setStatus(response);
@@ -82,16 +81,16 @@ public class MatchService {
     @Transactional
     public void markMatchDonated(Long matchId, Long requesterId, boolean isAdmin, boolean donated) {
         RequestMatch match = requestMatchRepository.findById(matchId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.MATCH_NOT_FOUND, "Match not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.MATCH_NOT_FOUND, "Match not found"));
 
         if (!isAdmin && !match.getRequest().getRequester().getId().equals(requesterId)) {
             throw ApiException.forbidden("Unauthorized to confirm donation for this request");
         }
         if (match.getStatus() != MatchStatus.ACCEPTED) {
-            throw CodedApiException.conflict(ErrorCodes.MATCH_NOT_ACCEPTED, "Only accepted matches can be marked as donated");
+            throw ApiException.conflict(ErrorCodes.MATCH_NOT_ACCEPTED, "Only accepted matches can be marked as donated");
         }
         if (match.getDonated() != null) {
-            throw CodedApiException.conflict(ErrorCodes.DONATION_ALREADY_RECORDED, "Donation outcome has already been recorded");
+            throw ApiException.conflict(ErrorCodes.DONATION_ALREADY_RECORDED, "Donation outcome has already been recorded");
         }
 
         match.setDonated(donated);
@@ -115,9 +114,9 @@ public class MatchService {
     @Transactional(readOnly = true)
     public RequestMatchesDto listMatchesForRequest(Long requestId, Long actorId, boolean admin) {
         BloodRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found"));
         if (!admin && !request.getRequester().getId().equals(actorId)) {
-            throw CodedApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found");
+            throw ApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found");
         }
         List<RequestMatch> matches = requestMatchRepository.findByRequestIdOrderByDistanceKmAscIdAsc(requestId);
 

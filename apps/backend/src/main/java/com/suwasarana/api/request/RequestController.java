@@ -95,7 +95,7 @@ public class RequestController {
         return ResponseEntity.ok(ApiResponse.success(matchService.listMatchesForRequest(id, userDetails.getId(), isAdmin(userDetails))));
     }
 
-    @Operation(summary = "Mark a request fulfilled", description = "Owner or admin states the need has been met. Only OPEN, ESCALATING or MATCHED requests (else 409 REQUEST_ALREADY_CLOSED).")
+    @Operation(summary = "Mark a request fulfilled", description = "Owner or admin states the need has been met. Only OPEN, ESCALATING or MATCHED requests (else 409 request.already_closed).")
     @PostMapping("/{id}/fulfil")
     public ResponseEntity<ApiResponse<RequestResponseDto>> fulfilRequest(
             @PathVariable Long id,

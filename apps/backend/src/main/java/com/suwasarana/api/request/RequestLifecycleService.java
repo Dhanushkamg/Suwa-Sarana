@@ -6,8 +6,8 @@ import com.suwasarana.api.matching.RequestMatch;
 import com.suwasarana.api.matching.RequestMatchRepository;
 import com.suwasarana.api.notification.NotificationInboxService;
 import com.suwasarana.api.shared.AppClock;
-import com.suwasarana.api.shared.CodedApiException;
-import com.suwasarana.api.shared.ErrorCodes;
+import com.suwasarana.api.common.ApiException;
+import com.suwasarana.api.common.ErrorCodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -176,16 +176,16 @@ public class RequestLifecycleService {
 
     private BloodRequest loadOwned(Long requestId, Long actorId, boolean admin) {
         BloodRequest r = requestRepository.findById(requestId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found"));
         if (!admin && !r.getRequester().getId().equals(actorId)) {
-            throw CodedApiException.forbidden(ErrorCodes.REQUEST_NOT_OWNED, "You can only change your own requests");
+            throw ApiException.forbidden(ErrorCodes.REQUEST_NOT_OWNED, "You can only change your own requests");
         }
         return r;
     }
 
     private void assertActive(BloodRequest r) {
         if (!r.getStatus().isActive()) {
-            throw CodedApiException.conflict(ErrorCodes.REQUEST_ALREADY_CLOSED,
+            throw ApiException.conflict(ErrorCodes.REQUEST_ALREADY_CLOSED,
                     "This request is already " + r.getStatus().name().toLowerCase() + ".");
         }
     }

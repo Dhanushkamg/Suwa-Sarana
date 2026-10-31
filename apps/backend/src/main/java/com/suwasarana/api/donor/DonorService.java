@@ -13,8 +13,7 @@ import com.suwasarana.api.matching.RequestMatch;
 import com.suwasarana.api.matching.RequestMatchRepository;
 import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.shared.AppClock;
-import com.suwasarana.api.shared.CodedApiException;
-import com.suwasarana.api.shared.ErrorCodes;
+import com.suwasarana.api.common.ErrorCodes;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,10 +61,10 @@ public class DonorService {
                 .orElseThrow(() -> ApiException.notFound("User not found"));
 
         String district = District.normalise(updateDto.getDistrict())
-                .orElseThrow(() -> CodedApiException.badRequest(ErrorCodes.UNKNOWN_DISTRICT,
+                .orElseThrow(() -> ApiException.badRequest(ErrorCodes.UNKNOWN_DISTRICT,
                         "Unknown district. Use one of the 25 official district names (GET /api/meta/districts)."));
         if (!GeoBounds.contains(updateDto.getLatitude(), updateDto.getLongitude())) {
-            throw CodedApiException.badRequest(ErrorCodes.OUTSIDE_SRI_LANKA, "Location must be inside Sri Lanka");
+            throw ApiException.badRequest(ErrorCodes.OUTSIDE_SRI_LANKA, "Location must be inside Sri Lanka");
         }
 
         DonorProfile profile = donorRepository.findByUserId(userId).orElse(new DonorProfile());
@@ -102,7 +101,7 @@ public class DonorService {
     @Transactional(readOnly = true)
     public EligibilityDto getEligibility(Long userId) {
         DonorProfile profile = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
         LocalDate today = clock.today();
         EligibilityResult result = deferralService.checkEligibility(profile, today);
 
@@ -122,7 +121,7 @@ public class DonorService {
     @Transactional(readOnly = true)
     public List<DonationHistoryDto> getDonationHistory(Long userId, int limit) {
         DonorProfile profile = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
         int size = Math.max(1, Math.min(limit, 500));
         return donationRecordRepository.findByDonorIdOrderByDonatedOnDescIdDesc(profile.getId(), PageRequest.of(0, size))
                 .stream().map(DonationHistoryDto::from).toList();

@@ -54,7 +54,7 @@ public class BloodBankStockController {
         return ResponseEntity.ok(ApiResponse.success(null, "Batch removed"));
     }
 
-    @Operation(summary = "Issue units", description = "Takes units out first-expiry-first-out. 409 INSUFFICIENT_STOCK when there are not enough usable units.")
+    @Operation(summary = "Issue units", description = "Takes units out first-expiry-first-out. 409 inventory.insufficient_stock when there are not enough usable units.")
     @PostMapping("/stock/issue")
     public ResponseEntity<ApiResponse<List<MovementDto>>> issue(@AuthenticationPrincipal UserDetailsImpl user,
                                                                 @Valid @RequestBody IssueRequest body) {

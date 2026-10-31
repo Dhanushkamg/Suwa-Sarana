@@ -1,5 +1,6 @@
 package com.suwasarana.api.ratelimit;
 
+import com.suwasarana.api.config.ApiErrorWriter;
 import com.suwasarana.api.config.RateLimitingFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,7 +44,7 @@ public class UserRateLimitInterceptor implements HandlerInterceptor {
             return true;
         }
         log.warn("Rate limit exceeded: group={} scope={} retryAfter={}s", group.key(), decision.scope(), decision.retryAfterSeconds());
-        RateLimitResponses.tooManyRequests(response, decision.retryAfterSeconds());
+        ApiErrorWriter.writeTooManyRequests(response, decision.retryAfterSeconds());
         return false;
     }
 }

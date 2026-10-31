@@ -3,7 +3,6 @@ package com.suwasarana.api.scheduler;
 import com.suwasarana.api.request.RequestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,11 +39,7 @@ public class DataRetentionScheduler {
     private final Clock clock;
 
     @Autowired
-    public DataRetentionScheduler(JdbcTemplate jdbc, RetentionProperties props, SchedulerGuard guard, ObjectProvider<Clock> clock) {
-        this(jdbc, props, guard, SchedulerClock.resolve(clock));
-    }
-
-    DataRetentionScheduler(JdbcTemplate jdbc, RetentionProperties props, SchedulerGuard guard, Clock clock) {
+    public DataRetentionScheduler(JdbcTemplate jdbc, RetentionProperties props, SchedulerGuard guard, Clock clock) {
         this.jdbc = jdbc;
         this.props = props;
         this.guard = guard;

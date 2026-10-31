@@ -1,5 +1,6 @@
 package com.suwasarana.api.request;
 
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.user.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -46,13 +47,13 @@ public class BloodRequest {
     private short currentRadiusKm = 5;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = Times.utcNow();
 
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)
-    private LocalDateTime lastEscalatedAt = LocalDateTime.now();
+    private LocalDateTime lastEscalatedAt = Times.utcNow();
 
     @Column
     private Integer fraudRiskScore = 0;

@@ -1,5 +1,7 @@
 package com.suwasarana.api.config;
 
+import com.suwasarana.api.common.ErrorCodes;
+import com.suwasarana.api.common.ErrorMessages;
 import com.suwasarana.api.common.RequestContext;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.MDC;
@@ -19,7 +21,27 @@ public final class ApiErrorWriter {
 
     private ApiErrorWriter() {}
 
+    /**
+     * 429 for the rate limiters: code {@code rate.limited}, {@code Retry-After} header and {@code data.retryAfterSeconds}
+     * (the same shape {@code AuthException.tooManyRequests} produces for account lockouts).
+     */
+    public static void writeTooManyRequests(HttpServletResponse response, long retryAfterSeconds) throws IOException {
+        if (response.isCommitted()) {
+            return;
+        }
+        long retry = Math.max(1, retryAfterSeconds);
+        response.setHeader("Retry-After", Long.toString(retry));
+        response.setHeader("Cache-Control", "no-store");
+        write(response, HttpStatus.TOO_MANY_REQUESTS, ErrorCodes.RATE_LIMITED, ErrorMessages.english(ErrorCodes.RATE_LIMITED),
+                "{\"retryAfterSeconds\":" + retry + "}");
+    }
+
     public static void write(HttpServletResponse response, HttpStatus status, String code, String message) throws IOException {
+        write(response, status, code, message, null);
+    }
+
+    /** {@code dataJson}: an already-valid JSON value built from constants and numbers only, or {@code null}. */
+    private static void write(HttpServletResponse response, HttpStatus status, String code, String message, String dataJson) throws IOException {
         if (response.isCommitted()) {
             return;
         }
@@ -30,7 +52,7 @@ public final class ApiErrorWriter {
         StringBuilder json = new StringBuilder(160)
                 .append("{\"success\":false,\"message\":\"").append(escape(message))
                 .append("\",\"code\":\"").append(escape(code))
-                .append("\",\"data\":null,\"timestamp\":\"").append(Instant.now()).append('"');
+                .append("\",\"data\":").append(dataJson == null ? "null" : dataJson).append(",\"timestamp\":\"").append(Instant.now()).append('"');
         if (requestId != null) {
             json.append(",\"requestId\":\"").append(escape(requestId)).append('"');
         }

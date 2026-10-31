@@ -8,38 +8,37 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * An expected failure in the authentication / identity / admin / privacy APIs. Carries a machine-readable
- * {@code code} (see {@link AuthCodes}), optional per-field codes and an optional retry delay.
- * The human-readable {@code message} is the code itself: the frontend translates codes.
+ * An expected failure in the authentication / identity / admin / privacy APIs: an {@link ApiException} whose
+ * {@code code} comes from {@link AuthCodes}, with optional per-field codes ({@code data: {field: code}}) and an
+ * optional retry delay ({@code data.retryAfterSeconds} + {@code Retry-After}). The {@code message} is the English
+ * fallback for the code ({@code ErrorMessages}); the frontend translates the code.
  */
 public class AuthException extends ApiException {
 
-    private final String code;
     private final Map<String, String> fieldErrors;
-    private final Integer retryAfterSeconds;
 
     public AuthException(HttpStatus status, String code) {
         this(status, code, Collections.emptyMap(), null);
     }
 
     public AuthException(HttpStatus status, String code, Map<String, String> fieldErrors, Integer retryAfterSeconds) {
-        // One-line wiring point: switch to super(status, code, code) once ApiException has an explicit code.
-        super(status, code);
-        this.code = code;
+        super(status, code, null, dataOf(fieldErrors, retryAfterSeconds), retryAfterSeconds);
         this.fieldErrors = fieldErrors == null ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(fieldErrors));
-        this.retryAfterSeconds = retryAfterSeconds;
     }
 
-    public String getCode() {
-        return code;
+    private static Map<String, Object> dataOf(Map<String, String> fieldErrors, Integer retryAfterSeconds) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        if (fieldErrors != null) {
+            data.putAll(fieldErrors);
+        }
+        if (retryAfterSeconds != null) {
+            data.put("retryAfterSeconds", retryAfterSeconds);
+        }
+        return data.isEmpty() ? null : data;
     }
 
     public Map<String, String> getFieldErrors() {
         return fieldErrors;
-    }
-
-    public Integer getRetryAfterSeconds() {
-        return retryAfterSeconds;
     }
 
     // ---- factories ----------------------------------------------------------------------------------------

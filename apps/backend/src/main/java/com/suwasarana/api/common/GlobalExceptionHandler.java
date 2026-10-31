@@ -1,12 +1,5 @@
 package com.suwasarana.api.common;
 
-import com.suwasarana.api.exception.CircleExpiredException;
-import com.suwasarana.api.exception.CircleNotFoundException;
-import com.suwasarana.api.exception.DonorIneligibleException;
-import com.suwasarana.api.exception.DuplicateBookingException;
-import com.suwasarana.api.exception.RequesterNotVerifiedException;
-import com.suwasarana.api.exception.SlotFullException;
-import com.suwasarana.api.exception.SlotNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +24,10 @@ import java.util.Map;
 
 /**
  * Turns every failure into the {@link ApiResponse} envelope with the right HTTP status and a machine-readable
- * {@code code} (see {@link ErrorCodes}). Internal details (SQL, stack traces, exception text of unexpected errors) are
- * logged but never returned.
+ * {@code code} (see {@link ErrorCodes}). Contract: {@code message} = human English fallback, {@code code} = machine key
+ * the frontend translates, {@code data} = field-to-message map (Bean Validation: auth DTOs put a field code there, the
+ * other DTOs an English sentence) or details such as {@code retryAfterSeconds}. Internal details (SQL, stack traces,
+ * exception text of unexpected errors) are logged (class name + stack, never personal data) but never returned.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -90,15 +85,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatus status = HttpStatus.resolve(statusCode.value());
         String message = status != null && status.is4xxClientError() ? status.getReasonPhrase() : "An unexpected error occurred";
         if (statusCode.is5xxServerError()) {
-            log.error("Server error: {}", ex.getMessage(), ex);
+            log.error("Server error ({})", ex.getClass().getSimpleName(), ex);
         }
         return ResponseEntity.status(statusCode).headers(headers)
                 .body(ApiResponse.error(ErrorCodes.forHttpStatus(statusCode.value()), message));
     }
 
+    /**
+     * Every expected failure of every module (including {@code AuthException} and the slot / circle exceptions).
+     * Body: {@code code}, English fallback {@code message}, optional {@code data} (field-code map, retryAfterSeconds);
+     * {@code Retry-After} header when the exception carries a delay.
+     */
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException ex) {
-        return ResponseEntity.status(ex.getStatus()).body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    public ResponseEntity<ApiResponse<Object>> handleApiException(ApiException ex) {
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(ex.getStatus());
+        if (ex.getRetryAfterSeconds() != null) {
+            builder.header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()));
+        }
+        return builder.body(ApiResponse.error(ex.getCode(), ex.getMessage(), ex.getData()));
     }
 
     @ExceptionHandler(AuthenticationException.class)
@@ -110,43 +114,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex) {
-        log.warn("Access denied: {}", ex.getMessage());
+        log.warn("Access denied ({})", ex.getClass().getSimpleName());
         return error(HttpStatus.FORBIDDEN, ErrorCodes.AUTH_FORBIDDEN, "Access denied");
-    }
-
-    @ExceptionHandler(RequesterNotVerifiedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleRequesterNotVerifiedException(RequesterNotVerifiedException ex) {
-        return error(HttpStatus.FORBIDDEN, ErrorCodes.REQUESTER_NOT_VERIFIED, ex.getMessage());
-    }
-
-    @ExceptionHandler(CircleNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleCircleNotFoundException(CircleNotFoundException ex) {
-        return error(HttpStatus.NOT_FOUND, ErrorCodes.CIRCLE_NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(CircleExpiredException.class)
-    public ResponseEntity<ApiResponse<Void>> handleCircleExpiredException(CircleExpiredException ex) {
-        return error(HttpStatus.GONE, ErrorCodes.CIRCLE_EXPIRED, ex.getMessage());
-    }
-
-    @ExceptionHandler(SlotNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleSlotNotFoundException(SlotNotFoundException ex) {
-        return error(HttpStatus.NOT_FOUND, ErrorCodes.SLOT_NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(SlotFullException.class)
-    public ResponseEntity<ApiResponse<Void>> handleSlotFullException(SlotFullException ex) {
-        return error(HttpStatus.CONFLICT, ErrorCodes.SLOT_FULL, ex.getMessage());
-    }
-
-    @ExceptionHandler(DuplicateBookingException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDuplicateBookingException(DuplicateBookingException ex) {
-        return error(HttpStatus.CONFLICT, ErrorCodes.SLOT_DUPLICATE_BOOKING, ex.getMessage());
-    }
-
-    @ExceptionHandler(DonorIneligibleException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDonorIneligibleException(DonorIneligibleException ex) {
-        return error(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCodes.DONOR_INELIGIBLE, ex.getMessage());
     }
 
     /**
@@ -174,7 +143,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
-        log.error("Unhandled runtime exception: {}", ex.getMessage(), ex);
+        log.error("Unhandled runtime exception ({})", ex.getClass().getSimpleName(), ex);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.INTERNAL_ERROR, "An unexpected error occurred");
     }
 
@@ -183,7 +152,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
-        log.error("Unhandled exception: {}", ex.getMessage(), ex);
+        log.error("Unhandled exception ({})", ex.getClass().getSimpleName(), ex);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCodes.INTERNAL_ERROR, "An unexpected error occurred");
     }
 

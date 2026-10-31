@@ -3,24 +3,39 @@ package com.suwasarana.api.common;
 import org.springframework.http.HttpStatus;
 
 /**
- * An expected, client-facing failure (bad input, conflict, unauthorized...).
- * The message is safe to show to the user; GlobalExceptionHandler maps it to the given HTTP status and passes the
- * optional machine-readable {@code code} through to the response so the frontend can localise it
- * (e.g. {@code auth.otp_expired}). Every pre-existing factory/constructor keeps working without a code.
+ * THE expected, client-facing failure of the whole API (bad input, conflict, unauthorized...). Every module throws
+ * this (or a subclass such as {@code AuthException}); {@link GlobalExceptionHandler} renders it as the
+ * {@link ApiResponse} envelope:
+ * <ul>
+ *   <li>{@code code} - machine-readable key ({@code area.reason}); the frontend translates it;</li>
+ *   <li>{@code message} - human English fallback, safe to show; when the thrower gives none it is looked up in
+ *       {@link ErrorMessages} by code;</li>
+ *   <li>{@code data} - optional details: a {@code {field: code}} map for validation failures, or
+ *       {@code {retryAfterSeconds: n}} (the {@code Retry-After} header is then sent as well).</li>
+ * </ul>
  */
 public class ApiException extends RuntimeException {
 
     private final HttpStatus status;
     private final String code;
+    private final transient Object data;
+    private final Integer retryAfterSeconds;
 
     public ApiException(HttpStatus status, String message) {
         this(status, null, message);
     }
 
     public ApiException(HttpStatus status, String code, String message) {
-        super(message);
+        this(status, code, message, null, null);
+    }
+
+    /** Full form; a {@code null} message is replaced by the English fallback of {@code code}. */
+    protected ApiException(HttpStatus status, String code, String message, Object data, Integer retryAfterSeconds) {
+        super(message != null ? message : ErrorMessages.english(code));
         this.status = status;
         this.code = code;
+        this.data = data;
+        this.retryAfterSeconds = retryAfterSeconds;
     }
 
     public HttpStatus getStatus() {
@@ -30,6 +45,16 @@ public class ApiException extends RuntimeException {
     /** Machine-readable error code ({@code area.reason}), or {@code null} when the thrower did not provide one. */
     public String getCode() {
         return code;
+    }
+
+    /** Optional details for the response {@code data} field (field-code map, ...). May be {@code null}. */
+    public Object getData() {
+        return data;
+    }
+
+    /** When set, the response also carries a {@code Retry-After} header. */
+    public Integer getRetryAfterSeconds() {
+        return retryAfterSeconds;
     }
 
     public static ApiException badRequest(String message) {

@@ -1,5 +1,6 @@
 package com.suwasarana.api.ivr;
 
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.request.RequestRepository;
 import com.suwasarana.api.request.RequestStatus;
@@ -79,7 +80,7 @@ public class IvrService {
     }
 
     String criticalRequestsSpeech() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = Times.utcNow();
         List<BloodRequest> speakable = requestRepository.findActiveRequests().stream()
                 .filter(r -> r.getUrgency() == Urgency.CRITICAL)
                 .filter(r -> r.getStatus() == null || SPEAKABLE.contains(r.getStatus()))

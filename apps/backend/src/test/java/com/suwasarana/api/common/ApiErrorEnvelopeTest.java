@@ -34,12 +34,44 @@ class ApiErrorEnvelopeTest {
     @Test
     @DisplayName("ApiException(status, code, message) passes status, code and message through")
     void apiExceptionWithCode() {
-        ResponseEntity<ApiResponse<Void>> response =
+        ResponseEntity<ApiResponse<Object>> response =
                 handler.handleApiException(new ApiException(HttpStatus.GONE, "auth.otp_expired", "Code expired"));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.GONE);
         assertThat(response.getBody().getCode()).isEqualTo("auth.otp_expired");
         assertThat(response.getBody().getMessage()).isEqualTo("Code expired");
         assertThat(response.getBody().isSuccess()).isFalse();
+    }
+
+    @Test
+    @DisplayName("AuthException is an ApiException: code + English fallback message + field-code data + Retry-After")
+    void authExceptionUsesTheSingleMechanism() {
+        ResponseEntity<ApiResponse<Object>> locked = handler.handleApiException(
+                com.suwasarana.api.auth.AuthException.tooManyRequests(com.suwasarana.api.auth.AuthCodes.ACCOUNT_LOCKED, 90));
+        assertThat(locked.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(locked.getHeaders().getFirst("Retry-After")).isEqualTo("90");
+        assertThat(locked.getBody().getCode()).isEqualTo("auth.account.locked");
+        assertThat(locked.getBody().getMessage()).isEqualTo("Account temporarily locked after too many failed attempts");
+        assertThat(locked.getBody().getData()).isEqualTo(java.util.Map.of("retryAfterSeconds", 90));
+
+        ResponseEntity<ApiResponse<Object>> field = handler.handleApiException(
+                com.suwasarana.api.auth.AuthException.invalidField("password", com.suwasarana.api.auth.AuthCodes.PASSWORD_COMMON));
+        assertThat(field.getBody().getCode()).isEqualTo("validation.failed");
+        assertThat(field.getBody().getMessage()).isEqualTo("Validation failed");
+        assertThat(field.getBody().getData()).isEqualTo(java.util.Map.of("password", "auth.password.common"));
+    }
+
+    @Test
+    @DisplayName("every code in ErrorCodes and AuthCodes has an English fallback text")
+    void everyCodeHasAnEnglishFallback() throws Exception {
+        for (Class<?> holder : new Class<?>[] {ErrorCodes.class, com.suwasarana.api.auth.AuthCodes.class}) {
+            for (java.lang.reflect.Field f : holder.getDeclaredFields()) {
+                if (f.getType() == String.class && java.lang.reflect.Modifier.isStatic(f.getModifiers()) && java.lang.reflect.Modifier.isPublic(f.getModifiers())) {
+                    String code = (String) f.get(null);
+                    assertThat(ErrorMessages.english(code)).as("English fallback for " + holder.getSimpleName() + "." + f.getName() + " = " + code)
+                            .isNotEqualTo(code);
+                }
+            }
+        }
     }
 
     @Test

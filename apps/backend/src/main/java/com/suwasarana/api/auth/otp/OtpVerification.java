@@ -1,6 +1,6 @@
 package com.suwasarana.api.auth.otp;
 
-import com.suwasarana.api.auth.AuthTime;
+import com.suwasarana.api.common.Times;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -30,7 +30,7 @@ public class OtpVerification {
     private LocalDateTime expiresAt;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = AuthTime.now();
+    private LocalDateTime createdAt = Times.utcNow();
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

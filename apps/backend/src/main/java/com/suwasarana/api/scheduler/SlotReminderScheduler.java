@@ -6,7 +6,6 @@ import com.suwasarana.api.slot.SlotBooking;
 import com.suwasarana.api.slot.SlotBookingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -65,16 +64,7 @@ public class SlotReminderScheduler {
     private final Clock clock;
 
     @Autowired
-    public SlotReminderScheduler(JdbcTemplate jdbc,
-                                 SlotBookingRepository bookingRepository,
-                                 NotificationService notificationService,
-                                 SchedulerGuard guard,
-                                 PlatformTransactionManager transactionManager,
-                                 ObjectProvider<Clock> clock) {
-        this(jdbc, bookingRepository, notificationService, guard, transactionManager, SchedulerClock.resolve(clock));
-    }
-
-    SlotReminderScheduler(JdbcTemplate jdbc, SlotBookingRepository bookingRepository, NotificationService notificationService,
+    public SlotReminderScheduler(JdbcTemplate jdbc, SlotBookingRepository bookingRepository, NotificationService notificationService,
                           SchedulerGuard guard, PlatformTransactionManager transactionManager, Clock clock) {
         this.jdbc = jdbc;
         this.bookingRepository = bookingRepository;
@@ -116,7 +106,7 @@ public class SlotReminderScheduler {
                 Integer n = tx.execute(status -> remindOne(bookingId, window));
                 sent += n == null ? 0 : n;
             } catch (RuntimeException e) {
-                log.warn("Failed to send {} reminder for booking {}: {}", window.label, bookingId, e.getMessage());
+                log.warn("Failed to send {} reminder for booking {} ({})", window.label, bookingId, e.getClass().getSimpleName());
             }
         }
         return sent;

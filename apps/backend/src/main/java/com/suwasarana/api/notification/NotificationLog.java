@@ -1,5 +1,6 @@
 package com.suwasarana.api.notification;
 
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.donor.DonorProfile;
 import com.suwasarana.api.request.BloodRequest;
 import jakarta.persistence.*;
@@ -36,7 +37,7 @@ public class NotificationLog {
     private String messageBody;
 
     @Column(name = "sent_at", nullable = false, updatable = false)
-    private LocalDateTime sentAt = LocalDateTime.now();
+    private LocalDateTime sentAt = Times.utcNow();
 
     public NotificationLog() {}
 
@@ -48,7 +49,7 @@ public class NotificationLog {
         this.status = status;
         this.recipient = recipient;
         this.messageBody = messageBody;
-        this.sentAt = LocalDateTime.now();
+        this.sentAt = Times.utcNow();
     }
 
     public Long getId() { return id; }

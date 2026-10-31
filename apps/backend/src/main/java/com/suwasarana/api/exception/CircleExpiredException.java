@@ -1,7 +1,11 @@
 package com.suwasarana.api.exception;
 
-public class CircleExpiredException extends RuntimeException {
+import com.suwasarana.api.common.ApiException;
+import com.suwasarana.api.common.ErrorCodes;
+import org.springframework.http.HttpStatus;
+
+public class CircleExpiredException extends ApiException {
     public CircleExpiredException(String message) {
-        super(message);
+        super(HttpStatus.GONE, ErrorCodes.CIRCLE_EXPIRED, message);
     }
 }

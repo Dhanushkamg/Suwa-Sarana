@@ -1,9 +1,9 @@
 package com.suwasarana.api.auth.otp;
 
 import com.suwasarana.api.auth.AuthCodes;
-import com.suwasarana.api.auth.AuthTime;
 import com.suwasarana.api.auth.AuthException;
 import com.suwasarana.api.auth.AuthMessages;
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.notification.sms.SmsProvider;
 import com.suwasarana.api.security.HmacHasher;
 import com.suwasarana.api.user.PhoneNumbers;
@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,16 +44,18 @@ public class OtpService {
     private final HmacHasher hasher;
     private final AuthMessages messages;
     private final UserRepository userRepository;
+    private final Clock clock;
 
     private final SecureRandom random = new SecureRandom();
 
     public OtpService(OtpVerificationRepository otpRepository, SmsProvider smsProvider, HmacHasher hasher,
-                      AuthMessages messages, UserRepository userRepository) {
+                      AuthMessages messages, UserRepository userRepository, Clock clock) {
         this.otpRepository = otpRepository;
         this.smsProvider = smsProvider;
         this.hasher = hasher;
         this.messages = messages;
         this.userRepository = userRepository;
+        this.clock = clock;
     }
 
     public void generateAndSendOtp(String phoneNumber) {
@@ -73,8 +76,8 @@ public class OtpService {
         Optional<OtpVerification> latest = otpRepository.findTopByPhoneNumberInOrderByCreatedAtDesc(variants);
         if (latest.isPresent()) {
             LocalDateTime next = latest.get().getCreatedAt().plusSeconds(RESEND_COOLDOWN_SECONDS);
-            if (next.isAfter(AuthTime.now())) {
-                int wait = (int) Math.max(1, Duration.between(AuthTime.now(), next).toSeconds());
+            if (next.isAfter(Times.utcNow(clock))) {
+                int wait = (int) Math.max(1, Duration.between(Times.utcNow(clock), next).toSeconds());
                 throw AuthException.tooManyRequests(AuthCodes.OTP_COOLDOWN, wait);
             }
         }
@@ -84,7 +87,7 @@ public class OtpService {
         OtpVerification verification = new OtpVerification();
         verification.setPhoneNumber(phone);
         verification.setOtpCode(hasher.hash(HASH_PURPOSE, phone + ":" + otp));
-        verification.setExpiresAt(AuthTime.now().plusMinutes(OTP_VALIDITY_MINUTES));
+        verification.setExpiresAt(Times.utcNow(clock).plusMinutes(OTP_VALIDITY_MINUTES));
         verification = otpRepository.save(verification);
 
         String language = userRepository.findFirstByPhoneNumberIn(variants)
@@ -113,7 +116,7 @@ public class OtpService {
         }
 
         OtpVerification verification = optVerification.get();
-        LocalDateTime now = AuthTime.now();
+        LocalDateTime now = Times.utcNow(clock);
 
         if (verification.getExpiresAt().isBefore(now)) {
             log.warn("OTP expired for {}", PhoneNumbers.mask(phone));
@@ -146,7 +149,7 @@ public class OtpService {
 
     public boolean isPhoneVerified(String phoneNumber) {
         return otpRepository.findTopByPhoneNumberInOrderByCreatedAtDesc(PhoneNumbers.variants(phoneNumber))
-                .map(v -> v.isVerified() && v.getExpiresAt().isAfter(AuthTime.now()))
+                .map(v -> v.isVerified() && v.getExpiresAt().isAfter(Times.utcNow(clock)))
                 .orElse(false);
     }
 

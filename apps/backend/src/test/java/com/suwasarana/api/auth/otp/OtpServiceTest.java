@@ -47,7 +47,7 @@ class OtpServiceTest {
     @BeforeEach
     void setUp() {
         hasher = new HmacHasher(new AuthProperties());
-        otpService = new OtpService(repository, smsProvider, hasher, new AuthMessages(), userRepository);
+        otpService = new OtpService(repository, smsProvider, hasher, new AuthMessages(), userRepository, java.time.Clock.systemUTC());
         when(smsProvider.sendSms(anyString(), anyString())).thenReturn(true);
         when(userRepository.findFirstByPhoneNumberIn(anyCollection())).thenReturn(Optional.empty());
     }

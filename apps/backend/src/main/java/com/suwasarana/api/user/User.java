@@ -1,6 +1,6 @@
 package com.suwasarana.api.user;
 
-import com.suwasarana.api.auth.AuthTime;
+import com.suwasarana.api.common.Times;
 import jakarta.persistence.*;
 import org.hibernate.annotations.DynamicUpdate;
 
@@ -88,14 +88,14 @@ public class User {
     private Instant deletedAt;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = AuthTime.now();
+    private LocalDateTime createdAt = Times.utcNow();
 
     @Column(nullable = false)
-    private LocalDateTime updatedAt = AuthTime.now();
+    private LocalDateTime updatedAt = Times.utcNow();
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = AuthTime.now();
+        updatedAt = Times.utcNow();
     }
 
     // ---- derived helpers --------------------------------------------------------------------------------

@@ -5,7 +5,6 @@ import com.suwasarana.api.ratelimit.CachedBodyRequestFactory;
 import com.suwasarana.api.ratelimit.ClientIpResolver;
 import com.suwasarana.api.ratelimit.RateGroup;
 import com.suwasarana.api.ratelimit.RateLimitProperties;
-import com.suwasarana.api.ratelimit.RateLimitResponses;
 import com.suwasarana.api.ratelimit.RateLimitService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -98,7 +97,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private void reject(HttpServletResponse response, RateGroup group, RateLimitService.Decision decision) throws IOException {
         log.warn("Rate limit exceeded: group={} scope={} retryAfter={}s", group.key(), decision.scope(), decision.retryAfterSeconds());
-        RateLimitResponses.tooManyRequests(response, decision.retryAfterSeconds());
+        ApiErrorWriter.writeTooManyRequests(response, decision.retryAfterSeconds());
     }
 
     /** Path without context path, matrix parameters, duplicate/trailing slashes. */

@@ -1,5 +1,6 @@
 package com.suwasarana.api.matching;
 
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.donor.DonorProfile;
 import com.suwasarana.api.request.BloodRequest;
 import jakarta.persistence.*;
@@ -26,7 +27,7 @@ public class RequestMatch {
     private BigDecimal distanceKm = BigDecimal.ZERO;
 
     @Column(name = "notified_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = Times.utcNow();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "response", length = 20)

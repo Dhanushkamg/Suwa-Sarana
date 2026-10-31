@@ -4,9 +4,9 @@ package com.suwasarana.api.auth;
  * Every machine-readable error code the authentication, identity, admin and privacy APIs return.
  * The API sends codes only; the frontend translates them (en/si/ta). Keep ALL of them here.
  *
- * Wiring note: {@link AuthException} is the single place that turns a code into an HTTP error. When the
- * shared ApiException gains an explicit {@code code} (ApiException(status, code, message)), only that
- * one constructor call changes.
+ * {@link AuthException} (an {@code ApiException}) turns a code into an HTTP error; the English fallback text of each
+ * code is in {@code i18n/error_messages_en.properties}. Together with {@code common.ErrorCodes} this is the platform's
+ * code list (docs/API-CONTRACT.md).
  */
 public final class AuthCodes {
 
@@ -14,7 +14,7 @@ public final class AuthCodes {
     }
 
     // ---- generic -------------------------------------------------------------------------------------------
-    public static final String VALIDATION_FAILED = "validation.failed";
+    public static final String VALIDATION_FAILED = com.suwasarana.api.common.ErrorCodes.VALIDATION_FAILED;
     public static final String NOT_FOUND = "common.notFound";
 
     // ---- success messages (also codes: the frontend translates) --------------------------------------------
