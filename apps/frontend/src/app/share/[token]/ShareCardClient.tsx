@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Heart, MapPin, Droplets, Share2, Copy, Check,
-  MessageSquare, Send, AlertCircle, Clock, Smartphone, Download, Hospital, BadgeCheck, CheckCircle2
+  MessageSquare, Send, AlertCircle, Clock, Smartphone, Download, Hospital, BadgeCheck, CheckCircle2, ImageDown
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { cn } from '@/lib/utils';
@@ -27,6 +29,10 @@ interface Props {
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://suwasarana.lk';
 
+// The poster dialog (QR code, image export) only loads when a signed-in requester opens it
+const RequestPosterDialog = dynamic(() => import('@/components/poster/RequestPosterDialog'), { ssr: false });
+const REQUESTER_ROLES = ['REQUESTER', 'HOSPITAL_REQUESTER', 'BLOOD_BANK_REQUESTER'];
+
 export default function ShareCardClient({ token, initialData }: Props) {
   const { t } = useI18n();
   const [info, setInfo] = useState<CircleInfo | null>(initialData || null);
@@ -36,6 +42,10 @@ export default function ShareCardClient({ token, initialData }: Props) {
   const [copyFailed, setCopyFailed] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [posterOpen, setPosterOpen] = useState(false);
+  // The page is public and the API does not say who owns the invite, so any signed-in requester account may open the
+  // poster maker; the server still refuses unverified requesters and the poster itself carries no personal details.
+  const canMakePoster = useAuthStore((s) => REQUESTER_ROLES.includes(s.user?.role ?? ''));
 
   const loadInfo = useCallback(async () => {
     if (initialData) return;
@@ -292,6 +302,12 @@ export default function ShareCardClient({ token, initialData }: Props) {
                     {copied ? t('share.copied') : t('share.copyLink')}
                   </Button>
                 </div>
+                {canMakePoster && !expired && info && (
+                  <Button type="button" variant="secondary" size="lg" onClick={() => setPosterOpen(true)} className="mt-3 w-full">
+                    <ImageDown className="h-4 w-4" aria-hidden="true" />
+                    {t('poster.create')}
+                  </Button>
+                )}
                 {downloadError && <Alert className="mt-4">{t('share.downloadFailed')}</Alert>}
                 {copyFailed && <Alert className="mt-4">{t('pub.copyFailed')}</Alert>}
                 <p className="sr-only" role="status">
@@ -316,6 +332,16 @@ export default function ShareCardClient({ token, initialData }: Props) {
         <p className="text-xs text-gray-400">{SITE.replace(/^https?:\/\//, '')}</p>
         <p className="eyebrow mt-1.5">{t('share.network')}</p>
       </footer>
+      {posterOpen && info && (
+        <RequestPosterDialog
+          bloodType={info.patientBloodType}
+          units={info.unitsNeeded}
+          hospital={info.hospitalName}
+          district={info.district}
+          token={token}
+          onClose={() => setPosterOpen(false)}
+        />
+      )}
     </main>
   );
 }

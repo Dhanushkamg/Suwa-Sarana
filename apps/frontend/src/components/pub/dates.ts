@@ -53,7 +53,8 @@ export function toTimeOfDay(value: unknown): Date | null {
     return null;
   }
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
-  return fromWallClock(2000, 1, 1, h, m);
+  // Any date after 2006 works; the year 2000 would not: Sri Lanka was on UTC+06:00 then, which shifts the time by 30 minutes
+  return fromWallClock(2020, 1, 1, h, m);
 }
 
 export const TIME_FORMAT: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };

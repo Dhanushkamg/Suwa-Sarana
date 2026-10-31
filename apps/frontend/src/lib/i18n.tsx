@@ -62,6 +62,28 @@ function translatorFor(locale: Locale) {
   return (translators[locale] ??= makeTranslator(locale));
 }
 
+/**
+ * Translate / format in a language other than the UI language (the poster generator renders artwork in the language the
+ * organiser picks, independent of the app language). Same English fallback as `useI18n().t`.
+ */
+export function translateIn(locale: Locale, key: string, values?: Values): string {
+  const current = translatorFor(locale);
+  if (current.has(key)) return current(key, values);
+  const english = translatorFor('en');
+  if (locale !== 'en' && english.has(key)) return english(key, values);
+  return key;
+}
+
+export function formatterIn(locale: Locale): I18nContextValue['format'] {
+  const f = createFormatter({ locale: INTL_LOCALE[locale], timeZone: 'Asia/Colombo' });
+  return {
+    number: (value, options) => f.number(value, options as Parameters<typeof f.number>[1]),
+    date: (value, options) => f.dateTime(new Date(value), (options ?? { dateStyle: 'medium' }) as Parameters<typeof f.dateTime>[1]),
+    dateTime: (value, options) =>
+      f.dateTime(new Date(value), (options ?? { dateStyle: 'medium', timeStyle: 'short' }) as Parameters<typeof f.dateTime>[1]),
+  };
+}
+
 function isLocale(value: unknown): value is Locale {
   return value === 'en' || value === 'si' || value === 'ta';
 }

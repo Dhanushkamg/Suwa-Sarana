@@ -27,3 +27,18 @@
 | `dashUi.units`, `dashUi.requestsCount` | {count} units / requests | Sinhala uses the same word for singular and plural (`one` and `other` identical) | Word order "ඒකක 3" vs "ඒකක 3ක්" |
 | `dashUi.matchStatus.*` | Waiting for reply / Accepted / Declined / No response / Donated | si: පිළිතුරු බලාපොරොත්තුවෙන් / පිළිගත්තා / ප්‍රතික්ෂේප කළා / පිළිතුරක් නැත / රුධිර දානය කළා | Past-tense verbs for status chips |
 | Glossary | "donation camp" | si: රුධිර දන් දීමේ කඳවුරු | Used as in the glossary; still marked unsure there |
+
+## FE-AI (chatbot, poster generator) - needs native-speaker review
+
+| Key | English | Wording used (si / ta) | Why unsure |
+|---|---|---|---|
+| `chatUi.grounded` | Verified source | si: සත්‍යාපිත මූලාශ්‍රය; ta: சரிபார்க்கப்பட்ட ஆதாரம் | Shown only when the answer cites a stored source |
+| `chatUi.sourceStatus.CONFLICT / GAP` | Sources disagree / No verified answer yet | si: මූලාශ්‍ර එකඟ නොවේ / තවම සත්‍යාපිත පිළිතුරක් නැත; ta: ஆதாரங்கள் முரண்படுகின்றன / சரிபார்க்கப்பட்ட பதில் இன்னும் இல்லை | Wording of the knowledge-base status labels |
+| `chatUi.replyStyle.*` | Match my message / Sinhala letters / Singlish (English letters) | si: මගේ පණිවිඩයට ගැළපෙන ලෙස / සිංහල අකුරින් / සිංග්ලිෂ් (ඉංග්‍රීසි අකුරින්); ta: என் செய்திக்கு ஏற்ப / சிங்கள எழுத்துகளில் / சிங்கிளிஷ் (ஆங்கில எழுத்துகளில்) | The term "Singlish" in Sinhala and Tamil script |
+| `chatUi.err.rateLimit` | You are asking questions too quickly. Please wait {seconds}... | si/ta plain `{seconds}` without plural forms | Natural phrasing of the wait message |
+| `poster.copy.*.headline/body/caption` | Standard poster wording (urgent request, camp, awareness, thank you) | si and ta drafts written for this change | All 16 strings: tone (calm, no scare language), verbs for "come forward / share", the em dash layout of the camp body |
+| `poster.cta.*` | Scan to volunteer or share / Scan for camp details / ... | si: ස්කෑන් කරන්න; ta: ஸ்கேன் செய்யவும் | Loan word "scan" vs a native verb |
+| `poster.unverifiedBadge` / `poster.unverifiedStamp` | Unverified / UNVERIFIED | si: සත්‍යාපනය කර නැත / සත්‍යාපිත නොවේ; ta: சரிபார்க்கப்படவில்லை / சரிபார்க்கப்படாதது | Short mark printed on the image; glossary has only "verified" |
+| `poster.size.*` | Square / Portrait / Link preview / Story | si: සමචතුරස්‍ර / සිරස් / සබැඳි පෙරදසුන / ස්ටෝරි; ta: சதுரம் / செங்குத்து / இணைப்பு முன்னோட்டம் / ஸ்டோரி | Social-media terms |
+| `poster.copySource.ai` | Wording suggested by AI. Read it and correct anything that is wrong... | si/ta drafts | Must read as a clear instruction to check the text |
+| `poster.blocked.desc` | Urgent request posters can only be made by verified requesters... | si/ta drafts | Policy message, check tone |

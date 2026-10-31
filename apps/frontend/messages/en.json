@@ -751,10 +751,7 @@
     "noAnswer": "I could not process your query. Please consult clinical staff at the blood bank.",
     "error": "Sorry, I am currently unable to reach the eligibility engine. Please check with clinical staff at your nearest blood bank.",
     "assistantName": "Eligibility AI Assistant",
-    "grounded": "NBTS Grounded",
     "subtitle": "Eligibility & Deferral FAQ",
-    "banner": "Information provided by this assistant is based solely on verified and trusted sources from the National Blood Transfusion Service (NBTS) Sri Lanka.",
-    "thinking": "Consulting NBTS eligibility rules...",
     "placeholder": "Ask in English, සිංහල, or தமிழ்...",
     "send": "Send",
     "prompt1Label": "Tattoo & Piercing",
@@ -1285,8 +1282,149 @@
     "notice": "This assistant gives general guidance and can make mistakes. For any medical decision, confirm with the staff at your blood bank.",
     "conversation": "Conversation",
     "assistantSays": "Assistant:",
-    "grounded": "Answer from a stored source",
+    "grounded": "Verified source",
     "thinking": "Looking for an answer…",
-    "suggested": "Suggested questions"
+    "suggested": "Suggested questions",
+    "showSources": "{count, plural, one {Show source} other {Show # sources}}",
+    "sourceStatus": {
+      "VERIFIED": "Verified",
+      "CONFLICT": "Sources disagree",
+      "GAP": "No verified answer yet"
+    },
+    "lastReviewed": "Last reviewed {date}",
+    "needsConfirmation": "Please confirm this with the staff at your blood bank before you rely on it.",
+    "replyLanguage": "Reply language: {language}",
+    "lang": {
+      "en": "English",
+      "si": "සිංහල",
+      "ta": "தமிழ்"
+    },
+    "replyStyle": {
+      "summary": "Sinhala reply style: {style}",
+      "legend": "When you write in Sinhala, reply in",
+      "auto": "Match my message",
+      "script": "Sinhala letters",
+      "romanised": "Singlish (English letters)"
+    },
+    "clear": "Clear conversation",
+    "retry": "Try again",
+    "retryIn": "Try again in {seconds}s",
+    "err": {
+      "offline": "You seem to be offline. Check your connection and try again.",
+      "rateLimit": "You are asking questions too quickly. Please wait {seconds, plural, one {# second} other {# seconds}} and try again.",
+      "invalid": "That question could not be processed. Please shorten it or ask it a different way."
+    },
+    "inputHint": "Enter to send, Shift+Enter for a new line",
+    "charsLeft": "{count, plural, one {# character left} other {# characters left}}"
+  },
+  "poster": {
+    "create": "Create poster",
+    "prepareFailed": "We could not prepare the share link for the poster. Please try again.",
+    "title": "Create a poster",
+    "description": "Pick a type and size, check the wording, then download the image to share. Facts such as the hospital and the blood type come from your account and cannot be changed here.",
+    "tagline": "Community blood donation",
+    "eyebrow": {
+      "URGENT_REQUEST": "Blood request",
+      "CAMP": "Blood donation camp",
+      "AWARENESS": "Blood donation",
+      "THANK_YOU": "Thank you"
+    },
+    "cta": {
+      "URGENT_REQUEST": "Scan to volunteer or share",
+      "CAMP": "Scan for camp details",
+      "AWARENESS": "Scan to register as a donor",
+      "THANK_YOU": "Scan to join our donor community"
+    },
+    "unitsHero": "{count, plural, one {# unit} other {# units}}",
+    "organisedBy": "Organised by {name}",
+    "unverifiedBadge": "Unverified",
+    "unverifiedStamp": "UNVERIFIED",
+    "copy": {
+      "URGENT_REQUEST": {
+        "headline": "{units, plural, one {# unit} other {# units}} of {bloodType} blood needed",
+        "headlineNoUnits": "{bloodType} blood needed",
+        "body": "A patient at {place} needs {bloodType} blood. If you are able to donate, please come forward, or share this post with someone who can.",
+        "caption": "{bloodType} blood is needed at {place}. If you can donate, or know someone who can, please share this post. Scan the QR code or open the link to help.",
+        "hashtags": "#SuwaSarana #BloodDonation #DonateBlood #SriLanka"
+      },
+      "CAMP": {
+        "headline": "Join our blood donation camp",
+        "body": "{campName} at {venue} on {when}. Come along to donate, or bring a friend.",
+        "caption": "{campName}: blood donation camp at {venue} on {when}. Come along and donate, and please share this post with family and friends. Scan the QR code for details.",
+        "hashtags": "#SuwaSarana #BloodDonationCamp #DonateBlood #SriLanka"
+      },
+      "AWARENESS": {
+        "headline": "Give blood, give hope",
+        "body": "Voluntary blood donors help patients in hospitals across Sri Lanka. Register with Suwa Sarana to be told when your blood type is needed near you.",
+        "caption": "Give blood, give hope. Register as a donor on Suwa Sarana and help patients in your community. Share this post to reach more donors.",
+        "hashtags": "#SuwaSarana #BloodDonation #BecomeADonor #SriLanka"
+      },
+      "THANK_YOU": {
+        "headline": "Thank you, donors",
+        "body": "{hasCamp, select, yes {Thank you to everyone who gave blood or lent a hand at {campName}. Your generosity makes a real difference for patients and their families.} other {Thank you to every donor and volunteer who gave their time and blood. Your generosity makes a real difference for patients and their families.}}",
+        "caption": "Thank you to everyone who donated blood or helped out. Your generosity makes a real difference for patients and their families.",
+        "hashtags": "#SuwaSarana #ThankYouDonors #BloodDonation #SriLanka"
+      }
+    },
+    "template": {
+      "label": "Poster type",
+      "URGENT_REQUEST": "Urgent request",
+      "CAMP": "Donation camp",
+      "AWARENESS": "Awareness",
+      "THANK_YOU": "Thank you"
+    },
+    "size": {
+      "label": "Size",
+      "1080x1080": "Square 1080×1080",
+      "1080x1350": "Portrait 1080×1350",
+      "1200x630": "Link preview 1200×630",
+      "1080x1920": "Story 1080×1920"
+    },
+    "language": {
+      "label": "Poster language",
+      "en": "English",
+      "si": "සිංහල",
+      "ta": "தமிழ்"
+    },
+    "previewLabel": "Preview of the poster: {headline}",
+    "wording": "Wording",
+    "field": {
+      "headline": "Headline",
+      "body": "Short text",
+      "caption": "Caption for sharing",
+      "hashtags": "Hashtags",
+      "hashtagsHelp": "Separate with spaces. Up to {max}.",
+      "count": "{count} / {max}"
+    },
+    "copySource": {
+      "loading": "Looking for wording suggestions…",
+      "ai": "Wording suggested by AI. Read it and correct anything that is wrong before you share.",
+      "standard": "Standard wording. Edit it if you like."
+    },
+    "resetCopy": "Use standard wording",
+    "contact": {
+      "label": "Show my phone number on the poster",
+      "help": "Anyone who sees the poster will see {phone}. Leave this off if you would rather not share it."
+    },
+    "download": "Download PNG",
+    "downloading": "Preparing image…",
+    "downloaded": "Poster downloaded",
+    "exportFailed": "We could not create the image. Please try again.",
+    "exportBlank": "The image came out blank. Please try again.",
+    "fontWarning": "The Sinhala or Tamil font may not have loaded. Check the image before you share it.",
+    "copyCaption": "Copy caption",
+    "captionCopied": "Caption copied",
+    "copyFailed": "Could not copy automatically. Select the text and copy it by hand.",
+    "share": {
+      "heading": "Share",
+      "help": "Download the image first, then attach it in the app you choose. These links share the caption and the link, not the image.",
+      "native": "Share…"
+    },
+    "blocked": {
+      "title": "Verification needed for this poster",
+      "desc": "Urgent request posters can only be made by verified requesters. Your account is not verified yet, so downloading is turned off for this type. You can still choose another poster type."
+    },
+    "unverifiedNote": "Your account is not verified yet, so posters you download carry an Unverified mark.",
+    "overflow": "Some text does not fit and may be cut off. Shorten the headline or the short text."
   }
 }

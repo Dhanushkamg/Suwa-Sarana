@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { MapPin, Activity, Droplets, CheckCircle2, Share2, Copy, Check, Users, Phone, MessageSquare, AlertCircle, ClipboardCheck, CircleX, ShieldOff } from 'lucide-react';
+import { MapPin, Activity, Droplets, CheckCircle2, Share2, Copy, Check, Users, Phone, MessageSquare, AlertCircle, ClipboardCheck, CircleX, ShieldOff, ImageDown } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { API_BASE_URL } from '@/lib/constants';
@@ -33,6 +33,9 @@ import type { BloodRequest } from '@/types';
 
 // Leaflet only loads when the map is shown (never in Low-Data Mode)
 const RequestDistanceMap = dynamic(() => import('@/components/maps/RequestDistanceMap'), { ssr: false, loading: () => <BlockSkeleton className="h-64" /> });
+
+// The poster dialog (QR code, image export) only loads when the owner opens it
+const RequestPosterDialog = dynamic(() => import('@/components/poster/RequestPosterDialog'), { ssr: false });
 
 interface CircleInviteData {
   requestId: number;
@@ -82,6 +85,8 @@ export default function RequestLiveStatusPage() {
   // Close-the-loop actions
   const [action, setAction] = useState<'fulfil' | 'close' | null>(null);
   const [matchesOpen, setMatchesOpen] = useState(false);
+  const [posterOpen, setPosterOpen] = useState(false);
+  const [posterPreparing, setPosterPreparing] = useState(false);
 
   // Circle state
   const [circleInvite, setCircleInvite] = useState<CircleInviteData | null>(null);
@@ -213,6 +218,21 @@ export default function RequestLiveStatusPage() {
     }
   };
 
+  /** The poster's QR code needs the request's share link: create it first when the owner has none yet. */
+  const openPoster = async () => {
+    if (posterPreparing) return;
+    setPosterPreparing(true);
+    try {
+      if (!circleInvite) await fetchInvite();
+      setPosterOpen(true);
+    } catch (err: unknown) {
+      if (apiStatus(err) === 403) setCircleForbidden(true);
+      toast.show(t('poster.prepareFailed'), 'error');
+    } finally {
+      setPosterPreparing(false);
+    }
+  };
+
   const copyToClipboard = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -338,6 +358,10 @@ export default function RequestLiveStatusPage() {
               <Button type="button" variant="secondary" onClick={() => setMatchesOpen(true)}>
                 <Users className="h-4 w-4" aria-hidden="true" />
                 {t('dashUi.viewMatches')}
+              </Button>
+              <Button type="button" variant="secondary" onClick={openPoster} loading={posterPreparing}>
+                {!posterPreparing && <ImageDown className="h-4 w-4" aria-hidden="true" />}
+                {t('poster.create')}
               </Button>
               {canClose && (
                 <>
@@ -518,6 +542,17 @@ export default function RequestLiveStatusPage() {
           </Panel>
         </Rise>
       </div>
+
+      {posterOpen && circleInvite && (
+        <RequestPosterDialog
+          bloodType={requestData.patientBloodType}
+          units={requestData.unitsNeeded}
+          hospital={requestData.hospitalName}
+          district={requestData.district}
+          token={circleInvite.inviteToken}
+          onClose={() => setPosterOpen(false)}
+        />
+      )}
 
       <MatchesDrawer requestId={matchesOpen ? requestData.id : null} hospitalName={requestData.hospitalName} onClose={() => setMatchesOpen(false)} />
 
