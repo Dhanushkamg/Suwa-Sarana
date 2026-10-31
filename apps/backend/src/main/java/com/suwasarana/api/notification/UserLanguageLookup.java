@@ -1,30 +1,22 @@
 package com.suwasarana.api.notification;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.suwasarana.api.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
- * Reads a user's {@code preferred_language} (en / si / ta) without depending on the User entity, because the column
- * is added by the account work (migrations V25-V29) and may not exist yet. Defensive on purpose:
- * the column's existence is checked once through information_schema, so a missing column never aborts a Postgres
- * transaction, and every failure falls back to English.
+ * Reads a user's {@code users.preferred_language} (en / si / ta; set at registration or in the profile) so alerts,
+ * SMS and inbox texts are rendered in the recipient's language. Any miss (unknown user, null, unsupported value)
+ * falls back to English.
  */
 @Component
 public class UserLanguageLookup {
 
-    private static final Logger log = LoggerFactory.getLogger(UserLanguageLookup.class);
-
-    private final JdbcTemplate jdbc;
-    private volatile Boolean columnPresent;
+    private final UserRepository userRepository;
 
     @Autowired
-    public UserLanguageLookup(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public UserLanguageLookup(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     /** Test seam: a lookup that always answers {@code lang}. */
@@ -38,28 +30,9 @@ public class UserLanguageLookup {
     }
 
     public String languageOf(Long userId) {
-        if (userId == null || jdbc == null || !columnPresent()) return NotificationTemplates.EN;
-        try {
-            List<String> rows = jdbc.queryForList("SELECT preferred_language FROM users WHERE id = ?", String.class, userId);
-            return rows.isEmpty() ? NotificationTemplates.EN : NotificationTemplates.language(rows.get(0));
-        } catch (Exception e) {
-            log.debug("preferred_language lookup failed, using English: {}", e.getMessage());
-            return NotificationTemplates.EN;
-        }
-    }
-
-    private boolean columnPresent() {
-        Boolean cached = columnPresent;
-        if (cached != null) return cached;
-        try {
-            Integer n = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM information_schema.columns "
-                            + "WHERE LOWER(table_name) = 'users' AND LOWER(column_name) = 'preferred_language'",
-                    Integer.class);
-            columnPresent = n != null && n > 0;
-        } catch (Exception e) {
-            columnPresent = false;
-        }
-        return columnPresent;
+        if (userId == null || userRepository == null) return NotificationTemplates.EN;
+        return userRepository.findPreferredLanguageById(userId)
+                .map(NotificationTemplates::language)
+                .orElse(NotificationTemplates.EN);
     }
 }

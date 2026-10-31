@@ -2,8 +2,8 @@ package com.suwasarana.api.request;
 
 import com.suwasarana.api.request.dto.ReportRequestDto;
 import com.suwasarana.api.shared.AppClock;
-import com.suwasarana.api.shared.CodedApiException;
-import com.suwasarana.api.shared.ErrorCodes;
+import com.suwasarana.api.common.ApiException;
+import com.suwasarana.api.common.ErrorCodes;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,15 +33,15 @@ public class RequestReportService {
     @Transactional
     public void report(Long requestId, Long reporterId, ReportRequestDto dto) {
         BloodRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found"));
         if (request.getRequester().getId().equals(reporterId)) {
-            throw CodedApiException.badRequest(ErrorCodes.CANNOT_REPORT_OWN_REQUEST, "You cannot report your own request");
+            throw ApiException.badRequest(ErrorCodes.CANNOT_REPORT_OWN_REQUEST, "You cannot report your own request");
         }
         if (reportRepository.existsByRequestIdAndReportedById(requestId, reporterId)) {
-            throw CodedApiException.conflict(ErrorCodes.REPORT_ALREADY_FILED, "You have already reported this request");
+            throw ApiException.conflict(ErrorCodes.REPORT_ALREADY_FILED, "You have already reported this request");
         }
         User reporter = userRepository.findById(reporterId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.REQUESTER_NOT_ALLOWED, "User not found"));
+                .orElseThrow(() -> ApiException.unauthorized(ErrorCodes.AUTH_UNAUTHORIZED, "User not found"));
 
         String details = dto.getDetails() == null ? null : dto.getDetails().trim();
         if (details != null && details.isEmpty()) details = null;
@@ -58,7 +58,7 @@ public class RequestReportService {
             reportRepository.saveAndFlush(report);
         } catch (DataIntegrityViolationException e) {
             // Two simultaneous submissions: the unique index (request_id, reported_by) decides
-            throw CodedApiException.conflict(ErrorCodes.REPORT_ALREADY_FILED, "You have already reported this request");
+            throw ApiException.conflict(ErrorCodes.REPORT_ALREADY_FILED, "You have already reported this request");
         }
     }
 }

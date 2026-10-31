@@ -128,7 +128,7 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
     void create_rejectsUnknownDistrictAndLocationsOutsideSriLanka() throws Exception {
         MvcResult unknown = create(requester, createBody("A+", 1, "URGENT", "Hospital", "Atlantis", 6.93, 79.86));
         assertEquals(400, unknown.getResponse().getStatus());
-        assertEquals("UNKNOWN_DISTRICT", json(unknown).get("code").asText());
+        assertEquals("geo.unknown_district", json(unknown).get("code").asText());
 
         MvcResult nullIsland = create(requester, createBody("A+", 1, "URGENT", "Hospital", "Colombo", 0.0, 0.0));
         assertEquals(400, nullIsland.getResponse().getStatus());
@@ -143,13 +143,13 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
 
         MvcResult dup = create(requester, createBody("A+", 2, "ROUTINE", "base hospital colombo", "Colombo", 6.93, 79.86));
         assertEquals(409, dup.getResponse().getStatus());
-        assertEquals("REQUEST_DUPLICATE", json(dup).get("code").asText());
+        assertEquals("request.duplicate", json(dup).get("code").asText());
 
         assertEquals(200, create(requester, createBody("B+", 1, "URGENT", "Hospital Two", "Kandy", 7.29, 80.63)).getResponse().getStatus());
         assertEquals(200, create(requester, createBody("O+", 1, "URGENT", "Hospital Three", "Galle", 6.05, 80.22)).getResponse().getStatus());
         MvcResult capped = create(requester, createBody("AB+", 1, "URGENT", "Hospital Four", "Matara", 5.95, 80.55));
         assertEquals(429, capped.getResponse().getStatus());
-        assertEquals("REQUEST_LIMIT_REACHED", json(capped).get("code").asText());
+        assertEquals("request.limit_reached", json(capped).get("code").asText());
 
         // the cap is per account
         assertEquals(200, create(other, createBody("AB+", 1, "URGENT", "Hospital Four", "Matara", 5.95, 80.55)).getResponse().getStatus());
@@ -160,7 +160,7 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
         User rejected = user("rejected", Role.REQUESTER, VerificationStatus.REJECTED);
         MvcResult r = create(rejected, createBody("A+", 1, "ROUTINE", "Hospital", "Colombo", 6.93, 79.86));
         assertEquals(403, r.getResponse().getStatus());
-        assertEquals("REQUESTER_NOT_ALLOWED", json(r).get("code").asText());
+        assertEquals("verification.rejected", json(r).get("code").asText());
 
         User pending = user("pending", Role.REQUESTER, VerificationStatus.PENDING);
         assertEquals(403, create(pending, createBody("A+", 1, "CRITICAL", "Hospital", "Colombo", 6.93, 79.86)).getResponse().getStatus());
@@ -238,7 +238,7 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
         // a closed request cannot be fulfilled again
         MvcResult again = mvc.perform(post("/api/requests/" + id + "/fulfil").with(as(requester))).andReturn();
         assertEquals(409, again.getResponse().getStatus());
-        assertEquals("REQUEST_ALREADY_CLOSED", json(again).get("code").asText());
+        assertEquals("request.already_closed", json(again).get("code").asText());
         assertNotNull(m2);
     }
 
@@ -441,7 +441,7 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
 
         MvcResult dup = mvc.perform(post(url).with(as(donorUser1)).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn();
         assertEquals(409, dup.getResponse().getStatus());
-        assertEquals("REPORT_ALREADY_FILED", json(dup).get("code").asText());
+        assertEquals("request.report_already_filed", json(dup).get("code").asText());
 
         // another user can still report
         mvc.perform(post(url).with(as(donorUser2)).contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"SPAM\"}")).andExpect(status().isOk());
@@ -527,7 +527,7 @@ class RequestLifecycleIntegrationTest extends LifecycleIntegrationBase {
         String nowhere = ok.replace("kandy DISTRICT", "Atlantis");
         MvcResult res = mvc.perform(put("/api/donors/me").with(as(fresh)).contentType(MediaType.APPLICATION_JSON).content(nowhere)).andReturn();
         assertEquals(400, res.getResponse().getStatus());
-        assertEquals("UNKNOWN_DISTRICT", json(res).get("code").asText());
+        assertEquals("geo.unknown_district", json(res).get("code").asText());
         String abroad = ok.replace("\"latitude\":7.29,\"longitude\":80.63", "\"latitude\":13.08,\"longitude\":80.27");
         mvc.perform(put("/api/donors/me").with(as(fresh)).contentType(MediaType.APPLICATION_JSON).content(abroad)).andExpect(status().isBadRequest());
     }

@@ -98,6 +98,11 @@ class ApiSweepIntegrationTest extends PostgresIntegrationTest {
         String[] requester = registerViaOtp("REQUESTER", uniquePhone());
         String donorToken = donor[0];
         String hospitalToken = hospital[0];
+        // institutions publish only after an administrator verified them (VerificationGuard): do what the admin console does
+        var approved = users.findById(Long.valueOf(hospital[1])).orElseThrow();
+        approved.setVerificationStatus(com.suwasarana.api.user.VerificationStatus.VERIFIED);
+        approved.setEmailVerifiedAt(java.time.Instant.now()); // and the emailed link was followed
+        users.save(approved);
         String requesterToken = requester[0];
 
         // --- auth: refresh (cookie) and logout

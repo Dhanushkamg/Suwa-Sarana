@@ -17,7 +17,7 @@ public class SmsNotificationService {
     private final SmsProvider smsProvider;
 
     /** Frontend base URL (app.frontend-url / FRONTEND_URL); the alert links to {base}/dashboard/donor/matches. */
-    @org.springframework.beans.factory.annotation.Value("${app.auth.frontend-url:http://localhost:3000}")
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl = "http://localhost:3000";
 
     @Autowired

@@ -105,22 +105,22 @@ class CampSlotIntegrationTest extends LifecycleIntegrationBase {
         MvcResult past = mvc.perform(post(url).with(as(organiser)).contentType(MediaType.APPLICATION_JSON)
                 .content(campJson("Old", "Kandy", clock.today().minusDays(1), "09:00:00", "15:00:00", null))).andReturn();
         assertEquals(400, past.getResponse().getStatus());
-        assertEquals("CAMP_IN_PAST", json(past).get("code").asText());
+        assertEquals("camp.in_past", json(past).get("code").asText());
 
         MvcResult reversed = mvc.perform(post(url).with(as(organiser)).contentType(MediaType.APPLICATION_JSON)
                 .content(campJson("Bad", "Kandy", future, "15:00:00", "09:00:00", null))).andReturn();
         assertEquals(400, reversed.getResponse().getStatus());
-        assertEquals("TIME_RANGE_INVALID", json(reversed).get("code").asText());
+        assertEquals("time.range_invalid", json(reversed).get("code").asText());
         mvc.perform(post(url).with(as(organiser)).contentType(MediaType.APPLICATION_JSON)
                 .content(campJson("Zero", "Kandy", future, "09:00:00", "09:00:00", null))).andExpect(status().isBadRequest());
 
         MvcResult district = mvc.perform(post(url).with(as(organiser)).contentType(MediaType.APPLICATION_JSON)
                 .content(campJson("Nowhere", "Atlantis", future, "09:00:00", "15:00:00", null))).andReturn();
-        assertEquals("UNKNOWN_DISTRICT", json(district).get("code").asText());
+        assertEquals("geo.unknown_district", json(district).get("code").asText());
 
         MvcResult group = mvc.perform(post(url).with(as(organiser)).contentType(MediaType.APPLICATION_JSON)
                 .content(campJson("Groups", "Kandy", future, "09:00:00", "15:00:00", "O-,Z+"))).andReturn();
-        assertEquals("BLOOD_GROUP_INVALID", json(group).get("code").asText());
+        assertEquals("blood.group_invalid", json(group).get("code").asText());
 
         mvc.perform(post(url).with(as(organiser)).contentType(MediaType.APPLICATION_JSON)
                 .content(campJson("N".repeat(256), "Kandy", future, "09:00:00", "15:00:00", null))).andExpect(status().isBadRequest());
@@ -210,7 +210,7 @@ class CampSlotIntegrationTest extends LifecycleIntegrationBase {
         MvcResult past = mvc.perform(post(url).with(as(organiser)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"startTime\":\"" + clock.now().minusHours(2) + "\",\"endTime\":\"" + clock.now().minusHours(1) + "\",\"capacity\":3}")).andReturn();
         assertEquals(400, past.getResponse().getStatus());
-        assertEquals("SLOT_IN_PAST", json(past).get("code").asText());
+        assertEquals("slot.in_past", json(past).get("code").asText());
 
         mvc.perform(post(url).with(as(organiser)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"startTime\":\"" + start + "\",\"endTime\":\"" + start.minusMinutes(5) + "\",\"capacity\":3}")).andExpect(status().isBadRequest());
@@ -239,7 +239,7 @@ class CampSlotIntegrationTest extends LifecycleIntegrationBase {
 
         MvcResult late = mvc.perform(post("/api/slots/" + started.getId() + "/book").with(as(donorUser))).andReturn();
         assertEquals(409, late.getResponse().getStatus());
-        assertEquals("SLOT_IN_PAST", json(late).get("code").asText());
+        assertEquals("slot.in_past", json(late).get("code").asText());
 
         mvc.perform(post("/api/slots/" + future.getId() + "/book").with(as(donorUser))).andExpect(status().isOk());
         assertEquals(1, slotRepository.findById(future.getId()).orElseThrow().getBookedCount());
@@ -267,7 +267,7 @@ class CampSlotIntegrationTest extends LifecycleIntegrationBase {
         mvc.perform(post("/api/slots/" + a.getId() + "/book").with(as(donorUser))).andExpect(status().isOk());
         MvcResult clash = mvc.perform(post("/api/slots/" + overlapping.getId() + "/book").with(as(donorUser))).andReturn();
         assertEquals(409, clash.getResponse().getStatus());
-        assertEquals("BOOKING_OVERLAP", json(clash).get("code").asText());
+        assertEquals("slot.booking_overlap", json(clash).get("code").asText());
         mvc.perform(post("/api/slots/" + adjacent.getId() + "/book").with(as(donorUser))).andExpect(status().isOk());
     }
 

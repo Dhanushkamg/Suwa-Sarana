@@ -1,5 +1,6 @@
 package com.suwasarana.api.circle;
 
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.circle.dto.*;
 import com.suwasarana.api.common.ApiException;
 import com.suwasarana.api.exception.CircleExpiredException;
@@ -34,7 +35,7 @@ public class CircleService {
     private final CircleProperties properties;
     private final List<PledgeNotifier> notifiers;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendBaseUrl;
 
     @Autowired
@@ -79,7 +80,7 @@ public class CircleService {
             }
         } else {
             token = tokens.generate();
-            LocalDateTime expiresAt = request.getExpiresAt() != null ? request.getExpiresAt() : LocalDateTime.now().plusDays(2);
+            LocalDateTime expiresAt = request.getExpiresAt() != null ? request.getExpiresAt() : Times.utcNow().plusDays(2);
             circle = requestCircleRepository.save(
                     new RequestCircle(request, tokens.hash(token), tokens.encrypt(token), expiresAt));
         }
@@ -134,7 +135,7 @@ public class CircleService {
                 >= properties.getMaxPledgesPerPhonePerCircle()) {
             throw ApiException.conflict("This phone number has already volunteered for this request.");
         }
-        if (circleResponseRepository.countByResponderPhoneAndRespondedAtAfter(phone, LocalDateTime.now().minusDays(1))
+        if (circleResponseRepository.countByResponderPhoneAndRespondedAtAfter(phone, Times.utcNow().minusDays(1))
                 >= properties.getMaxPledgesPerPhonePerDay()) {
             throw ApiException.tooManyRequests("This phone number has made too many pledges today. Please try again tomorrow.");
         }

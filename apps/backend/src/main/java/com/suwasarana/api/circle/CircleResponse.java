@@ -1,5 +1,6 @@
 package com.suwasarana.api.circle;
 
+import com.suwasarana.api.common.Times;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -28,7 +29,7 @@ public class CircleResponse {
     private String notes;
 
     @Column(name = "responded_at", nullable = false, updatable = false)
-    private LocalDateTime respondedAt = LocalDateTime.now();
+    private LocalDateTime respondedAt = Times.utcNow();
 
     /** Set by the retention job once name / phone / notes have been removed. */
     @Column(name = "scrubbed_at")
@@ -42,7 +43,7 @@ public class CircleResponse {
         this.responderPhone = responderPhone;
         this.bloodType = bloodType;
         this.notes = notes;
-        this.respondedAt = LocalDateTime.now();
+        this.respondedAt = Times.utcNow();
     }
 
     public Long getId() { return id; }

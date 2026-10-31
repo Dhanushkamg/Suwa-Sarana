@@ -9,8 +9,8 @@ import com.suwasarana.api.matching.RequestMatchRepository;
 import com.suwasarana.api.request.dto.CreateRequestDto;
 import com.suwasarana.api.request.dto.RequestResponseDto;
 import com.suwasarana.api.shared.AppClock;
-import com.suwasarana.api.shared.CodedApiException;
-import com.suwasarana.api.shared.ErrorCodes;
+import com.suwasarana.api.common.ApiException;
+import com.suwasarana.api.common.ErrorCodes;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,27 +67,27 @@ public class RequestService {
     @Transactional
     public RequestResponseDto createRequest(Long userId, CreateRequestDto dto, boolean isAdmin) {
         User requester = userRepository.findById(userId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.REQUESTER_NOT_ALLOWED, "User not found"));
+                .orElseThrow(() -> ApiException.unauthorized(ErrorCodes.AUTH_UNAUTHORIZED, "User not found"));
 
         requesterEligibility.assertMayCreateRequest(requester, dto.getUrgency());
 
         String district = District.normalise(dto.getDistrict())
-                .orElseThrow(() -> CodedApiException.badRequest(ErrorCodes.UNKNOWN_DISTRICT,
+                .orElseThrow(() -> ApiException.badRequest(ErrorCodes.UNKNOWN_DISTRICT,
                         "Unknown district. Use one of the 25 official district names (GET /api/meta/districts)."));
         if (!GeoBounds.contains(dto.getLatitude(), dto.getLongitude())) {
-            throw CodedApiException.badRequest(ErrorCodes.OUTSIDE_SRI_LANKA, "The hospital location must be inside Sri Lanka");
+            throw ApiException.badRequest(ErrorCodes.OUTSIDE_SRI_LANKA, "The hospital location must be inside Sri Lanka");
         }
         String hospital = dto.getHospitalName().trim();
 
         // Abuse limits: duplicate suppression first (more specific), then the per-account cap
         List<BloodRequest> duplicates = requestRepository.findDuplicates(userId, dto.getPatientBloodType(), hospital, ACTIVE);
         if (!duplicates.isEmpty()) {
-            throw CodedApiException.conflict(ErrorCodes.REQUEST_DUPLICATE,
+            throw ApiException.conflict(ErrorCodes.REQUEST_DUPLICATE,
                     "You already have an active request for " + dto.getPatientBloodType() + " blood at this hospital (request #"
                             + duplicates.get(0).getId() + ").");
         }
         if (!isAdmin && requestRepository.countByRequesterIdAndStatusIn(userId, ACTIVE) >= maxActivePerUser) {
-            throw CodedApiException.tooManyRequests(ErrorCodes.REQUEST_LIMIT_REACHED,
+            throw ApiException.tooManyRequests(ErrorCodes.REQUEST_LIMIT_REACHED,
                     "You can have at most " + maxActivePerUser + " active requests. Close or fulfil one first.");
         }
 
@@ -130,7 +130,7 @@ public class RequestService {
     @Transactional(readOnly = true)
     public RequestResponseDto getRequestById(Long id, Long viewerId, boolean isAdmin) {
         BloodRequest request = requestRepository.findById(id)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found"));
         boolean owner = request.getRequester() != null && request.getRequester().getId().equals(viewerId);
         if (isAdmin || owner) {
             return mapToDto(request, View.OWNER, isAdmin);
@@ -138,14 +138,14 @@ public class RequestService {
         if (matchRepository.existsByRequestIdAndDonorUserId(id, viewerId)) {
             return mapToDto(request, View.MATCHED_DONOR, false);
         }
-        throw CodedApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found");
+        throw ApiException.notFound(ErrorCodes.REQUEST_NOT_FOUND, "Request not found");
     }
 
     /** Legacy cancel endpoint: same as closing with the default reason. */
     @Transactional
     public void cancelRequest(Long userId, Long requestId) {
         User caller = userRepository.findById(userId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.REQUESTER_NOT_ALLOWED, "User not found"));
+                .orElseThrow(() -> ApiException.unauthorized(ErrorCodes.AUTH_UNAUTHORIZED, "User not found"));
         lifecycle.close(requestId, userId, caller.getRole() == com.suwasarana.api.user.Role.ADMIN, CloseReason.NO_LONGER_NEEDED);
     }
 

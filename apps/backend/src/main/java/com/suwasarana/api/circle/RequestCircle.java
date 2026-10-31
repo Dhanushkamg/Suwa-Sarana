@@ -1,5 +1,6 @@
 package com.suwasarana.api.circle;
 
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.request.BloodRequest;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -35,7 +36,7 @@ public class RequestCircle {
     private String inviteToken;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = Times.utcNow();
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
@@ -50,7 +51,7 @@ public class RequestCircle {
         this.inviteTokenHash = inviteTokenHash;
         this.inviteTokenEnc = inviteTokenEnc;
         this.expiresAt = expiresAt;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = Times.utcNow();
     }
 
     public Long getId() { return id; }
@@ -78,6 +79,6 @@ public class RequestCircle {
     public void setResponses(List<CircleResponse> responses) { this.responses = responses; }
 
     public boolean isExpired() {
-        return expiresAt != null && LocalDateTime.now().isAfter(expiresAt);
+        return expiresAt != null && Times.utcNow().isAfter(expiresAt);
     }
 }

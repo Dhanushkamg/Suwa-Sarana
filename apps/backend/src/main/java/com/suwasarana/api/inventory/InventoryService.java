@@ -16,8 +16,8 @@ import com.suwasarana.api.matching.BloodCompatibility;
 import com.suwasarana.api.notification.NotificationInboxService;
 import com.suwasarana.api.request.RequesterEligibility;
 import com.suwasarana.api.shared.AppClock;
-import com.suwasarana.api.shared.CodedApiException;
-import com.suwasarana.api.shared.ErrorCodes;
+import com.suwasarana.api.common.ApiException;
+import com.suwasarana.api.common.ErrorCodes;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import com.suwasarana.api.user.VerificationStatus;
@@ -117,10 +117,10 @@ public class InventoryService {
         LocalDate today = clock.today();
         LocalDate collected = req.getCollectedOn() == null ? today : req.getCollectedOn();
         if (collected.isAfter(today)) {
-            throw CodedApiException.badRequest(ErrorCodes.STOCK_DATE_INVALID, "The collection date cannot be in the future");
+            throw ApiException.badRequest(ErrorCodes.STOCK_DATE_INVALID, "The collection date cannot be in the future");
         }
         if (req.getExpiresOn().isBefore(collected) || req.getExpiresOn().isBefore(today)) {
-            throw CodedApiException.badRequest(ErrorCodes.STOCK_DATE_INVALID, "The expiry date must not be in the past or before the collection date");
+            throw ApiException.badRequest(ErrorCodes.STOCK_DATE_INVALID, "The expiry date must not be in the past or before the collection date");
         }
 
         Unit u = new Unit();
@@ -144,14 +144,14 @@ public class InventoryService {
     public BatchDto updateBatch(Long ownerId, Long batchId, UpdateBatchRequest req) {
         User owner = verifiedOwner(ownerId);
         Unit u = unitRepository.findByIdAndOwnerUserId(batchId, ownerId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.STOCK_NOT_FOUND, "Stock batch not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.STOCK_NOT_FOUND, "Stock batch not found"));
         if (u.getStatus() == BatchStatus.EXPIRED) {
-            throw CodedApiException.conflict(ErrorCodes.STOCK_NOT_FOUND, "An expired batch cannot be changed");
+            throw ApiException.conflict(ErrorCodes.STOCK_NOT_FOUND, "An expired batch cannot be changed");
         }
         LocalDate today = clock.today();
         if (req.getExpiresOn() != null) {
             if (req.getExpiresOn().isBefore(u.getCollectedOn())) {
-                throw CodedApiException.badRequest(ErrorCodes.STOCK_DATE_INVALID, "The expiry date cannot be before the collection date");
+                throw ApiException.badRequest(ErrorCodes.STOCK_DATE_INVALID, "The expiry date cannot be before the collection date");
             }
             u.setExpiresOn(req.getExpiresOn());
         }
@@ -171,7 +171,7 @@ public class InventoryService {
     public void discardBatch(Long ownerId, Long batchId) {
         User owner = verifiedOwner(ownerId);
         Unit u = unitRepository.findByIdAndOwnerUserId(batchId, ownerId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.STOCK_NOT_FOUND, "Stock batch not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.STOCK_NOT_FOUND, "Stock batch not found"));
         if (u.getUnits() > 0 && u.getStatus() == BatchStatus.ACTIVE) {
             movement(ownerId, u, -u.getUnits(), MovementReason.DISCARD, null, "Batch removed");
         }
@@ -190,7 +190,7 @@ public class InventoryService {
         List<Unit> usable = unitRepository.findUsable(ownerId, req.getBloodType(), req.getComponent(), clock.today(), BatchStatus.ACTIVE);
         int available = usable.stream().mapToInt(Unit::getUnits).sum();
         if (available < req.getUnits()) {
-            throw CodedApiException.conflict(ErrorCodes.INSUFFICIENT_STOCK,
+            throw ApiException.conflict(ErrorCodes.INSUFFICIENT_STOCK,
                     "Only " + available + " usable unit(s) of " + req.getBloodType() + " " + req.getComponent() + " in stock");
         }
         int remaining = req.getUnits();
@@ -231,7 +231,7 @@ public class InventoryService {
         User owner = verifiedOwner(ownerId);
         requireValidType(req.getBloodType());
         if (req.getCritical() > req.getLow()) {
-            throw CodedApiException.badRequest(ErrorCodes.THRESHOLD_INVALID, "The critical level cannot be higher than the low level");
+            throw ApiException.badRequest(ErrorCodes.THRESHOLD_INVALID, "The critical level cannot be higher than the low level");
         }
         Component component = req.getComponent() == null ? Component.WHOLE_BLOOD : req.getComponent();
         Threshold t = thresholdRepository.findByOwnerUserIdAndBloodTypeAndComponent(ownerId, req.getBloodType(), component)
@@ -263,12 +263,12 @@ public class InventoryService {
         if (req.getSiteName() != null && !req.getSiteName().isBlank()) site.setSiteName(req.getSiteName().trim());
         if (req.getDistrict() != null) {
             site.setDistrict(District.normalise(req.getDistrict()).orElseThrow(() ->
-                    CodedApiException.badRequest(ErrorCodes.UNKNOWN_DISTRICT,
+                    ApiException.badRequest(ErrorCodes.UNKNOWN_DISTRICT,
                             "Unknown district. Use one of the 25 official district names (GET /api/meta/districts).")));
         }
         if (req.getLatitude() != null || req.getLongitude() != null) {
             if (req.getLatitude() == null || req.getLongitude() == null || !GeoBounds.contains(req.getLatitude(), req.getLongitude())) {
-                throw CodedApiException.badRequest(ErrorCodes.OUTSIDE_SRI_LANKA, "Location must be inside Sri Lanka");
+                throw ApiException.badRequest(ErrorCodes.OUTSIDE_SRI_LANKA, "Location must be inside Sri Lanka");
             }
             site.setLatitude(req.getLatitude());
             site.setLongitude(req.getLongitude());
@@ -432,14 +432,14 @@ public class InventoryService {
 
     private User verifiedOwner(Long ownerId) {
         User owner = userRepository.findById(ownerId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.INSTITUTION_NOT_VERIFIED, "User not found"));
+                .orElseThrow(() -> ApiException.unauthorized(ErrorCodes.AUTH_UNAUTHORIZED, "User not found"));
         eligibility.assertVerifiedInstitution(owner);
         return owner;
     }
 
     private static void requireValidType(String type) {
         if (!BloodCompatibility.isValid(type)) {
-            throw CodedApiException.badRequest(ErrorCodes.BLOOD_GROUP_INVALID, "Unknown blood type");
+            throw ApiException.badRequest(ErrorCodes.BLOOD_GROUP_INVALID, "Unknown blood type");
         }
     }
 

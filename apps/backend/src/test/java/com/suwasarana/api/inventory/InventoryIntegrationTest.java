@@ -88,7 +88,7 @@ class InventoryIntegrationTest extends LifecycleIntegrationBase {
     void onlyVerifiedInstitutionsManageStock() throws Exception {
         MvcResult pending = mvc.perform(get(BASE + "/stock").with(as(pendingBank))).andReturn();
         assertEquals(403, pending.getResponse().getStatus());
-        assertEquals("INSTITUTION_NOT_VERIFIED", json(pending).get("code").asText());
+        assertEquals("verification.required", json(pending).get("code").asText());
         mvc.perform(post(BASE + "/stock").with(as(pendingBank)).contentType(MediaType.APPLICATION_JSON)
                 .content(collection("O-", "WHOLE_BLOOD", 5, LocalDate.now().plusDays(20)))).andExpect(status().isForbidden());
         mvc.perform(get(BASE + "/stock").with(as(donorUser))).andExpect(status().isForbidden());
@@ -110,13 +110,13 @@ class InventoryIntegrationTest extends LifecycleIntegrationBase {
         MvcResult expired = mvc.perform(post(BASE + "/stock").with(as(bank)).contentType(MediaType.APPLICATION_JSON)
                 .content(collection("O-", "WHOLE_BLOOD", 5, clock.today().minusDays(1)))).andReturn();
         assertEquals(400, expired.getResponse().getStatus());
-        assertEquals("STOCK_DATE_INVALID", json(expired).get("code").asText());
+        assertEquals("inventory.date_invalid", json(expired).get("code").asText());
         MvcResult bad = mvc.perform(put(BASE + "/thresholds").with(as(bank)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"bloodType\":\"O-\",\"low\":3,\"critical\":8}")).andReturn();
-        assertEquals("THRESHOLD_INVALID", json(bad).get("code").asText());
+        assertEquals("inventory.threshold_invalid", json(bad).get("code").asText());
         MvcResult district = mvc.perform(put(BASE + "/site").with(as(bank)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"district\":\"Atlantis\"}")).andReturn();
-        assertEquals("UNKNOWN_DISTRICT", json(district).get("code").asText());
+        assertEquals("geo.unknown_district", json(district).get("code").asText());
     }
 
     // ------------------------------------------------------------------ status and alerts
@@ -207,7 +207,7 @@ class InventoryIntegrationTest extends LifecycleIntegrationBase {
         MvcResult tooMany = mvc.perform(post(BASE + "/stock/issue").with(as(bank)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"bloodType\":\"B-\",\"component\":\"WHOLE_BLOOD\",\"units\":4}")).andReturn();
         assertEquals(409, tooMany.getResponse().getStatus());
-        assertEquals("INSUFFICIENT_STOCK", json(tooMany).get("code").asText());
+        assertEquals("inventory.insufficient_stock", json(tooMany).get("code").asText());
         assertEquals(3, unitRepository.findById(later.get("id").asLong()).orElseThrow().getUnits(), "nothing was taken");
 
         // the movement log is the audit trail

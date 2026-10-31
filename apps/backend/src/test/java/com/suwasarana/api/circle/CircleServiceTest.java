@@ -289,14 +289,14 @@ class CircleServiceTest {
 
         // a notifier that reports "nothing sent" (the logging fallback) => not notified
         CircleService quiet = new CircleService(requestCircleRepository, circleResponseRepository, requestRepository,
-                tokens, properties, List.of(new LoggingPledgeNotifier()));
+                tokens, properties, List.of(((PledgeNotifier) (rid, uid, name, blood, count) -> false)));
         assertFalse(quiet.submitResponse(token, pledge("0771234567")).getRequesterNotified());
 
         // a notifier that creates a notification => notified, and it receives no phone number
         List<String> calls = new ArrayList<>();
         PledgeNotifier real = (rid, uid, name, blood, count) -> { calls.add(rid + "/" + uid + "/" + name + "/" + blood + "/" + count); return true; };
         CircleService loud = new CircleService(requestCircleRepository, circleResponseRepository, requestRepository,
-                tokens, properties, List.of(real, new LoggingPledgeNotifier()));
+                tokens, properties, List.of(real, ((PledgeNotifier) (rid, uid, name, blood, count) -> false)));
         assertTrue(loud.submitResponse(token, pledge("0772222222")).getRequesterNotified());
         assertEquals(List.of("100/10/Kasun Perera/B+/1"), calls);
 

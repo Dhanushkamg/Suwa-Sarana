@@ -67,4 +67,8 @@ public interface UserRepository extends JpaRepository<User, Long>, org.springfra
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update User u set u.tokenVersion = u.tokenVersion + 1 where u.id = :id")
     int bumpTokenVersion(@Param("id") Long id);
+
+    /** The recipient's language for alerts / SMS / inbox texts (en | si | ta). */
+    @Query("select u.preferredLanguage from User u where u.id = :id")
+    java.util.Optional<String> findPreferredLanguageById(@org.springframework.data.repository.query.Param("id") Long id);
 }

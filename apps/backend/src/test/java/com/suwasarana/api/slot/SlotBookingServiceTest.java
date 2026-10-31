@@ -35,6 +35,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class SlotBookingServiceTest {
 
+    @Mock
+    private com.suwasarana.api.security.VerificationGuard verificationGuard;
+
     @Mock private DonationSlotRepository slotRepository;
     @Mock private SlotBookingRepository bookingRepository;
     @Mock private DonorRepository donorRepository;

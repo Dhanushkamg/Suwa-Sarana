@@ -110,6 +110,7 @@ public abstract class LifecycleIntegrationBase {
         u.setLastName("Tester");
         u.setRole(role);
         u.setVerificationStatus(status);
+        u.setEmailVerifiedAt(java.time.Instant.now()); // institutions need a confirmed email (VerificationGuard)
         return userRepository.save(u);
     }
 

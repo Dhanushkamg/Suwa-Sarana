@@ -19,9 +19,9 @@ import com.suwasarana.api.slot.dto.CreateSlotDto;
 import com.suwasarana.api.slot.dto.DonationSlotDto;
 import com.suwasarana.api.slot.dto.SlotBookingDto;
 import com.suwasarana.api.slot.dto.SlotRosterEntryDto;
+import com.suwasarana.api.security.VerificationGuard;
 import com.suwasarana.api.shared.AppClock;
-import com.suwasarana.api.shared.CodedApiException;
-import com.suwasarana.api.shared.ErrorCodes;
+import com.suwasarana.api.common.ErrorCodes;
 import com.suwasarana.api.user.Role;
 import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
@@ -56,6 +56,7 @@ public class SlotBookingService {
     @Autowired private NotificationService notificationService;
     @Autowired private DonationRecorder donationRecorder;
     @Autowired private AppClock clock;
+    @Autowired private VerificationGuard verificationGuard;
 
     // -------------------------------------------------------------------------
     // Slot Creation
@@ -105,8 +106,9 @@ public class SlotBookingService {
     /** Camp must exist and the caller must be its organizer (or ADMIN). */
     private DonationCamp loadManagedCamp(Long campId, Long callerId) {
         User caller = loadCaller(callerId);
+        verificationGuard.requireVerified(caller);
         DonationCamp camp = campRepository.findById(campId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.CAMP_NOT_FOUND, "Camp not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.CAMP_NOT_FOUND, "Camp not found"));
         if (caller.getRole() != Role.ADMIN && !camp.getOrganizer().getId().equals(caller.getId())) {
             throw ApiException.forbidden("You can only manage slots for your own camps");
         }
@@ -116,6 +118,7 @@ public class SlotBookingService {
     /** Target must be a hospital / blood bank user and the caller must be that user (or ADMIN). */
     private User loadManagedHospital(Long hospitalUserId, Long callerId) {
         User caller = loadCaller(callerId);
+        verificationGuard.requireVerified(caller);
         if (caller.getRole() != Role.ADMIN && !caller.getId().equals(hospitalUserId)) {
             throw ApiException.forbidden("You can only manage your own slots");
         }
@@ -124,6 +127,7 @@ public class SlotBookingService {
         if (hospitalUser.getRole() != Role.HOSPITAL_REQUESTER && hospitalUser.getRole() != Role.BLOOD_BANK_REQUESTER) {
             throw ApiException.badRequest("User is not a hospital or blood bank");
         }
+        verificationGuard.requireVerified(hospitalUser); // an admin cannot publish slots for an unverified organisation either
         return hospitalUser;
     }
 
@@ -140,10 +144,10 @@ public class SlotBookingService {
 
     private DonationSlot buildSlot(LocalDateTime start, LocalDateTime end, int capacity) {
         if (!end.isAfter(start)) {
-            throw CodedApiException.badRequest(ErrorCodes.TIME_RANGE_INVALID, "End time must be after start time");
+            throw ApiException.badRequest(ErrorCodes.TIME_RANGE_INVALID, "End time must be after start time");
         }
         if (!start.isAfter(clock.now())) {
-            throw CodedApiException.badRequest(ErrorCodes.SLOT_IN_PAST, "A slot must start in the future");
+            throw ApiException.badRequest(ErrorCodes.SLOT_IN_PAST, "A slot must start in the future");
         }
         DonationSlot slot = new DonationSlot();
         slot.setStartTime(start);
@@ -154,10 +158,10 @@ public class SlotBookingService {
 
     private List<DonationSlot> generateSlots(BulkCreateSlotDto dto) {
         if (!dto.getOverallEndTime().isAfter(dto.getOverallStartTime())) {
-            throw CodedApiException.badRequest(ErrorCodes.TIME_RANGE_INVALID, "Overall end time must be after overall start time");
+            throw ApiException.badRequest(ErrorCodes.TIME_RANGE_INVALID, "Overall end time must be after overall start time");
         }
         if (!dto.getOverallStartTime().isAfter(clock.now())) {
-            throw CodedApiException.badRequest(ErrorCodes.SLOT_IN_PAST, "Slots must start in the future");
+            throw ApiException.badRequest(ErrorCodes.SLOT_IN_PAST, "Slots must start in the future");
         }
         if (dto.getIntervalMinutes() <= 0) {
             throw ApiException.badRequest("Interval must be greater than 0 minutes");
@@ -213,7 +217,8 @@ public class SlotBookingService {
     public SlotBookingDto bookSlot(Long slotId, Long userId) {
         // 1. Resolve donor profile from the authenticated user's ID
         DonorProfile donor = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
+        verificationGuard.requireNotBlocked(userId); // suspended / rejected accounts cannot book
 
         // 2. Acquire pessimistic write lock — prevents race condition on bookedCount
         DonationSlot slot = slotRepository.findByIdForUpdate(slotId)
@@ -221,7 +226,7 @@ public class SlotBookingService {
 
         // 3. Only future slots can be booked
         if (!slot.getStartTime().isAfter(clock.now())) {
-            throw CodedApiException.conflict(ErrorCodes.SLOT_IN_PAST, "This slot has already started or ended");
+            throw ApiException.conflict(ErrorCodes.SLOT_IN_PAST, "This slot has already started or ended");
         }
 
         // 4. Capacity / status guard
@@ -238,7 +243,7 @@ public class SlotBookingService {
 
         // 6. A donor cannot be in two places at once
         if (bookingRepository.countOverlappingBookings(donor.getId(), slot.getStartTime(), slot.getEndTime(), slotId) > 0) {
-            throw CodedApiException.conflict(ErrorCodes.BOOKING_OVERLAP, "You already have a booking that overlaps this time");
+            throw ApiException.conflict(ErrorCodes.BOOKING_OVERLAP, "You already have a booking that overlaps this time");
         }
 
         // 7. NBTS eligibility on the DAY OF THE SLOT (not today): a donor deferred until next week can book next month
@@ -281,7 +286,7 @@ public class SlotBookingService {
             notificationService.notify(donor, msg);
         } catch (Exception e) {
             // Notification failure must never roll back the booking
-            log.warn("Failed to send slot confirmation notification for booking {}: {}", saved.getId(), e.getMessage());
+            log.warn("Failed to send slot confirmation notification for booking {} ({})", saved.getId(), e.getClass().getSimpleName());
         }
 
         log.info("Donor {} booked slot {} (booking {})", donor.getId(), slotId, saved.getId());
@@ -295,7 +300,7 @@ public class SlotBookingService {
     @Transactional
     public SlotBookingDto cancelBooking(Long slotId, Long userId) {
         DonorProfile donor = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
 
         // Lock the slot first so two concurrent cancels cannot both release capacity
         DonationSlot slot = slotRepository.findByIdForUpdate(slotId)
@@ -336,6 +341,7 @@ public class SlotBookingService {
     @Transactional
     public SlotBookingDto checkIn(Long slotId, Long bookingId, Long callerId) {
         User caller = loadCaller(callerId);
+        verificationGuard.requireVerified(caller);
         SlotBooking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> ApiException.notFound("Booking not found"));
 
@@ -384,7 +390,7 @@ public class SlotBookingService {
     @Transactional(readOnly = true)
     public List<SlotBookingDto> getMyBookings(Long userId) {
         DonorProfile donor = donorRepository.findByUserId(userId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.DONOR_PROFILE_NOT_FOUND, "Donor profile not found"));
         return bookingRepository.findByDonorIdOrderByBookedAtDesc(donor.getId())
                 .stream()
                 .map(this::mapBookingToDto)

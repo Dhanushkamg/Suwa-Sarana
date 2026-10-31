@@ -35,6 +35,9 @@ import static org.mockito.Mockito.*;
 public class DonationCampServiceTest {
 
     @Mock
+    private com.suwasarana.api.security.VerificationGuard verificationGuard;
+
+    @Mock
     private DonationCampRepository campRepository;
 
     @Mock
