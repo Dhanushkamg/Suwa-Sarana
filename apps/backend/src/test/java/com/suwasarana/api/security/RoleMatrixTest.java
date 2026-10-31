@@ -118,6 +118,11 @@ class RoleMatrixTest extends IntegrationTestBase {
             ep(HttpMethod.GET, "/api/requests/me", REQUEST_CREATORS),
             ep(HttpMethod.GET, "/api/requests/999001", SIGNED_IN),
             ep(HttpMethod.PUT, "/api/requests/999001/cancel", REQUEST_CREATORS),
+            ep(HttpMethod.GET, "/api/requests/999001/matches", REQUEST_CREATORS),
+            ep(HttpMethod.POST, "/api/requests/999001/fulfil", REQUEST_CREATORS),
+            ep(HttpMethod.POST, "/api/requests/999001/close", "{}", REQUEST_CREATORS),
+            // any signed-in user may report a request (once per request)
+            ep(HttpMethod.POST, "/api/requests/999001/report", "{}", SIGNED_IN),
 
             // ---- circles ------------------------------------------------------------------------------------------------
             ep(HttpMethod.POST, "/api/requests/999001/circle", SIGNED_IN),
@@ -133,6 +138,8 @@ class RoleMatrixTest extends IntegrationTestBase {
             ep(HttpMethod.PATCH, "/api/donors/me/availability", "{}", ONLY_DONOR),
             ep(HttpMethod.GET, "/api/donors/me/matches", ONLY_DONOR),
             ep(HttpMethod.GET, "/api/donors/me/bookings", ONLY_DONOR),
+            ep(HttpMethod.GET, "/api/donors/me/donations", ONLY_DONOR),
+            ep(HttpMethod.GET, "/api/donors/me/eligibility", ONLY_DONOR),
 
             // ---- camps / slots ------------------------------------------------------------------------------------------
             ep(HttpMethod.GET, "/api/camps", EVERYONE),
@@ -151,6 +158,33 @@ class RoleMatrixTest extends IntegrationTestBase {
             ep(HttpMethod.POST, "/api/slots/999001/book", ONLY_DONOR),
             ep(HttpMethod.DELETE, "/api/slots/999001/book", ONLY_DONOR),
             ep(HttpMethod.POST, "/api/slots/999001/check-in/999002", INSTITUTIONS_AND_ADMIN),
+            ep(HttpMethod.GET, "/api/slots/999001/bookings", INSTITUTIONS_AND_ADMIN),
+
+            // ---- blood-bank stock (class-level @PreAuthorize: hospitals and blood banks only, not even ADMIN) -------------
+            ep(HttpMethod.GET, "/api/blood-bank/stock", INSTITUTIONS),
+            ep(HttpMethod.POST, "/api/blood-bank/stock", "{}", INSTITUTIONS),
+            ep(HttpMethod.PUT, "/api/blood-bank/stock/999001", "{}", INSTITUTIONS),
+            ep(HttpMethod.DELETE, "/api/blood-bank/stock/999001", INSTITUTIONS),
+            ep(HttpMethod.POST, "/api/blood-bank/stock/issue", "{}", INSTITUTIONS),
+            ep(HttpMethod.POST, "/api/blood-bank/stock/confirm", INSTITUTIONS),
+            ep(HttpMethod.GET, "/api/blood-bank/stock/movements", INSTITUTIONS),
+            ep(HttpMethod.GET, "/api/blood-bank/thresholds", INSTITUTIONS),
+            ep(HttpMethod.PUT, "/api/blood-bank/thresholds", "{}", INSTITUTIONS),
+            ep(HttpMethod.GET, "/api/blood-bank/site", INSTITUTIONS),
+            ep(HttpMethod.PUT, "/api/blood-bank/site", "{}", INSTITUTIONS),
+
+            // ---- notification inbox (any signed-in user) --------------------------------------------------------------
+            ep(HttpMethod.GET, "/api/notifications", SIGNED_IN),
+            ep(HttpMethod.GET, "/api/notifications/unread-count", SIGNED_IN),
+            ep(HttpMethod.POST, "/api/notifications/999001/read", SIGNED_IN),
+            ep(HttpMethod.POST, "/api/notifications/read-all", SIGNED_IN),
+
+            // ---- exports (scoped to the caller's own data inside the controller) -----------------------------------------
+            ep(HttpMethod.GET, "/api/exports/requests.csv", SIGNED_IN),
+            ep(HttpMethod.GET, "/api/exports/donations.csv", SIGNED_IN),
+
+            // ---- reference data ---------------------------------------------------------------------------------------
+            ep(HttpMethod.GET, "/api/meta/districts", EVERYONE),
 
             // ---- admin ----------------------------------------------------------------------------------------------------
             ep(HttpMethod.GET, "/api/admin/reports", ONLY_ADMIN),
@@ -169,7 +203,11 @@ class RoleMatrixTest extends IntegrationTestBase {
             ep(HttpMethod.GET, "/api/admin/users/999001/export?reason=matrix", ONLY_ADMIN),
             ep(HttpMethod.GET, "/api/admin/audit", ONLY_ADMIN),
             ep(HttpMethod.POST, "/api/admin/invitations", "{}", ONLY_ADMIN),
+            ep(HttpMethod.GET, "/api/admin/analytics/summary", ONLY_ADMIN),
+            ep(HttpMethod.GET, "/api/admin/contact-messages", ONLY_ADMIN),
+            ep(HttpMethod.PATCH, "/api/admin/contact-messages/999001", "{}", ONLY_ADMIN),
             ep(HttpMethod.GET, "/api/analytics/district-summary", SIGNED_IN),
+            ep(HttpMethod.GET, "/api/analytics/summary", SIGNED_IN),
 
             // ---- public / misc --------------------------------------------------------------------------------------------
             ep(HttpMethod.POST, "/api/faq/ask", "{}", EVERYONE),
@@ -181,7 +219,10 @@ class RoleMatrixTest extends IntegrationTestBase {
             ep(HttpMethod.GET, "/api/notifications/stream", SIGNED_IN),
 
             // ---- operations -------------------------------------------------------------------------------------------------
-            ep(HttpMethod.GET, "/actuator/health", EVERYONE),
+            // liveness / readiness are public for the load balancer; the aggregate /actuator/health (details) is ADMIN only
+            ep(HttpMethod.GET, "/actuator/health", ONLY_ADMIN),
+            ep(HttpMethod.GET, "/actuator/health/liveness", EVERYONE),
+            ep(HttpMethod.GET, "/actuator/health/readiness", EVERYONE),
             ep(HttpMethod.GET, "/actuator/env", ONLY_ADMIN),
             ep(HttpMethod.GET, "/actuator/metrics", ONLY_ADMIN),
             ep(HttpMethod.GET, "/v3/api-docs", ONLY_ADMIN),

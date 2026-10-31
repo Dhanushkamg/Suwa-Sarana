@@ -145,13 +145,13 @@ class PlatformHttpTest {
     }
 
     @Test
-    @DisplayName("validation failures keep data={field: message} and add code validation.failed")
+    @DisplayName("validation failures: code validation.failed, data={field: field-level code}, message = English fallback")
     void validationEnvelope() throws Exception {
         mockMvc.perform(post("/api/auth/login").with(freshIp()).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("validation.failed"))
                 .andExpect(jsonPath("$.message").value("Validation failed"))
-                .andExpect(jsonPath("$.data.password").value("Password is required"));
+                .andExpect(jsonPath("$.data.password").value("auth.password.required"));
     }
 
     @Test

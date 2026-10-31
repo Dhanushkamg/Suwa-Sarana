@@ -1,6 +1,7 @@
 package com.suwasarana.api.support;
 
 import com.jayway.jsonpath.JsonPath;
+import com.suwasarana.api.user.PhoneNumbers;
 import com.suwasarana.api.notification.sms.SmsProvider;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -95,7 +96,8 @@ public abstract class PostgresIntegrationTest {
                 .andExpect(status().isOk());
 
         ArgumentCaptor<String> message = ArgumentCaptor.forClass(String.class);
-        verify(smsProvider, atLeastOnce()).sendSms(eq(phone), message.capture());
+        // the service normalises local numbers (07...) to E.164 before sending
+        verify(smsProvider, atLeastOnce()).sendSms(eq(PhoneNumbers.normalize(phone)), message.capture());
         Matcher m = OTP.matcher(message.getValue());
         assertThat(m.find()).as("the SMS contains a 6-digit code").isTrue();
         String otp = m.group(1);
@@ -108,7 +110,7 @@ public abstract class PostgresIntegrationTest {
         var result = mockMvc.perform(post("/api/auth/register").with(freshClientIp())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + email + "\",\"phoneNumber\":\"" + phone + "\",\"password\":\"" + TEST_PASSWORD
-                                + "\",\"firstName\":\"E2E\",\"lastName\":\"" + role + "\",\"role\":\"" + role + "\",\"otpCode\":\"" + otp + "\"}"))
+                                + "\",\"firstName\":\"E2E\",\"lastName\":\"" + role + "\",\"role\":\"" + role + "\",\"otpCode\":\"" + otp + "\",\"acceptTerms\":true}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andReturn().getResponse();
