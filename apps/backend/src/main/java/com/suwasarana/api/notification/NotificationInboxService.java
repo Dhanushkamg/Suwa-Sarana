@@ -6,8 +6,8 @@ import com.suwasarana.api.notification.dto.NotificationDto;
 import com.suwasarana.api.notification.dto.NotificationPageDto;
 import com.suwasarana.api.shared.AfterCommit;
 import com.suwasarana.api.shared.AppClock;
-import com.suwasarana.api.shared.CodedApiException;
-import com.suwasarana.api.shared.ErrorCodes;
+import com.suwasarana.api.common.ApiException;
+import com.suwasarana.api.common.ErrorCodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +55,7 @@ public class NotificationInboxService {
             try {
                 sse.push(userId, dto);
             } catch (Exception e) {
-                log.warn("SSE push failed for user {}: {}", userId, e.getMessage());
+                log.warn("SSE push failed for user {} ({})", userId, e.getClass().getSimpleName());
             }
         });
         return dto;
@@ -113,7 +113,7 @@ public class NotificationInboxService {
     @Transactional
     public NotificationDto markRead(Long userId, Long id) {
         UserNotification n = repository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> CodedApiException.notFound(ErrorCodes.NOTIFICATION_NOT_FOUND, "Notification not found"));
+                .orElseThrow(() -> ApiException.notFound(ErrorCodes.NOTIFICATION_NOT_FOUND, "Notification not found"));
         if (n.getReadAt() == null) {
             n.setReadAt(clock.instant());
             repository.save(n);
@@ -160,7 +160,7 @@ public class NotificationInboxService {
         try {
             return mapper.writeValueAsString(params == null ? Map.of() : params);
         } catch (Exception e) {
-            log.warn("Could not serialise notification params: {}", e.getMessage());
+            log.warn("Could not serialise notification params ({})", e.getClass().getSimpleName());
             return "{}";
         }
     }

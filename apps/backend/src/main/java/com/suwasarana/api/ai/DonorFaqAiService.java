@@ -103,7 +103,7 @@ public class DonorFaqAiService {
                     );
                 }
             } catch (Exception e) {
-                log.warn("Groq FAQ call failed or timed out: {}. Using rule-grounded fallback engine.", e.getMessage());
+                log.warn("Groq FAQ call failed or timed out ({}). Using rule-grounded fallback engine.", e.getClass().getSimpleName());
             }
         }
 
@@ -151,8 +151,8 @@ public class DonorFaqAiService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
         ResponseEntity<String> response = restTemplate.exchange(GROQ_URL, HttpMethod.POST, entity, String.class);
 
-        log.info("Groq API Response Status: {}", response.getStatusCode());
-        log.info("Groq API Response Body: {}", response.getBody());
+        // Status only: the body echoes the donor's question and the answer, which may contain health details.
+        log.debug("Groq API response status: {}", response.getStatusCode());
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             JsonNode root = objectMapper.readTree(response.getBody());

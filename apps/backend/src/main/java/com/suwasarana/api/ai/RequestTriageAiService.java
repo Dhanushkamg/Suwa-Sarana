@@ -1,5 +1,6 @@
 package com.suwasarana.api.ai;
 
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.request.RequestRepository;
 import com.suwasarana.api.request.Urgency;
@@ -35,7 +36,7 @@ public class RequestTriageAiService {
 
         // 1. Rapid Duplicate / Frequency Check
         if (requester != null && requester.getId() != null) {
-            LocalDateTime dayAgo = LocalDateTime.now().minusHours(24);
+            LocalDateTime dayAgo = Times.utcNow().minusHours(24);
             List<BloodRequest> recentRequests = requestRepository.findByRequesterId(requester.getId());
             long recentCount = recentRequests.stream()
                     .filter(r -> r.getCreatedAt() != null && r.getCreatedAt().isAfter(dayAgo) && !r.getId().equals(request.getId()))
@@ -78,10 +79,10 @@ public class RequestTriageAiService {
 
         request.setFraudRiskScore(finalScore);
         request.setAiFlagReason(reason);
-        request.setTriagedAt(LocalDateTime.now());
+        request.setTriagedAt(Times.utcNow());
 
         // Note: Lifecycle status is deliberately NEVER mutated by AI triage
-        log.info("AI Triage evaluated Request #{} with Fraud Risk Score: {} (Reason: {})", request.getId(), finalScore, reason);
+        log.info("AI Triage evaluated Request #{} with Fraud Risk Score: {}", request.getId(), finalScore);
         return requestRepository.save(request);
     }
 }

@@ -4,29 +4,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Development sender: nothing leaves the machine. With {@code logBody} (dev/local/test profiles) the whole mail,
- * including its links, is printed so a developer can follow them; otherwise only the masked recipient and the subject.
+ * Development sender: nothing leaves the machine. Only the masked recipient and the subject are logged; the body
+ * (verification / reset links, invitations) never is.
  */
 public class LoggingEmailSender implements EmailSender {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingEmailSender.class);
-
-    private final boolean logBody;
-
-    public LoggingEmailSender(boolean logBody) {
-        this.logBody = logBody;
-    }
 
     @Override
     public boolean send(EmailMessage message) {
         if (message == null || message.to() == null) {
             return false;
         }
-        if (logBody) {
-            log.info("[EMAIL not sent - logging sender]\nTo: {}\nSubject: {}\n\n{}", message.to(), message.subject(), message.body());
-        } else {
-            log.info("[EMAIL not sent - logging sender] to={} subject={}", maskEmail(message.to()), message.subject());
-        }
+        log.info("[EMAIL not sent - logging sender] to={} subject={}", maskEmail(message.to()), message.subject());
         return true;
     }
 

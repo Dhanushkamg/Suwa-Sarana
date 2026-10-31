@@ -172,15 +172,13 @@ class NotifyLkSmsProviderTest {
         appender.start();
         logger.addAppender(appender);
         try {
-            assertTrue(new LoggingSmsProvider(false).sendSms("+94771234567", "code 111222"));
-            assertTrue(new LoggingSmsProvider(true).sendSms("+94771234567", "code 333444"));
-            assertFalse(new LoggingSmsProvider(true).sendSms("", "x"));
+            assertTrue(new LoggingSmsProvider().sendSms("+94771234567", "code 111222"));
+            assertFalse(new LoggingSmsProvider().sendSms("", "x"));
 
-            String quiet = appender.list.get(0).getFormattedMessage();
-            String dev = appender.list.get(1).getFormattedMessage();
-            assertFalse(quiet.contains("111222"), quiet);
-            assertTrue(dev.contains("333444"), dev);
-            assertFalse(quiet.contains("771234567") || dev.contains("771234567"));
+            assertEquals(1, appender.list.size());
+            String line = appender.list.get(0).getFormattedMessage();
+            assertFalse(line.contains("111222"), line);
+            assertFalse(line.contains("771234567"), line);
         } finally {
             logger.detachAppender(appender);
         }

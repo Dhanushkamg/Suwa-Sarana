@@ -37,7 +37,7 @@ public class InboxPledgeNotifier implements PledgeNotifier {
             inbox.add(requesterUserId, "CIRCLE_PLEDGE", "notifications.pledge.title", "notifications.pledge.body", params, requestId);
             return true;
         } catch (Exception e) {
-            log.warn("Could not store the circle pledge notification for request {}: {}", requestId, e.getMessage());
+            log.warn("Could not store the circle pledge notification for request {} ({})", requestId, e.getClass().getSimpleName());
             return false;
         }
     }

@@ -90,7 +90,7 @@ public class SmtpEmailSender implements EmailSender {
             }
             return true;
         } catch (IOException | RuntimeException e) {
-            log.warn("Email to {} failed: {}", LoggingEmailSender.maskEmail(to), e.getMessage());
+            log.warn("Email to {} failed ({})", LoggingEmailSender.maskEmail(to), e.getClass().getSimpleName());
             return false;
         } finally {
             if (socket != null) {

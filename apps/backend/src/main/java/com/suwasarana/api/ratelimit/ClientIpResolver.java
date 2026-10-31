@@ -53,7 +53,7 @@ public class ClientIpResolver {
                     parsed.add(IpCidr.parse(raw));
                 } catch (IllegalArgumentException e) {
                     // Fail closed: an unparsable entry trusts nothing. Never fail startup over a typo in a hint list.
-                    log.error("Ignoring invalid app.rate-limit.trusted-proxies entry '{}': {}", raw, e.getMessage());
+                    log.error("Ignoring invalid app.rate-limit.trusted-proxies entry '{}' ({})", raw, e.getClass().getSimpleName());
                 }
             }
         }

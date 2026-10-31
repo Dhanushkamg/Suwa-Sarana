@@ -178,7 +178,7 @@ class SmtpEmailSenderTest {
     @Test
     void loggingSender_masksTheRecipient_andOnlyPrintsTheBodyInDev() {
         assertEquals("n*****@example.com", LoggingEmailSender.maskEmail("nimal@example.com"));
-        assertTrue(new LoggingEmailSender(false).send(new EmailMessage("nimal@example.com", "s", "b")));
-        assertFalse(new LoggingEmailSender(false).send(null));
+        assertTrue(new LoggingEmailSender().send(new EmailMessage("nimal@example.com", "s", "b")));
+        assertFalse(new LoggingEmailSender().send(null));
     }
 }

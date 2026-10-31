@@ -86,7 +86,7 @@ public class DataInitializer implements CommandLineRunner {
             });
             log.info("Donor profiles initialized");
         } catch (Exception e) {
-            log.warn("Could not init donor profiles: {}", e.getMessage());
+            log.warn("Could not init donor profiles: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -128,7 +128,7 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("Active blood requests initialized");
             }
         } catch (Exception e) {
-            log.warn("Could not init active requests: {}", e.getMessage());
+            log.warn("Could not init active requests: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -145,7 +145,7 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("Abuse reports initialized");
             }
         } catch (Exception e) {
-            log.warn("Could not init reports: {}", e.getMessage());
+            log.warn("Could not init reports: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -174,7 +174,7 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("Donation camps initialized");
             }
         } catch (Exception e) {
-            log.warn("Could not init camps: {}", e.getMessage());
+            log.warn("Could not init camps: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -189,7 +189,7 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("Blood bank inventory initialized");
             }
         } catch (Exception e) {
-            log.warn("Could not init inventory: {}", e.getMessage());
+            log.warn("Could not init inventory: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -209,9 +209,9 @@ public class DataInitializer implements CommandLineRunner {
             user.setRole(role);
             user.setVerificationStatus(status);
             userRepository.save(user);
-            log.info("Initialized test account: {} with role: {} and status: {}", email, role, status);
+            log.info("Initialized test account {} with role: {} and status: {}", com.suwasarana.api.email.LoggingEmailSender.maskEmail(email), role, status);
         } catch (Exception e) {
-            log.warn("Could not initialize account {}: {}", email, e.getMessage());
+            log.warn("Could not initialize account {} ({})", com.suwasarana.api.email.LoggingEmailSender.maskEmail(email), e.getClass().getSimpleName());
         }
     }
 }

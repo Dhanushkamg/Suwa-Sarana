@@ -8,7 +8,6 @@ public class SmsProperties {
 
     private String provider = "logging";
     /** Logging provider only: also print the message body (OTP codes!). Always on in dev/local/test profiles. */
-    private boolean logMessageBody = false;
     private final NotifyLk notifylk = new NotifyLk();
 
     public static class NotifyLk {
@@ -35,7 +34,5 @@ public class SmsProperties {
 
     public String getProvider() { return provider; }
     public void setProvider(String provider) { this.provider = provider; }
-    public boolean isLogMessageBody() { return logMessageBody; }
-    public void setLogMessageBody(boolean logMessageBody) { this.logMessageBody = logMessageBody; }
     public NotifyLk getNotifylk() { return notifylk; }
 }

@@ -35,7 +35,7 @@ public class MatchNotificationListener {
             try {
                 cascade.sendNotification(match.getDonor(), match.getRequest());
             } catch (Exception e) {
-                log.error("Alerting donor {} for request {} failed: {}", match.getDonor().getId(), event.requestId(), e.getMessage());
+                log.error("Alerting donor {} for request {} failed ({})", match.getDonor().getId(), event.requestId(), e.getClass().getSimpleName());
             }
         }
     }

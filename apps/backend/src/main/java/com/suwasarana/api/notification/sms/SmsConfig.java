@@ -29,6 +29,6 @@ public class SmsConfig {
         if (!devLike) {
             log.warn("SMS provider is 'logging': NO SMS WILL BE SENT. Set SMS_PROVIDER=notifylk with NOTIFYLK_* credentials.");
         }
-        return new LoggingSmsProvider(devLike || properties.isLogMessageBody());
+        return new LoggingSmsProvider();
     }
 }

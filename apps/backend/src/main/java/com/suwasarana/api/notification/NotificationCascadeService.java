@@ -173,8 +173,8 @@ public class NotificationCascadeService implements NotificationService {
             logEntry.setSentAt(clock.utcNow());
             notificationLogRepository.save(logEntry);
         } catch (Exception e) {
-            log.error("Failed to persist notification audit log for donor {} / request {}: {}",
-                    donor.getId(), request.getId(), e.getMessage());
+            log.error("Failed to persist notification audit log for donor {} / request {} ({})",
+                    donor.getId(), request.getId(), e.getClass().getSimpleName());
         }
     }
 }

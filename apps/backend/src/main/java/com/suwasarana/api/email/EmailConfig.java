@@ -25,6 +25,6 @@ public class EmailConfig {
         if (!devLike) {
             log.warn("Email provider is 'logging': NO EMAIL WILL BE SENT. Set EMAIL_PROVIDER=smtp with SMTP_* settings.");
         }
-        return new LoggingEmailSender(devLike);
+        return new LoggingEmailSender();
     }
 }

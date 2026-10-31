@@ -76,7 +76,7 @@ public class RequestIntakeAiService {
                     return llmResult;
                 }
             } catch (Exception e) {
-                log.warn("Groq LLM extraction call failed or timed out: {}. Falling back to rule-based parser.", e.getMessage());
+                log.warn("Groq LLM extraction call failed or timed out ({}). Falling back to rule-based parser.", e.getClass().getSimpleName());
             }
         }
 
@@ -170,7 +170,7 @@ public class RequestIntakeAiService {
 
             return dto;
         } catch (Exception e) {
-            log.warn("Failed to parse LLM JSON response: {}", json, e);
+            log.warn("Failed to parse the LLM JSON response ({})", e.getClass().getSimpleName());
             return null;
         }
     }
