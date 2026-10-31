@@ -1,7 +1,7 @@
 package com.suwasarana.api.ai.retrieval;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 
@@ -26,18 +26,32 @@ public final class TextNormalizer {
     private static final int MIN_SCRIPT_TOKEN = 2;
 
     private final Lexicon lexicon;
-    private final Set<String> sinhalaVocab;
-    private final Set<String> tamilVocab;
-    private final int maxVocabLen;
+    private final Map<String, String> sinhalaVocab;
+    private final Map<String, String> tamilVocab;
 
-    public TextNormalizer(Lexicon lexicon, Set<String> sinhalaVocab, Set<String> tamilVocab) {
+    /**
+     * @param sinhalaVocab stem (or alias) to canonical stem; built by {@link #buildVocab(Set)}
+     */
+    public TextNormalizer(Lexicon lexicon, Map<String, String> sinhalaVocab, Map<String, String> tamilVocab) {
         this.lexicon = lexicon;
         this.sinhalaVocab = sinhalaVocab;
         this.tamilVocab = tamilVocab;
-        int m = 0;
-        for (String s : sinhalaVocab) m = Math.max(m, s.length());
-        for (String s : tamilVocab) m = Math.max(m, s.length());
-        this.maxVocabLen = m;
+    }
+
+    /**
+     * Vocabulary map from the keyword tokens of one script. A token that ends in a virama / hal kirima (Tamil "துபாய்",
+     * Sinhala "වයස්") also gets an alias without it, because suffixes replace the virama ("துபாயில்").
+     */
+    public static Map<String, String> buildVocab(Set<String> tokens) {
+        Map<String, String> m = new java.util.HashMap<>();
+        for (String t : tokens) m.put(t, t);
+        for (String t : tokens) {
+            if (t.endsWith("்") || t.endsWith("්")) {
+                String alias = t.substring(0, t.length() - 1);
+                if (TextUtil.codePointLength(alias) >= 3) m.putIfAbsent(alias, t);
+            }
+        }
+        return m;
     }
 
     /** All tokens of a text after cleaning (used to build the script vocabularies from the knowledge base). */
@@ -124,23 +138,25 @@ public final class TextNormalizer {
     private void script(String token, boolean sinhala, List<Term> out) {
         if (TextUtil.codePointLength(token) < MIN_SCRIPT_TOKEN) return;
         if (sinhala ? lexicon.isSinhalaStop(token) : lexicon.isTamilStop(token)) return;
-        Set<String> vocab = sinhala ? sinhalaVocab : tamilVocab;
+        Map<String, String> vocab = sinhala ? sinhalaVocab : tamilVocab;
         String vocabStem = longestPrefix(token, vocab);
+        if (vocabStem != null && (sinhala ? lexicon.isSinhalaStop(vocabStem) : lexicon.isTamilStop(vocabStem))) return;
         String domainStem = sinhala ? lexicon.sinhalaDomainStem(token) : lexicon.tamilDomainStem(token);
-        if (domainStem != null && (vocabStem == null || vocabStem.length() <= domainStem.length())) {
+        if (domainStem != null) {
             out.add(new Term(domainStem, true));
             return;
         }
         out.add(new Term(vocabStem != null ? vocabStem : token, false));
     }
 
-    private static String longestPrefix(String token, Collection<String> vocab) {
-        if (vocab.contains(token)) return token;
+    private static String longestPrefix(String token, Map<String, String> vocab) {
+        String exact = vocab.get(token);
+        if (exact != null) return exact;
         // prefixes on code point boundaries, longest first
         int[] cps = token.codePoints().toArray();
         for (int len = Math.min(cps.length - 1, 64); len >= MIN_SCRIPT_TOKEN; len--) {
-            String p = new String(cps, 0, len);
-            if (vocab.contains(p)) return p;
+            String hit = vocab.get(new String(cps, 0, len));
+            if (hit != null) return hit;
         }
         return null;
     }
@@ -148,9 +164,5 @@ public final class TextNormalizer {
     /** Longest vocabulary stem the token starts with (package-visible for tests). */
     String stemOf(String token, boolean sinhala) {
         return longestPrefix(token, sinhala ? sinhalaVocab : tamilVocab);
-    }
-
-    int maxVocabLen() {
-        return maxVocabLen;
     }
 }

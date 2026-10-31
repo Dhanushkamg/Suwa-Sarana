@@ -47,8 +47,12 @@ public final class Bm25Index {
             for (Map.Entry<String, List<String>> kw : e.keywords().entrySet()) {
                 for (String phrase : kw.getValue()) addPhrase(d, normalizer, phrase, W_KEYWORD);
             }
-            for (Map.Entry<String, List<String>> ex : e.questionExamples().entrySet()) {
-                for (String q : ex.getValue()) addPhrase(d, normalizer, q, W_EXAMPLE);
+            // CONFLICT entries are reached through their companions or an explicit first-time/malaria phrase; their example
+            // sentences would otherwise out-rank the plain entry for the same words (weight, malaria).
+            if (e.status() != com.suwasarana.api.ai.kb.KbStatus.CONFLICT) {
+                for (Map.Entry<String, List<String>> ex : e.questionExamples().entrySet()) {
+                    for (String q : ex.getValue()) addPhrase(d, normalizer, q, W_EXAMPLE);
+                }
             }
             addPhrase(d, normalizer, e.topic(), W_EXAMPLE);
             for (double w : d.weights.values()) d.length += w;

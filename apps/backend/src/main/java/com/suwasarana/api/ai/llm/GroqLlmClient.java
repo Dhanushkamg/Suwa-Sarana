@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.suwasarana.api.ai.AiProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -51,6 +52,7 @@ public class GroqLlmClient implements LlmClient {
     private final CircuitBreaker breaker;
     private final TokenBudget budget;
 
+    @Autowired
     public GroqLlmClient(AiProperties props, Environment env) {
         this(props.getGroq(), props.getGroq().resolveApiKey(env), defaultTransport(), Clock.systemUTC());
     }

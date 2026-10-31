@@ -40,9 +40,13 @@ public class RetrievalEngine {
     }
 
     private static final Pattern SENTENCE_SPLIT = Pattern.compile("[?!;\\n।]+|\\.(?!\\d)|(?<!\\d)\\.");
-    private static final double TOPICAL_IDF = 1.0;
+    private static final double TOPICAL_IDF = 1.5;
     private static final int MAX_PER_SEGMENT = 3;
     private static final int MAX_TOTAL = 4;
+    /** Unit words: they score, but can never be the only reason an entry is selected ("3 months" alone is not a topic). */
+    private static final Set<String> WEAK = Set.of("month", "year", "day", "hour", "week", "time", "long");
+    /** Without any blood/donation word, at least this share of the content words must be known to the knowledge base. */
+    private static final double MIN_KNOWN_SHARE = 0.3;
 
     private final TextNormalizer normalizer;
     private final Bm25Index index;
@@ -67,7 +71,7 @@ public class RetrievalEngine {
                 }
             }
         }
-        this.normalizer = new TextNormalizer(lexicon, si, ta);
+        this.normalizer = new TextNormalizer(lexicon, TextNormalizer.buildVocab(si), TextNormalizer.buildVocab(ta));
         this.index = new Bm25Index(kb.entries(), normalizer);
         this.minScore = minScore;
         this.minScoreExtra = minScoreExtra;
@@ -100,13 +104,25 @@ public class RetrievalEngine {
     private Result retrieveText(String text, double first, double extra) {
         Map<String, Hit> picked = new LinkedHashMap<>();
         boolean domain = false;
+        boolean softSeen = false;
         int topical = 0;
+        int contentTotal = 0;
+        int contentKnown = 0;
         String[] segments = SENTENCE_SPLIT.split(text == null ? "" : text);
         int segNo = 0;
         for (String seg : segments) {
             if (seg.isBlank()) continue;
             List<TextNormalizer.Term> terms = normalizer.normalize(seg);
-            for (TextNormalizer.Term t : terms) if (t.soft()) domain = true;
+            Set<String> seen = new HashSet<>();
+            for (TextNormalizer.Term t : terms) {
+                if (t.soft()) {
+                    domain = true;
+                    softSeen = true;
+                } else if (seen.add(t.text())) {
+                    contentTotal++;
+                    if (index.known(t.text()) && !WEAK.contains(t.text())) contentKnown++;
+                }
+            }
             Set<String> remaining = new LinkedHashSet<>(TextNormalizer.termsWithBigrams(terms));
             for (String t : remaining) if (index.known(t) && index.idf(t) >= TOPICAL_IDF) topical++;
             int fromSegment = 0;
@@ -128,7 +144,7 @@ public class RetrievalEngine {
                 for (String t : remaining) {
                     if (best.terms().contains(t)) {
                         matched.add(t);
-                        if (index.idf(t) >= TOPICAL_IDF) topicalMatch = true;
+                        if (index.idf(t) >= TOPICAL_IDF && !WEAK.contains(t)) topicalMatch = true;
                     }
                 }
                 if (!topicalMatch) break;
@@ -138,6 +154,9 @@ public class RetrievalEngine {
                 domain = true;
             }
             segNo++;
+        }
+        if (!softSeen && contentTotal >= 3 && (double) contentKnown / contentTotal < MIN_KNOWN_SHARE) {
+            return new Result(new ArrayList<>(), false, 0);
         }
         return new Result(new ArrayList<>(picked.values()), domain, topical);
     }

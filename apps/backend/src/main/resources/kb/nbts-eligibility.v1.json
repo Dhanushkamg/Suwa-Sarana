@@ -347,36 +347,43 @@
           "again",
           "every 3 months",
           "every month",
-          "next donation",
           "gap between donations",
           "wait between",
           "since last donation",
-          "last donated",
           "months between",
           "donate again",
           "repeat",
-          "regular donor"
+          "regular donor",
+          "how many times",
+          "times a year",
+          "per year",
+          "in a year",
+          "once a year"
         ],
         "si": [
           "නැවත",
           "නැවතත්",
-          "කොපමණ කාලයකට වරක්",
-          "කොච්චර කාලෙකට වරක්",
+          "වරක්",
           "අතර කාලය",
           "පරතරය",
-          "ඊළඟ දානය",
+          "ආයෙත්",
+          "ආයේ",
+          "ආපහු",
           "අවසන් වරට",
           "මාසයකට වරක්",
-          "මාස"
+          "මාස",
+          "වසරකට",
+          "අවුරුද්දකට"
         ],
         "ta": [
           "மீண்டும்",
           "இடைவெளி",
           "எத்தனை மாதங்களுக்கு ஒருமுறை",
           "மாதங்களுக்கு",
-          "அடுத்த தானம்",
           "கடைசியாக",
-          "மாதத்திற்கு ஒருமுறை"
+          "மாதத்திற்கு ஒருமுறை",
+          "வருடத்திற்கு",
+          "ஆண்டுக்கு"
         ],
         "singlish": [
           "aye",
@@ -1073,8 +1080,7 @@
           "දිවා ආහාර",
           "වතුර",
           "දියර",
-          "බොන්න",
-          "පානය",
+          "බීම",
           "කන්න",
           "බඩගින්නේ",
           "හිස් බඩ",
@@ -1082,15 +1088,15 @@
           "කෝපි"
         ],
         "ta": [
-          "சாப்பிட",
           "உணவு",
+          "சாப்பாடு",
           "காலை உணவு",
           "மதிய உணவு",
           "வெறும் வயிறு",
           "நீர்",
           "தண்ணீர்",
           "திரவ",
-          "குடிக்க",
+          "உண்ண",
           "பசி"
         ],
         "singlish": [
@@ -1114,7 +1120,7 @@
           "රුධිර දානයට පෙර කෑම කා යා යුතුද?"
         ],
         "ta": [
-          "இரத்த தானத்திற்கு முன் சாப்பிட வேண்டுமா?"
+          "இரத்த தானத்திற்கு முன் என்ன உணவு உண்ண வேண்டும்?"
         ],
         "singlish": [
           "blood denna kalin kanna one da?"
@@ -1478,35 +1484,27 @@
       "category": "weight",
       "keywords": {
         "en": [
-          "first time",
-          "first-time donor",
+          "first time weight",
+          "first-time donor weight",
+          "weight for first time donors",
+          "first time donor",
           "never donated",
-          "new donor",
-          "weight",
-          "weigh",
-          "weighing",
-          "kg",
-          "kilo"
+          "new donor"
         ],
         "si": [
           "පළමු වතාවට",
           "පළමු වරට",
-          "බර",
-          "කිලෝ",
           "අලුත් දායක"
         ],
         "ta": [
           "முதல் முறை",
           "முதன்முறை",
-          "முதல் தடவை",
-          "எடை",
-          "கிலோ"
+          "முதல் தடவை"
         ],
         "singlish": [
           "aluth donor",
           "palamuwara",
-          "bara",
-          "kg"
+          "first time"
         ]
       },
       "question_examples": {
@@ -1649,6 +1647,9 @@
           "පච්ච ගැසීම",
           "කන් විදීම",
           "ශරීරය විදීම",
+          "විදගත්",
+          "විදුව",
+          "විදපු",
           "ඇක්‍යුපංක්චර්"
         ],
         "ta": [
@@ -1769,7 +1770,7 @@
       "question_examples": {
         "en": [
           "I take antibiotics. Can I donate?",
-          "I take blood pressure tablets. Can I donate?"
+          "I take vitamin tablets every day. Can I donate?"
         ],
         "si": [
           "බෙහෙත් ගන්නවා නම් රුධිර දානය කළ හැකිද?"
@@ -2131,7 +2132,6 @@
         ],
         "si": [
           "මව්කිරි",
-          "කිරි දෙන",
           "කිරි දීම",
           "ළදරු",
           "පසු ප්‍රසව",
@@ -2372,6 +2372,8 @@
           "දානයෙන් පසු",
           "පසු",
           "පසුව",
+          "පස්සේ",
+          "පස්සෙ",
           "ප්ලාස්ටරය",
           "තුවාලය",
           "ව්‍යායාම",

@@ -47,14 +47,22 @@ public class LanguageDetector {
 
     public InputStyle detect(String text) {
         String cleaned = TextUtil.clean(text);
-        int[] c = TextUtil.letterCounts(cleaned);
-        int si = c[0], ta = c[1], la = c[2];
+        List<TextUtil.Tok> toks = TextUtil.tokens(cleaned);
+        int si = 0, ta = 0, la = 0;
+        for (TextUtil.Tok t : toks) {
+            if (TextUtil.codePointLength(t.text()) < 2) continue;
+            switch (t.script()) {
+                case SINHALA -> si++;
+                case TAMIL -> ta++;
+                case LATIN -> la++;
+                default -> { }
+            }
+        }
         int total = si + ta + la;
         if (total == 0) return InputStyle.UNKNOWN;
         if (si + ta > 0 && (double) (si + ta) / total >= SCRIPT_SHARE) {
             return si >= ta ? InputStyle.SI : InputStyle.TA;
         }
-        List<TextUtil.Tok> toks = TextUtil.tokens(cleaned);
         int siHits = 0, taHits = 0;
         for (TextUtil.Tok t : toks) {
             if (t.script() != TextUtil.Script.LATIN) continue;
@@ -62,8 +70,6 @@ public class LanguageDetector {
             if (lexicon.isTamilMarker(t.text())) taHits++;
         }
         if (siHits == 0 && taHits == 0) {
-            if (si > 0) return InputStyle.SI;
-            if (ta > 0) return InputStyle.TA;
             return InputStyle.EN;
         }
         return taHits > siHits ? InputStyle.TANGLISH : InputStyle.SINGLISH;

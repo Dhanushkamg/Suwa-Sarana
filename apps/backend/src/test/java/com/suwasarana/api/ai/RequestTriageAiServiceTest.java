@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +29,9 @@ public class RequestTriageAiServiceTest {
 
     @Mock
     private RequestRepository requestRepository;
+
+    @Mock
+    private AiTriageRecordRepository recordRepository;
 
     @InjectMocks
     private RequestTriageAiService triageService;
@@ -141,5 +145,54 @@ public class RequestTriageAiServiceTest {
         assertNotNull(result);
         assertEquals(0, result.getFraudRiskScore());
         assertTrue(result.getAiFlagReason().contains("Standard requisition profile"));
+    }
+
+    @Test
+    @DisplayName("TriageResult lists the reasons heaviest first with stable codes, and the stored record keeps them")
+    void testTriage_reasonsAreOrderedAndStored() {
+        BloodRequest req = new BloodRequest();
+        req.setId(501L);
+        req.setRequester(unverifiedUser);
+        req.setHospitalName("test");
+        req.setUnitsNeeded((short) 8);
+        req.setUrgency(Urgency.CRITICAL);
+        req.setStatus(RequestStatus.OPEN);
+        when(requestRepository.findByRequesterId(10L)).thenReturn(Collections.emptyList());
+        when(requestRepository.save(any(BloodRequest.class))).thenAnswer(i -> i.getArgument(0));
+
+        TriageResult result = triageService.evaluate(req);
+        assertEquals(List.of("UNVERIFIED_HIGH_UNITS", "SUSPICIOUS_HOSPITAL_NAME", "UNVERIFIED_CRITICAL"),
+                result.reasons().stream().map(TriageResult.Reason::code).toList());
+        assertEquals(90, result.score());
+        assertEquals(35, result.reasons().get(0).weight());
+        assertTrue(result.humanReviewRecommended());
+
+        triageService.triageRequest(req);
+        org.mockito.ArgumentCaptor<AiTriageRecord> cap = org.mockito.ArgumentCaptor.forClass(AiTriageRecord.class);
+        org.mockito.Mockito.verify(recordRepository).save(cap.capture());
+        assertEquals(501L, cap.getValue().getRequestId());
+        assertEquals(90, cap.getValue().getScore());
+        assertTrue(cap.getValue().getReasonsJson().contains("UNVERIFIED_HIGH_UNITS"));
+    }
+
+    @Test
+    @DisplayName("a human review is recorded next to the AI result without zeroing the score")
+    void testReview_doesNotZeroScore() {
+        AiTriageRecord rec = new AiTriageRecord();
+        rec.setRequestId(601L);
+        rec.setScore(65);
+        rec.setRawScore(65);
+        rec.setReasonsJson("[]");
+        when(recordRepository.findFirstByRequestIdOrderByCreatedAtDescIdDesc(601L)).thenReturn(java.util.Optional.of(rec));
+
+        assertTrue(triageService.recordReview(601L, 7L, "dismissed", "called the hospital"));
+        assertEquals(65, rec.getScore(), "the original AI score must be kept");
+        assertEquals(7L, rec.getReviewedBy());
+        assertNotNull(rec.getReviewedAt());
+        assertEquals("DISMISSED", rec.getReviewDecision());
+        assertEquals("called the hospital", rec.getReviewNote());
+
+        when(recordRepository.findFirstByRequestIdOrderByCreatedAtDescIdDesc(602L)).thenReturn(java.util.Optional.empty());
+        org.junit.jupiter.api.Assertions.assertFalse(triageService.recordReview(602L, 7L, null, null));
     }
 }

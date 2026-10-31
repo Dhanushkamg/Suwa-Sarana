@@ -545,6 +545,25 @@
    ]
   },
   {
+   "canon": "before",
+   "forms": [
+    "kalin",
+    "kalinma",
+    "munnama"
+   ]
+  },
+  {
+   "canon": "after",
+   "forms": [
+    "passe",
+    "passeth",
+    "pasu",
+    "pinbu",
+    "pirahu",
+    "pirakku"
+   ]
+  },
+  {
    "canon": "pregnant",
    "forms": [
     "pregnancy",
@@ -1060,6 +1079,8 @@
     "dum",
     "dumpanaya",
     "dum+bonawa",
+    "dum+bonna",
+    "dum+bonne",
     "pugai",
     "pugaipidikka",
     "puhai"
@@ -1395,12 +1416,26 @@
     "vendum",
     "sari",
     "hari",
-    "oyage"
+    "oyage",
+    "kenek",
+    "kenekuta",
+    "kenekta",
+    "kenaka",
+    "kenekge"
    ]
   }
  ],
  "markers": {
   "si": [
+   "eka",
+   "kiyatada",
+   "wenne",
+   "karanne",
+   "denne",
+   "yanne",
+   "innawa",
+   "kenek",
+   "adha",
    "mama",
    "mata",
    "mage",
@@ -1484,6 +1519,7 @@
    "nam"
   ],
   "ta": [
+   "ethanai",
    "naan",
    "nan",
    "enakku",
@@ -1528,6 +1564,66 @@
  },
  "stopwords": {
   "latin": [
+   "last",
+   "next",
+   "give",
+   "gives",
+   "giving",
+   "gave",
+   "given",
+   "get",
+   "yesterday",
+   "today",
+   "tomorrow",
+   "ago",
+   "now",
+   "recently",
+   "later",
+   "need",
+   "needs",
+   "want",
+   "wants",
+   "wanted",
+   "help",
+   "rules",
+   "rule",
+   "information",
+   "info",
+   "details",
+   "detail",
+   "question",
+   "ask",
+   "asking",
+   "possible",
+   "allowed",
+   "able",
+   "anything",
+   "something",
+   "person",
+   "people",
+   "someone",
+   "everyone",
+   "good",
+   "bad",
+   "like",
+   "see",
+   "say",
+   "way",
+   "use",
+   "make",
+   "go",
+   "going",
+   "come",
+   "one",
+   "two",
+   "three",
+   "four",
+   "five",
+   "six",
+   "seven",
+   "eight",
+   "nine",
+   "ten",
    "a",
    "an",
    "the",
@@ -1629,6 +1725,20 @@
    "thank"
   ],
   "si": [
+   "කළාට",
+   "ගියාට",
+   "ඊයේ",
+   "අද",
+   "දැන්",
+   "දෙන",
+   "දෙන්න",
+   "දුන්",
+   "දුන්න",
+   "දුන්නා",
+   "ගන්න",
+   "ගත්ත",
+   "ඕන",
+   "ඕනද",
    "මම",
    "මට",
    "මගේ",
@@ -1666,6 +1776,17 @@
    "දිය"
   ],
   "ta": [
+   "ஒரு",
+   "ஆகிறது",
+   "ஆகிவிட்டது",
+   "நேற்று",
+   "இன்று",
+   "இப்போது",
+   "எப்போது",
+   "எப்படி",
+   "ஏன்",
+   "எது",
+   "யார்",
    "நான்",
    "என்",
    "எனக்கு",
@@ -1688,7 +1809,9 @@
  "domain": {
   "latin": [
    "blood",
-   "donate"
+   "donate",
+   "after",
+   "before"
   ],
   "si": [
    "ලේ",
@@ -1696,15 +1819,20 @@
    "රුධිරය",
    "දාන",
    "දානය",
-   "දන්",
    "දායක",
-   "පරිත්‍යාග"
+   "පරිත්‍යාග",
+   "පසු",
+   "පස්සේ",
+   "පස්සෙ",
+   "කලින්"
   ],
   "ta": [
    "இரத்த",
    "ரத்த",
    "தான",
-   "கொடை"
+   "கொடை",
+   "பிறகு",
+   "பின்னர்"
   ]
  }
 }
