@@ -3,6 +3,7 @@ package com.suwasarana.api.ai.retrieval;
 import com.suwasarana.api.ai.AiProperties;
 import com.suwasarana.api.ai.kb.KbEntry;
 import com.suwasarana.api.ai.kb.KnowledgeBase;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -53,6 +54,7 @@ public class RetrievalEngine {
     private final double minScore;
     private final double minScoreExtra;
 
+    @Autowired
     public RetrievalEngine(KnowledgeBase kb, Lexicon lexicon, AiProperties props) {
         this(kb, lexicon, props.getFaq().getMinScore(), props.getFaq().getMinScoreExtra());
     }

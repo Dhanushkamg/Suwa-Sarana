@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.suwasarana.api.ai.AiProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -42,6 +43,7 @@ public class KnowledgeBase {
     private final Map<String, KbEntry> byId;
     private final Map<String, String> variables;
 
+    @Autowired
     public KnowledgeBase(AiProperties props) {
         this(props.getKb().getPath(), contactVariables(props), new ObjectMapper());
     }
