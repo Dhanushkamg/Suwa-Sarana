@@ -1,0 +1,246 @@
+{
+ "description": "The 25 official districts of Sri Lanka with names in English/Sinhala/Tamil and an approximate centroid (same values as AdminService.DISTRICT_COORDINATES). Coordinates are APPROXIMATE (district level).",
+ "districts": [
+  {
+   "name": "Colombo",
+   "si": "කොළඹ",
+   "ta": "கொழும்பு",
+   "latitude": 6.9271,
+   "longitude": 79.8612,
+   "aliases": []
+  },
+  {
+   "name": "Gampaha",
+   "si": "ගම්පහ",
+   "ta": "கம்பஹா",
+   "latitude": 7.084,
+   "longitude": 80.0098,
+   "aliases": []
+  },
+  {
+   "name": "Kalutara",
+   "si": "කළුතර",
+   "ta": "களுத்துறை",
+   "latitude": 6.5854,
+   "longitude": 79.9607,
+   "aliases": []
+  },
+  {
+   "name": "Kandy",
+   "si": "මහනුවර",
+   "ta": "கண்டி",
+   "latitude": 7.2906,
+   "longitude": 80.6337,
+   "aliases": [
+    "mahanuwara"
+   ]
+  },
+  {
+   "name": "Matale",
+   "si": "මාතලේ",
+   "ta": "மாத்தளை",
+   "latitude": 7.4675,
+   "longitude": 80.6234,
+   "aliases": [
+    "matale"
+   ]
+  },
+  {
+   "name": "Nuwara Eliya",
+   "si": "නුවරඑළිය",
+   "ta": "நுவரெலியா",
+   "latitude": 6.9497,
+   "longitude": 80.7891,
+   "aliases": [
+    "nuwaraeliya",
+    "nuwara-eliya"
+   ]
+  },
+  {
+   "name": "Galle",
+   "si": "ගාල්ල",
+   "ta": "காலி",
+   "latitude": 6.0535,
+   "longitude": 80.221,
+   "aliases": [
+    "galla"
+   ]
+  },
+  {
+   "name": "Matara",
+   "si": "මාතර",
+   "ta": "மாத்தறை",
+   "latitude": 5.9549,
+   "longitude": 80.555,
+   "aliases": []
+  },
+  {
+   "name": "Hambantota",
+   "si": "හම්බන්තොට",
+   "ta": "அம்பாந்தோட்டை",
+   "latitude": 6.1429,
+   "longitude": 81.1212,
+   "aliases": [
+    "hambanthota"
+   ]
+  },
+  {
+   "name": "Jaffna",
+   "si": "යාපනය",
+   "ta": "யாழ்ப்பாணம்",
+   "latitude": 9.6615,
+   "longitude": 80.0255,
+   "aliases": [
+    "yapanaya"
+   ]
+  },
+  {
+   "name": "Kilinochchi",
+   "si": "කිලිනොච්චි",
+   "ta": "கிளிநொச்சி",
+   "latitude": 9.3803,
+   "longitude": 80.377,
+   "aliases": [
+    "kilinochi"
+   ]
+  },
+  {
+   "name": "Mannar",
+   "si": "මන්නාරම",
+   "ta": "மன்னார்",
+   "latitude": 8.981,
+   "longitude": 79.9044,
+   "aliases": [
+    "mannaram"
+   ]
+  },
+  {
+   "name": "Vavuniya",
+   "si": "වවුනියාව",
+   "ta": "வவுனியா",
+   "latitude": 8.7542,
+   "longitude": 80.4982,
+   "aliases": [
+    "vavuniyawa"
+   ]
+  },
+  {
+   "name": "Mullaitivu",
+   "si": "මුලතිව්",
+   "ta": "முல்லைத்தீவு",
+   "latitude": 9.2671,
+   "longitude": 80.8143,
+   "aliases": [
+    "mullativu",
+    "mullaithivu"
+   ]
+  },
+  {
+   "name": "Batticaloa",
+   "si": "මඩකලපුව",
+   "ta": "மட்டக்களப்பு",
+   "latitude": 7.731,
+   "longitude": 81.6747,
+   "aliases": [
+    "batti"
+   ]
+  },
+  {
+   "name": "Ampara",
+   "si": "අම්පාර",
+   "ta": "அம்பாறை",
+   "latitude": 7.2912,
+   "longitude": 81.6724,
+   "aliases": []
+  },
+  {
+   "name": "Trincomalee",
+   "si": "ත්‍රිකුණාමලය",
+   "ta": "திருகோணமலை",
+   "latitude": 8.5874,
+   "longitude": 81.2152,
+   "aliases": [
+    "trinco",
+    "trincomalie"
+   ]
+  },
+  {
+   "name": "Kurunegala",
+   "si": "කුරුණෑගල",
+   "ta": "குருணாகல்",
+   "latitude": 7.4863,
+   "longitude": 80.3623,
+   "aliases": [
+    "kurunagala"
+   ]
+  },
+  {
+   "name": "Puttalam",
+   "si": "පුත්තලම",
+   "ta": "புத்தளம்",
+   "latitude": 8.0408,
+   "longitude": 79.8394,
+   "aliases": [
+    "puttlam"
+   ]
+  },
+  {
+   "name": "Anuradhapura",
+   "si": "අනුරාධපුරය",
+   "ta": "அநுராதபுரம்",
+   "latitude": 8.3114,
+   "longitude": 80.4037,
+   "aliases": [
+    "anuradhapuraya"
+   ]
+  },
+  {
+   "name": "Polonnaruwa",
+   "si": "පොළොන්නරුව",
+   "ta": "பொலன்னறுவை",
+   "latitude": 7.9403,
+   "longitude": 81.0188,
+   "aliases": [
+    "polonaruwa"
+   ]
+  },
+  {
+   "name": "Badulla",
+   "si": "බදුල්ල",
+   "ta": "பதுளை",
+   "latitude": 6.9934,
+   "longitude": 81.055,
+   "aliases": []
+  },
+  {
+   "name": "Monaragala",
+   "si": "මොණරාගල",
+   "ta": "மொனராகலை",
+   "latitude": 6.8728,
+   "longitude": 81.3507,
+   "aliases": [
+    "moneragala"
+   ]
+  },
+  {
+   "name": "Ratnapura",
+   "si": "රත්නපුරය",
+   "ta": "இரத்தினபுரி",
+   "latitude": 6.6828,
+   "longitude": 80.3992,
+   "aliases": [
+    "ratnapuraya"
+   ]
+  },
+  {
+   "name": "Kegalle",
+   "si": "කෑගල්ල",
+   "ta": "கேகாலை",
+   "latitude": 7.2513,
+   "longitude": 80.3464,
+   "aliases": [
+    "kegalla"
+   ]
+  }
+ ]
+}

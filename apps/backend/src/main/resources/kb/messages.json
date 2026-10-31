@@ -1,0 +1,85 @@
+{
+ "description": "Fixed replies. si/ta are AI-drafted and need native-speaker review. Placeholders: {{nbtsPhone}}, {{nbtsEmail}}, {{emergencyNumber}}.",
+ "messages": {
+  "disclaimer": {
+   "en": "General information only, not medical advice or a diagnosis. The Medical Officer at the blood bank makes the final decision on whether you can donate.",
+   "si": "මෙය සාමාන්‍ය තොරතුරු පමණි; වෛද්‍ය උපදෙසක් හෝ රෝග විනිශ්චයක් නොවේ. ඔබට රුධිර දානය කළ හැකිදැයි අවසාන තීරණය ගන්නේ රුධිර බැංකුවේ වෛද්‍ය නිලධාරියා ය.",
+   "ta": "இது பொதுவான தகவல் மட்டுமே; மருத்துவ ஆலோசனையோ நோயறிதலோ அல்ல. நீங்கள் இரத்த தானம் செய்யலாமா என்பதை இரத்த வங்கியின் மருத்துவ அதிகாரியே இறுதியாக முடிவு செய்வார்."
+  },
+  "confirmFooter": {
+   "en": "Some of this information still has to be confirmed with NBTS. Please check with the blood bank Medical Officer or NBTS ({{nbtsPhone}}) before you go to donate.",
+   "si": "මෙම තොරතුරු සමහරක් තවමත් NBTS සමඟ තහවුරු කර ගත යුතුය. රුධිර දානයට යාමට පෙර රුධිර බැංකුවේ වෛද්‍ය නිලධාරියාගෙන් හෝ NBTS ආයතනයෙන් ({{nbtsPhone}}) විමසන්න.",
+   "ta": "இந்தத் தகவல்களில் சில இன்னும் NBTS உடன் உறுதிப்படுத்தப்பட வேண்டும். இரத்த தானம் செய்யச் செல்வதற்கு முன் இரத்த வங்கியின் மருத்துவ அதிகாரியிடம் அல்லது NBTS இடம் ({{nbtsPhone}}) கேளுங்கள்."
+  },
+  "translationDraft": {
+   "en": "",
+   "si": "සටහන: මෙම සිංහල පරිවර්තනය කෙටුම්පතකි; සිංහල භාෂා විශේෂඥයෙකු විසින් තවමත් සමාලෝචනය කර නැත.",
+   "ta": "குறிப்பு: இந்தத் தமிழ் மொழிபெயர்ப்பு வரைவு மட்டுமே; தமிழ் மொழி வல்லுநரால் இன்னும் மதிப்பாய்வு செய்யப்படவில்லை."
+  },
+  "noAnswer": {
+   "en": "I do not have a confirmed answer to that, so I will not guess. Please ask the Medical Officer at the blood bank, or contact NBTS: {{nbtsPhone}}, {{nbtsEmail}}.",
+   "si": "ඒ ගැන තහවුරු කළ පිළිතුරක් මා සතුව නැති බැවින් අනුමාන කරන්නේ නැත. රුධිර බැංකුවේ වෛද්‍ය නිලධාරියාගෙන් විමසන්න, නැතහොත් NBTS ආයතනය අමතන්න: {{nbtsPhone}}, {{nbtsEmail}}.",
+   "ta": "அதற்கு உறுதிப்படுத்தப்பட்ட பதில் என்னிடம் இல்லை, எனவே நான் ஊகிக்க மாட்டேன். இரத்த வங்கியின் மருத்துவ அதிகாரியிடம் கேளுங்கள் அல்லது NBTS ஐத் தொடர்புகொள்ளுங்கள்: {{nbtsPhone}}, {{nbtsEmail}}."
+  },
+  "offTopic": {
+   "en": "I can only answer questions about blood donation eligibility in Sri Lanka, such as age, weight, haemoglobin, how often you can donate, travel and preparation. Please ask me one of those.",
+   "si": "මට පිළිතුරු දිය හැක්කේ ශ්‍රී ලංකාවේ රුධිර දානය සඳහා සුදුසුකම් පිළිබඳ ප්‍රශ්නවලට පමණි; උදාහරණ ලෙස වයස, බර, හීමොග්ලොබින්, කොපමණ කාලයකට වරක් දිය හැකිද, ගමන් සහ සූදානම. කරුණාකර ඒවායින් එකක් අසන්න.",
+   "ta": "இலங்கையில் இரத்த தானத்திற்கான தகுதி தொடர்பான கேள்விகளுக்கு மட்டுமே என்னால் பதிலளிக்க முடியும்; எடுத்துக்காட்டாக வயது, எடை, ஹீமோகுளோபின், எத்தனை முறை தானம் செய்யலாம், பயணம் மற்றும் தயாரிப்பு. அவற்றில் ஒன்றைக் கேளுங்கள்."
+  },
+  "platformRedirect": {
+   "en": "I cannot help with account or app problems. Please use the Contact page of this website. I can answer questions about blood donation eligibility.",
+   "si": "ගිණුම් හෝ යෙදුම් ගැටලු සඳහා මට උදව් කළ නොහැක. කරුණාකර මෙම වෙබ් අඩවියේ සම්බන්ධ වන්න (Contact) පිටුව භාවිතා කරන්න. රුධිර දානය සඳහා සුදුසුකම් පිළිබඳ ප්‍රශ්නවලට මට පිළිතුරු දිය හැක.",
+   "ta": "கணக்கு அல்லது செயலி சிக்கல்களுக்கு என்னால் உதவ முடியாது. இந்த இணையதளத்தின் தொடர்பு (Contact) பக்கத்தைப் பயன்படுத்தவும். இரத்த தானத்திற்கான தகுதி தொடர்பான கேள்விகளுக்கு என்னால் பதிலளிக்க முடியும்."
+  },
+  "emergency": {
+   "en": "If you feel seriously unwell right now (for example chest pain, heavy bleeding, fainting or difficulty breathing), call the emergency ambulance service on {{emergencyNumber}} or go to the nearest hospital immediately. This assistant cannot assess symptoms. If your symptoms started after a blood donation, also tell the blood bank where you donated.",
+   "si": "ඔබට දැන් බරපතල අසනීපයක් (උදාහරණ ලෙස පපුවේ වේදනාව, දැඩි රුධිර වහනය, සිහිය නැති වීම හෝ හුස්ම ගැනීමේ අපහසුව) දැනේ නම්, වහාම හදිසි ගිලන්රථ සේවාව {{emergencyNumber}} අමතන්න, නැතහොත් ළඟම ඇති රෝහලට යන්න. මෙම සහායකයාට රෝග ලක්ෂණ තක්සේරු කළ නොහැක. රුධිර දානයකින් පසු මෙම ලක්ෂණ ඇති වූයේ නම්, ඔබ රුධිරය ලබා දුන් රුධිර බැංකුවටද දන්වන්න.",
+   "ta": "உங்களுக்கு இப்போது கடுமையான உடல்நலக் குறைவு (எ.கா. நெஞ்சு வலி, அதிக இரத்தப்போக்கு, மயக்கம் அல்லது சுவாசிப்பதில் சிரமம்) இருந்தால், உடனடியாக அவசர ஆம்புலன்ஸ் சேவையை {{emergencyNumber}} இல் அழைக்கவும் அல்லது அருகிலுள்ள மருத்துவமனைக்குச் செல்லவும். இந்த உதவியாளரால் அறிகுறிகளை மதிப்பிட முடியாது. இரத்த தானத்திற்குப் பின் இந்த அறிகுறிகள் தொடங்கியிருந்தால், நீங்கள் இரத்தம் வழங்கிய இரத்த வங்கிக்கும் தெரிவிக்கவும்."
+  },
+  "emergencyNoNumber": {
+   "en": "If you feel seriously unwell right now (for example chest pain, heavy bleeding, fainting or difficulty breathing), call your local emergency services or go to the nearest hospital immediately. This assistant cannot assess symptoms. If your symptoms started after a blood donation, also tell the blood bank where you donated.",
+   "si": "ඔබට දැන් බරපතල අසනීපයක් (උදාහරණ ලෙස පපුවේ වේදනාව, දැඩි රුධිර වහනය, සිහිය නැති වීම හෝ හුස්ම ගැනීමේ අපහසුව) දැනේ නම්, වහාම ඔබේ ප්‍රදේශයේ හදිසි සේවාව අමතන්න, නැතහොත් ළඟම ඇති රෝහලට යන්න. මෙම සහායකයාට රෝග ලක්ෂණ තක්සේරු කළ නොහැක. රුධිර දානයකින් පසු මෙම ලක්ෂණ ඇති වූයේ නම්, ඔබ රුධිරය ලබා දුන් රුධිර බැංකුවටද දන්වන්න.",
+   "ta": "உங்களுக்கு இப்போது கடுமையான உடல்நலக் குறைவு (எ.கா. நெஞ்சு வலி, அதிக இரத்தப்போக்கு, மயக்கம் அல்லது சுவாசிப்பதில் சிரமம்) இருந்தால், உடனடியாக உங்கள் பகுதியின் அவசர சேவையை அழைக்கவும் அல்லது அருகிலுள்ள மருத்துவமனைக்குச் செல்லவும். இந்த உதவியாளரால் அறிகுறிகளை மதிப்பிட முடியாது. இரத்த தானத்திற்குப் பின் இந்த அறிகுறிகள் தொடங்கியிருந்தால், நீங்கள் இரத்தம் வழங்கிய இரத்த வங்கிக்கும் தெரிவிக்கவும்."
+  },
+  "injectionRefusal": {
+   "en": "I cannot share or change my instructions. I can help with questions about blood donation eligibility in Sri Lanka: please ask one.",
+   "si": "මගේ උපදෙස් බෙදා ගැනීමට හෝ වෙනස් කිරීමට මට නොහැක. ශ්‍රී ලංකාවේ රුධිර දානය සඳහා සුදුසුකම් පිළිබඳ ප්‍රශ්නවලට මට උදව් කළ හැක: කරුණාකර එවැනි ප්‍රශ්නයක් අසන්න.",
+   "ta": "எனது அறிவுறுத்தல்களைப் பகிரவோ மாற்றவோ என்னால் இயலாது. இலங்கையில் இரத்த தானத்திற்கான தகுதி தொடர்பான கேள்விகளுக்கு நான் உதவ முடியும்: அத்தகைய கேள்வி ஒன்றைக் கேளுங்கள்."
+  },
+  "abuse": {
+   "en": "Let us keep this respectful. I am happy to answer questions about blood donation eligibility whenever you are ready.",
+   "si": "කරුණාකර ගෞරවාන්විතව කතා කරමු. රුධිර දානය සඳහා සුදුසුකම් පිළිබඳ ප්‍රශ්නවලට පිළිතුරු දීමට මම සූදානම්.",
+   "ta": "தயவுசெய்து மரியாதையுடன் உரையாடுவோம். இரத்த தானத்திற்கான தகுதி தொடர்பான கேள்விகளுக்குப் பதிலளிக்க நான் தயாராக இருக்கிறேன்."
+  },
+  "greeting": {
+   "en": "Hello! I can answer questions about blood donation eligibility in Sri Lanka: age, weight, haemoglobin, how often you can donate, travel, preparation and more.",
+   "si": "ආයුබෝවන්! ශ්‍රී ලංකාවේ රුධිර දානය සඳහා සුදුසුකම් පිළිබඳ ප්‍රශ්නවලට මට පිළිතුරු දිය හැක: වයස, බර, හීමොග්ලොබින්, කොපමණ කාලයකට වරක් දිය හැකිද, ගමන්, සූදානම සහ තවත්.",
+   "ta": "வணக்கம்! இலங்கையில் இரத்த தானத்திற்கான தகுதி தொடர்பான கேள்விகளுக்கு என்னால் பதிலளிக்க முடியும்: வயது, எடை, ஹீமோகுளோபின், எத்தனை முறை தானம் செய்யலாம், பயணம், தயாரிப்பு மற்றும் பல."
+  },
+  "thanks": {
+   "en": "You are welcome. Ask me anything else about blood donation eligibility.",
+   "si": "ඔබව සාදරයෙන් පිළිගනිමු. රුධිර දානය සඳහා සුදුසුකම් ගැන තවත් යමක් අසන්න.",
+   "ta": "நன்றி. இரத்த தானத்திற்கான தகுதி பற்றி வேறு ஏதேனும் கேளுங்கள்."
+  },
+  "emptyQuestion": {
+   "en": "Please type a question about blood donation eligibility.",
+   "si": "රුධිර දානය සඳහා සුදුසුකම් පිළිබඳ ප්‍රශ්නයක් ටයිප් කරන්න.",
+   "ta": "இரத்த தானத்திற்கான தகுதி தொடர்பான கேள்வியை உள்ளிடுங்கள்."
+  },
+  "intakeOk": {
+   "en": "Draft ready. Please check every highlighted field before you submit; nothing has been sent.",
+   "si": "කෙටුම්පත සූදානම්. ඉදිරිපත් කිරීමට පෙර ඉස්මතු කර ඇති සියලු ක්ෂේත්‍ර පරීක්ෂා කරන්න; කිසිවක් යවා නැත.",
+   "ta": "வரைவு தயாராக உள்ளது. சமர்ப்பிக்கும் முன் சிறப்பிக்கப்பட்ட அனைத்து புலங்களையும் சரிபார்க்கவும்; எதுவும் அனுப்பப்படவில்லை."
+  },
+  "intakeNone": {
+   "en": "I could not read any request details from that text. Please fill in the form yourself.",
+   "si": "එම පෙළෙන් ඉල්ලීම් විස්තර කිසිවක් කියවා ගත නොහැකි විය. කරුණාකර පෝරමය ඔබම පුරවන්න.",
+   "ta": "அந்த உரையிலிருந்து கோரிக்கை விவரங்கள் எதையும் படிக்க இயலவில்லை. படிவத்தை நீங்களே நிரப்பவும்."
+  },
+  "intakeEmpty": {
+   "en": "Input text cannot be empty.",
+   "si": "ඇතුළත් කළ පෙළ හිස් විය නොහැක.",
+   "ta": "உள்ளிடப்பட்ட உரை காலியாக இருக்கக்கூடாது."
+  }
+ }
+}

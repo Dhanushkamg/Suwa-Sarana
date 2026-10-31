@@ -1,0 +1,1838 @@
+{
+ "version": 1,
+ "description": "Romanised Sinhala/Tamil (Singlish/Tanglish) -> canonical tokens, plus detector markers, stopwords and domain terms. Forms are matched on a phonetic skeleton (th/dh/ph->t/d/p, w->v, aa->a, doubled letters collapsed) after an exact lookup. '+' joins the words of a phrase form. Canon '_' drops the word. Reviewed by: nobody yet (needs a native speaker).",
+ "groups": [
+  {
+   "canon": "donate",
+   "forms": [
+    "donor",
+    "donors",
+    "donation",
+    "donations",
+    "donating",
+    "donated",
+    "donates",
+    "denna",
+    "dhenna",
+    "denawa",
+    "dennada",
+    "dunna",
+    "dunnata",
+    "dunnoth",
+    "dunnama",
+    "dana",
+    "danaya",
+    "daanaya",
+    "dhanaya",
+    "danayak",
+    "daayaka",
+    "dayaka",
+    "dayakayo",
+    "kodukka",
+    "kodukkalama",
+    "kodukkalaama",
+    "tharalama",
+    "thaanam",
+    "thanam",
+    "dhanam"
+   ]
+  },
+  {
+   "canon": "blood",
+   "forms": [
+    "le",
+    "rudhira",
+    "rudhiraya",
+    "rudirayen",
+    "rudhirayata",
+    "ratha",
+    "ratham",
+    "raththam",
+    "rathan",
+    "kurudhi"
+   ]
+  },
+  {
+   "canon": "bank",
+   "forms": [
+    "banks",
+    "banku"
+   ]
+  },
+  {
+   "canon": "hospital",
+   "forms": [
+    "hospitals",
+    "hospitale",
+    "rohala",
+    "rohal",
+    "rohalata",
+    "rohale",
+    "rohalak",
+    "maruthuvamanai",
+    "maruthuvamanaiyil",
+    "aspathiri"
+   ]
+  },
+  {
+   "canon": "nearest",
+   "forms": [
+    "nearby",
+    "closest",
+    "near",
+    "langa",
+    "langama",
+    "langin",
+    "asannathama",
+    "arugil",
+    "arukil",
+    "arugilulla"
+   ]
+  },
+  {
+   "canon": "where",
+   "forms": [
+    "koheda",
+    "kohe",
+    "kothanada",
+    "kothana",
+    "kohedada",
+    "enge",
+    "engu",
+    "enga"
+   ]
+  },
+  {
+   "canon": "map",
+   "forms": [
+    "maps",
+    "sitiyama",
+    "sitiyamak",
+    "patam",
+    "varaipadam"
+   ]
+  },
+  {
+   "canon": "camp",
+   "forms": [
+    "camps",
+    "camping",
+    "kandawura",
+    "kandawuru",
+    "kandawuruwak",
+    "kamp",
+    "mugam",
+    "mugaam",
+    "mukam",
+    "muhaam"
+   ]
+  },
+  {
+   "canon": "organise",
+   "forms": [
+    "organize",
+    "organising",
+    "organizing",
+    "organised",
+    "organized",
+    "organiser",
+    "organizer",
+    "sanwidhanaya",
+    "sanwidana",
+    "sanvidhanaya",
+    "erpadu",
+    "erpaadu",
+    "erpaadu+seyya"
+   ]
+  },
+  {
+   "canon": "book",
+   "forms": [
+    "booking",
+    "booked",
+    "reserve",
+    "reservation",
+    "appointment",
+    "appointments",
+    "registration",
+    "bukk",
+    "munpathivu",
+    "muthpathivu"
+   ]
+  },
+  {
+   "canon": "contact",
+   "forms": [
+    "contacts",
+    "phone",
+    "telephone",
+    "dhurakathana",
+    "durakathana",
+    "dhurakathanaya",
+    "tholaipesi",
+    "ilakkam"
+   ]
+  },
+  {
+   "canon": "address",
+   "forms": [
+    "ilipinaya",
+    "lipinaya",
+    "mugavari"
+   ]
+  },
+  {
+   "canon": "email",
+   "forms": [
+    "emails",
+    "e-mail",
+    "mail"
+   ]
+  },
+  {
+   "canon": "open",
+   "forms": [
+    "opens",
+    "opened",
+    "opening",
+    "viwurtha",
+    "viwurta",
+    "wiwurthai",
+    "thirandhu",
+    "thirakkum",
+    "thirakkapadum"
+   ]
+  },
+  {
+   "canon": "close",
+   "forms": [
+    "closes",
+    "closed",
+    "closing",
+    "wasanawa",
+    "wasai",
+    "moodu",
+    "moodum",
+    "mudum"
+   ]
+  },
+  {
+   "canon": "age",
+   "forms": [
+    "aged",
+    "ages",
+    "wayasa",
+    "vayasa",
+    "wayasak",
+    "wayasata",
+    "waysa",
+    "wayas",
+    "vayas",
+    "wyasa",
+    "wayasath",
+    "vayathu",
+    "vayadhu",
+    "vayasu",
+    "vayathil"
+   ]
+  },
+  {
+   "canon": "old",
+   "forms": [
+    "older",
+    "oldest",
+    "mahalu",
+    "mahallu",
+    "mahalla",
+    "wayasakaraya",
+    "wayasakkaraya",
+    "wayasakaara",
+    "muthiyor",
+    "muthiyavar",
+    "periyavar"
+   ]
+  },
+  {
+   "canon": "young",
+   "forms": [
+    "younger",
+    "tharuna",
+    "tharunaya",
+    "ilam",
+    "ilaiyor",
+    "ilaiyavar"
+   ]
+  },
+  {
+   "canon": "elderly",
+   "forms": [
+    "senior",
+    "seniors"
+   ]
+  },
+  {
+   "canon": "minimum",
+   "forms": [
+    "min",
+    "awama",
+    "awamaya",
+    "kuraintha",
+    "kurainthapatcham"
+   ]
+  },
+  {
+   "canon": "maximum",
+   "forms": [
+    "max",
+    "upparima",
+    "uparima",
+    "upparima",
+    "adhikapatcham"
+   ]
+  },
+  {
+   "canon": "limit",
+   "forms": [
+    "limits",
+    "sima",
+    "seema",
+    "seemawa",
+    "simawa",
+    "varambu"
+   ]
+  },
+  {
+   "canon": "weight",
+   "forms": [
+    "weights",
+    "bara",
+    "baara",
+    "bhara",
+    "barata",
+    "barak",
+    "edai",
+    "edaiyai",
+    "edaiyin"
+   ]
+  },
+  {
+   "canon": "weigh",
+   "forms": [
+    "weighs",
+    "weighing",
+    "weighed"
+   ]
+  },
+  {
+   "canon": "kg",
+   "forms": [
+    "kgs",
+    "kilo",
+    "kilos",
+    "kilogram",
+    "kilograms",
+    "kilogramme",
+    "killo"
+   ]
+  },
+  {
+   "canon": "haemoglobin",
+   "forms": [
+    "hemoglobin",
+    "hemoglobine",
+    "himoglobin",
+    "himoglobine",
+    "hb",
+    "hgb",
+    "haemoglobine"
+   ]
+  },
+  {
+   "canon": "anaemia",
+   "forms": [
+    "anemia",
+    "anaemic",
+    "anemic",
+    "rakthaheenatha",
+    "rakthaheenathawa",
+    "ratha+sokai",
+    "ratham+sokai",
+    "iratha+sokai"
+   ]
+  },
+  {
+   "canon": "iron",
+   "forms": [
+    "ayan",
+    "irumbu"
+   ]
+  },
+  {
+   "canon": "interval",
+   "forms": [
+    "intervals",
+    "gap",
+    "antharaya",
+    "antharayak",
+    "idaiveli",
+    "idaiyeli"
+   ]
+  },
+  {
+   "canon": "often",
+   "forms": [
+    "frequently",
+    "frequency",
+    "kiyawarak",
+    "kiya+warak",
+    "ethanai+thadavai"
+   ]
+  },
+  {
+   "canon": "again",
+   "forms": [
+    "aye",
+    "ayeth",
+    "ayemath",
+    "marubadi",
+    "meendum",
+    "meendumum",
+    "thirumba",
+    "thirumbavum"
+   ]
+  },
+  {
+   "canon": "month",
+   "forms": [
+    "months",
+    "monthly",
+    "masa",
+    "masaya",
+    "masayak",
+    "masayakata",
+    "masayen",
+    "mase",
+    "maasa",
+    "maatham",
+    "maadham",
+    "masam",
+    "maathangal",
+    "maathathirku",
+    "maathathil"
+   ]
+  },
+  {
+   "canon": "year",
+   "forms": [
+    "years",
+    "yearly",
+    "awurudu",
+    "awuruddak",
+    "awuruddata",
+    "avurudu",
+    "avurudda",
+    "awurudda",
+    "wasara",
+    "wasarak",
+    "varusham",
+    "varudam",
+    "varudangal",
+    "aandu",
+    "aandukal",
+    "aandugal"
+   ]
+  },
+  {
+   "canon": "day",
+   "forms": [
+    "days",
+    "daily",
+    "dawas",
+    "dawasak",
+    "dawasata",
+    "dawase",
+    "dinaya",
+    "naal",
+    "naatkal",
+    "nal"
+   ]
+  },
+  {
+   "canon": "hour",
+   "forms": [
+    "hours",
+    "hr",
+    "hrs",
+    "paya",
+    "payak",
+    "payata",
+    "peya",
+    "maniyal",
+    "mani",
+    "manineram"
+   ]
+  },
+  {
+   "canon": "week",
+   "forms": [
+    "weeks",
+    "weekly",
+    "sathiya",
+    "sathiyak",
+    "vaaram",
+    "vaarangal"
+   ]
+  },
+  {
+   "canon": "time",
+   "forms": [
+    "times",
+    "welawa",
+    "welawak",
+    "welawata",
+    "welawe",
+    "neram",
+    "nerangal",
+    "nerathil"
+   ]
+  },
+  {
+   "canon": "long",
+   "forms": [
+    "kalaya",
+    "kalayak",
+    "kalayakin",
+    "kalayata"
+   ]
+  },
+  {
+   "canon": "wait",
+   "forms": [
+    "waiting",
+    "waited",
+    "inna",
+    "indanna",
+    "irukka"
+   ]
+  },
+  {
+   "canon": "first time",
+   "forms": [
+    "palamuwara",
+    "palamu+wathawa",
+    "palamu+wara",
+    "palamuwa+wara",
+    "mudal+murai",
+    "mudhal+murai",
+    "mudhan+murai",
+    "mudal+thadavai",
+    "first+timer"
+   ]
+  },
+  {
+   "canon": "new",
+   "forms": [
+    "aluth",
+    "puthiya",
+    "putiya"
+   ]
+  },
+  {
+   "canon": "never",
+   "forms": [
+    "kawadawath",
+    "kavadawath"
+   ]
+  },
+  {
+   "canon": "before",
+   "forms": [
+    "kalin",
+    "kalinma",
+    "munnama"
+   ]
+  },
+  {
+   "canon": "after",
+   "forms": [
+    "passe",
+    "passeth",
+    "pasu",
+    "pinbu",
+    "pirahu",
+    "pirakku"
+   ]
+  },
+  {
+   "canon": "pregnant",
+   "forms": [
+    "pregnancy",
+    "pregnancies",
+    "preg",
+    "gabbini",
+    "gabini",
+    "garbhini",
+    "garbini",
+    "gabgatta",
+    "gabgaththa",
+    "karppam",
+    "karpam",
+    "karppini",
+    "karppamaga"
+   ]
+  },
+  {
+   "canon": "breastfeeding",
+   "forms": [
+    "breastfeed",
+    "breastfed",
+    "lactating",
+    "lactation",
+    "kiri+denawa",
+    "kiri+dena",
+    "kiri+denna",
+    "mawkiri",
+    "mavkiri",
+    "thaaipaal",
+    "thaipal",
+    "paal+kodukkum"
+   ]
+  },
+  {
+   "canon": "delivery",
+   "forms": [
+    "childbirth",
+    "postpartum",
+    "praswa",
+    "prasuthiya",
+    "prasoothiya",
+    "pirasavam"
+   ]
+  },
+  {
+   "canon": "baby",
+   "forms": [
+    "babies",
+    "daruwa",
+    "daruwek",
+    "bebi",
+    "kulandhai",
+    "kuzhandhai",
+    "kuzhanthai"
+   ]
+  },
+  {
+   "canon": "tattoo",
+   "forms": [
+    "tattoos",
+    "tatoo",
+    "tatoos",
+    "tatu",
+    "tattu",
+    "pachcha",
+    "pachchak",
+    "pachchaya",
+    "pacha",
+    "pachchayak",
+    "pachai",
+    "pachchai"
+   ]
+  },
+  {
+   "canon": "piercing",
+   "forms": [
+    "piercings",
+    "pierced",
+    "pierce",
+    "kan+widima",
+    "kan+vidima",
+    "kan+vidhima",
+    "nase+widima"
+   ]
+  },
+  {
+   "canon": "medicine",
+   "forms": [
+    "medicines",
+    "medication",
+    "medications",
+    "meds",
+    "beheth",
+    "behet",
+    "behethak",
+    "behetha",
+    "behethata",
+    "bahetha",
+    "beheth+gannawa",
+    "marunthu",
+    "marundhu",
+    "maruthu",
+    "marunthai",
+    "marunthukal"
+   ]
+  },
+  {
+   "canon": "tablet",
+   "forms": [
+    "tablets",
+    "tab",
+    "pills",
+    "pill",
+    "pethi"
+   ]
+  },
+  {
+   "canon": "antibiotic",
+   "forms": [
+    "antibiotics",
+    "antibiyotic"
+   ]
+  },
+  {
+   "canon": "diabetes",
+   "forms": [
+    "diabetic",
+    "diabetics",
+    "diabetis",
+    "diyawadiyawa",
+    "diyawadiya",
+    "diyawediyawa",
+    "diyawadiyawak",
+    "diya+wadiyawa",
+    "sugar",
+    "madhumegam",
+    "madhumeha",
+    "neerizhivu",
+    "neerilivu",
+    "sakkarai+noi",
+    "sugar+noi"
+   ]
+  },
+  {
+   "canon": "pressure",
+   "forms": [
+    "presure",
+    "pressureh"
+   ]
+  },
+  {
+   "canon": "cholesterol",
+   "forms": [
+    "colesterol",
+    "kolestrol",
+    "kolesterol",
+    "cholestrol",
+    "kolestarol"
+   ]
+  },
+  {
+   "canon": "heart",
+   "forms": [
+    "hadaya",
+    "hadayata",
+    "hadaye",
+    "hadaya+leda",
+    "idhayam",
+    "idayam"
+   ]
+  },
+  {
+   "canon": "kidney",
+   "forms": [
+    "kidneys",
+    "wakugadu",
+    "vakugadu",
+    "siruneeragam"
+   ]
+  },
+  {
+   "canon": "cancer",
+   "forms": [
+    "cancers",
+    "pilika",
+    "pilikaa",
+    "pilikawa",
+    "puttrunoi"
+   ]
+  },
+  {
+   "canon": "asthma",
+   "forms": [
+    "asthmatic",
+    "aduma"
+   ]
+  },
+  {
+   "canon": "epilepsy",
+   "forms": [
+    "apasmaraya",
+    "valippu"
+   ]
+  },
+  {
+   "canon": "allergy",
+   "forms": [
+    "allergies",
+    "asathmikatha",
+    "ovvaamai"
+   ]
+  },
+  {
+   "canon": "illness",
+   "forms": [
+    "illnesses",
+    "disease",
+    "diseases",
+    "leda",
+    "ledak",
+    "ledata",
+    "ledaya",
+    "roga",
+    "rogaya",
+    "rogayak",
+    "noi",
+    "nooi",
+    "noigal"
+   ]
+  },
+  {
+   "canon": "sick",
+   "forms": [
+    "ill",
+    "unwell",
+    "asaneepa",
+    "asaneepaya",
+    "asaniipa",
+    "asaniipaya",
+    "sugayeenam",
+    "sugaveenam"
+   ]
+  },
+  {
+   "canon": "serious",
+   "forms": [
+    "severe",
+    "barapathala",
+    "barapathala+leda",
+    "kadumaiyana",
+    "theevira",
+    "theeviram"
+   ]
+  },
+  {
+   "canon": "fever",
+   "forms": [
+    "fevers",
+    "una",
+    "unak",
+    "unakak",
+    "una+thiyenawa",
+    "kaaichal",
+    "kaichchal",
+    "jwaram",
+    "suram"
+   ]
+  },
+  {
+   "canon": "cold",
+   "forms": [
+    "colds",
+    "sali",
+    "salli",
+    "salliya",
+    "semaprathishyawa",
+    "pratishyawa",
+    "salithollai",
+    "sali+thollai"
+   ]
+  },
+  {
+   "canon": "flu",
+   "forms": [
+    "influenza",
+    "inflooenza"
+   ]
+  },
+  {
+   "canon": "cough",
+   "forms": [
+    "coughs",
+    "coughing",
+    "kassa",
+    "kassak",
+    "irumal",
+    "irumbal"
+   ]
+  },
+  {
+   "canon": "dengue",
+   "forms": [
+    "dengu",
+    "denggu",
+    "dengue+jwaram",
+    "tengu"
+   ]
+  },
+  {
+   "canon": "headache",
+   "forms": [
+    "hisarada",
+    "hisa+warada",
+    "thalaivali"
+   ]
+  },
+  {
+   "canon": "infection",
+   "forms": [
+    "infections",
+    "asaadana",
+    "asadana",
+    "thotru"
+   ]
+  },
+  {
+   "canon": "surgery",
+   "forms": [
+    "surgeries",
+    "operation",
+    "operations",
+    "surgical",
+    "operated",
+    "sathkama",
+    "sathkamak",
+    "sathkamata",
+    "satkama",
+    "saththkama",
+    "aruvai+sigichchai",
+    "aruvai+sikichai",
+    "arivai+sigichai"
+   ]
+  },
+  {
+   "canon": "tooth",
+   "forms": [
+    "teeth",
+    "dental",
+    "dentist",
+    "dentists",
+    "dantha",
+    "dath",
+    "dathak",
+    "dath+ganna",
+    "dath+gaththa",
+    "pal",
+    "pal+pidungi",
+    "pal+maruthuvam"
+   ]
+  },
+  {
+   "canon": "vaccine",
+   "forms": [
+    "vaccines",
+    "vaccinated",
+    "vaccination",
+    "vaccinations",
+    "immunisation",
+    "immunization",
+    "ennatha",
+    "ennathak",
+    "ennathata",
+    "enntha",
+    "thadupoosi",
+    "thadupuusi",
+    "thadupooci",
+    "booster",
+    "boosters",
+    "jab",
+    "jabs"
+   ]
+  },
+  {
+   "canon": "covid",
+   "forms": [
+    "corona",
+    "coronavirus",
+    "kovid"
+   ]
+  },
+  {
+   "canon": "alcohol",
+   "forms": [
+    "alcoholic",
+    "alcohols",
+    "arrack",
+    "arakku",
+    "arakkuwa",
+    "beer",
+    "beers",
+    "liquor",
+    "wine",
+    "whisky",
+    "whiskey",
+    "brandy",
+    "toddy",
+    "madya",
+    "madyapanaya",
+    "mathpan",
+    "mathpaan",
+    "mathpana",
+    "beema",
+    "bima",
+    "biima",
+    "madhu",
+    "mathu",
+    "sarakku"
+   ]
+  },
+  {
+   "canon": "drink",
+   "forms": [
+    "drinks",
+    "drinking",
+    "drank",
+    "bonna",
+    "bonawa",
+    "bonne",
+    "bonawada",
+    "kudikka",
+    "kudikkalama",
+    "kudichu"
+   ]
+  },
+  {
+   "canon": "water",
+   "forms": [
+    "waters",
+    "wathura",
+    "watura",
+    "wathure",
+    "thanni",
+    "thanneer",
+    "neer"
+   ]
+  },
+  {
+   "canon": "food",
+   "forms": [
+    "foods",
+    "meal",
+    "meals",
+    "breakfast",
+    "lunch",
+    "dinner",
+    "kaema",
+    "kama",
+    "kema",
+    "kaama",
+    "kamata",
+    "kemata",
+    "saapadu",
+    "saappadu",
+    "saapaadu",
+    "unavu",
+    "unavai"
+   ]
+  },
+  {
+   "canon": "eat",
+   "forms": [
+    "ate",
+    "eating",
+    "eaten",
+    "kanna",
+    "kanawa",
+    "kewwa",
+    "sappida",
+    "sapida",
+    "sappidanum"
+   ]
+  },
+  {
+   "canon": "sleep",
+   "forms": [
+    "slept",
+    "sleeping",
+    "nidimata",
+    "nidahas",
+    "nidahasa",
+    "nidaganna",
+    "nidagana",
+    "nidi",
+    "nindha",
+    "thookam",
+    "thoongu",
+    "thoongina",
+    "thookkam"
+   ]
+  },
+  {
+   "canon": "smoking",
+   "forms": [
+    "smoke",
+    "smoked",
+    "smoker",
+    "sigaret",
+    "sigarette",
+    "cigarette",
+    "cigarettes",
+    "cigar",
+    "dum",
+    "dumpanaya",
+    "dum+bonawa",
+    "dum+bonna",
+    "dum+bonne",
+    "pugai",
+    "pugaipidikka",
+    "puhai"
+   ]
+  },
+  {
+   "canon": "betel",
+   "forms": [
+    "bulath"
+   ]
+  },
+  {
+   "canon": "travel",
+   "forms": [
+    "travelled",
+    "traveled",
+    "travelling",
+    "traveling",
+    "travels",
+    "trip",
+    "trips",
+    "journey",
+    "tour",
+    "gaman",
+    "gamana",
+    "gamanak",
+    "payanam",
+    "payanangal",
+    "sutrulaa"
+   ]
+  },
+  {
+   "canon": "abroad",
+   "forms": [
+    "overseas",
+    "foreign",
+    "foreigner",
+    "wideshaya",
+    "wideshayata",
+    "wideshagatha",
+    "videsha",
+    "videshaya",
+    "pitarata",
+    "pitarata+giya",
+    "pitarata+yanna",
+    "rata+giya",
+    "rata+giyaa",
+    "rata+yanna",
+    "rata+yanawa",
+    "velinaadu",
+    "velinattu",
+    "veliyoor",
+    "velinaattil"
+   ]
+  },
+  {
+   "canon": "returned",
+   "forms": [
+    "return",
+    "returning",
+    "came+back",
+    "awa",
+    "awoth",
+    "awath",
+    "aawa",
+    "aapasu",
+    "apasu",
+    "thirumbi",
+    "thirumbina"
+   ]
+  },
+  {
+   "canon": "india",
+   "forms": [
+    "indian",
+    "indiya",
+    "indiyawa",
+    "indiyawata",
+    "indiyaawa",
+    "indiyaa",
+    "inthiya",
+    "inthiyaa",
+    "inthiyavil"
+   ]
+  },
+  {
+   "canon": "korea",
+   "forms": [
+    "korean",
+    "koriya",
+    "koreawa",
+    "koriyawa"
+   ]
+  },
+  {
+   "canon": "dubai",
+   "forms": [
+    "dubayi",
+    "dubay",
+    "uae"
+   ]
+  },
+  {
+   "canon": "malaria",
+   "forms": [
+    "malariya",
+    "malariyawa",
+    "maalariya",
+    "malaria+rata"
+   ]
+  },
+  {
+   "canon": "mosquito",
+   "forms": [
+    "mosquitos",
+    "makuluwa",
+    "makuluwo",
+    "kosu",
+    "kosuk"
+   ]
+  },
+  {
+   "canon": "id",
+   "forms": [
+    "nic",
+    "identity",
+    "identification",
+    "hadunumpatha",
+    "hadunumpatak",
+    "hadunumpath",
+    "adaiyalam",
+    "adaiyala+attai"
+   ]
+  },
+  {
+   "canon": "passport",
+   "forms": [
+    "passports",
+    "gaman+balapathraya",
+    "kadavuchit"
+   ]
+  },
+  {
+   "canon": "emergency",
+   "forms": [
+    "emergencies",
+    "hadisi",
+    "hadisiyak",
+    "ambulance",
+    "ambulans",
+    "avasara",
+    "avasaram"
+   ]
+  },
+  {
+   "canon": "pain",
+   "forms": [
+    "pains",
+    "painful",
+    "wedana",
+    "wedanawa",
+    "wedanawak",
+    "wedanaa",
+    "vali",
+    "valikkuthu"
+   ]
+  },
+  {
+   "canon": "chest",
+   "forms": [
+    "pupuwe",
+    "pupuwa",
+    "papuwe",
+    "nenju",
+    "nenchu"
+   ]
+  },
+  {
+   "canon": "bleeding",
+   "forms": [
+    "bleed",
+    "bled",
+    "rudhira+wahanaya",
+    "ratham+varudhu",
+    "ratham+kasiyuthu"
+   ]
+  },
+  {
+   "canon": "faint",
+   "forms": [
+    "fainted",
+    "fainting",
+    "unconscious",
+    "collapsed",
+    "sihiya+nethi",
+    "sihiya+nathi",
+    "mayakkam",
+    "mayanga"
+   ]
+  },
+  {
+   "canon": "dizzy",
+   "forms": [
+    "dizziness",
+    "giddy",
+    "hisa+karakawenawa",
+    "karakawenawa",
+    "thalaichuthal",
+    "thalai+sutral"
+   ]
+  },
+  {
+   "canon": "breath",
+   "forms": [
+    "breathe",
+    "breathing",
+    "breathless",
+    "husma+ganna",
+    "suvasam",
+    "moochu"
+   ]
+  },
+  {
+   "canon": "_",
+   "forms": [
+    "mama",
+    "mata",
+    "mage",
+    "mge",
+    "mamath",
+    "mam",
+    "api",
+    "apita",
+    "oya",
+    "oyaa",
+    "oyata",
+    "eyaa",
+    "meka",
+    "mehema",
+    "methana",
+    "eka",
+    "ekak",
+    "ek",
+    "ekata",
+    "eke",
+    "ekath",
+    "nam",
+    "nang",
+    "ne",
+    "neda",
+    "nadda",
+    "nethi",
+    "nathi",
+    "one",
+    "oni",
+    "oney",
+    "oneda",
+    "ona",
+    "thiyenawa",
+    "thiyenawada",
+    "thiyenne",
+    "thiyenawanam",
+    "tiyenawa",
+    "thiyanawa",
+    "thiyanawada",
+    "thiyena",
+    "thiyeda",
+    "tiyenne",
+    "puluwanda",
+    "puluwan",
+    "pluwan",
+    "pluwanda",
+    "puluvanda",
+    "puluvan",
+    "pulunda",
+    "puluwannam",
+    "mokakda",
+    "mokada",
+    "monawada",
+    "kiyada",
+    "keeyada",
+    "kiyakda",
+    "keeyak",
+    "kiyak",
+    "kohomada",
+    "kohoma",
+    "kohomd",
+    "kawadda",
+    "kawda",
+    "kawadada",
+    "kiyanna",
+    "kiyanne",
+    "kiyala",
+    "karanna",
+    "karala",
+    "gannawa",
+    "ganna",
+    "gaththa",
+    "gaththata",
+    "gahuwoth",
+    "gahanawa",
+    "giya",
+    "giyaa",
+    "giyata",
+    "giyoth",
+    "gihin",
+    "yanna",
+    "yanawa",
+    "yaddi",
+    "yanakota",
+    "enawa",
+    "ena",
+    "naan",
+    "nan",
+    "enakku",
+    "irukku",
+    "irukkiradhu",
+    "irukkum",
+    "mudiyuma",
+    "mudiyumaa",
+    "seyyalama",
+    "seiyalama",
+    "seyyalaama",
+    "enna",
+    "eppadi",
+    "evvalavu",
+    "eppo",
+    "yaar",
+    "illai",
+    "illa",
+    "aama",
+    "venum",
+    "vendum",
+    "sari",
+    "hari",
+    "oyage",
+    "kenek",
+    "kenekuta",
+    "kenekta",
+    "kenaka",
+    "kenekge"
+   ]
+  }
+ ],
+ "markers": {
+  "si": [
+   "eka",
+   "kiyatada",
+   "wenne",
+   "karanne",
+   "denne",
+   "yanne",
+   "innawa",
+   "kenek",
+   "adha",
+   "mama",
+   "mata",
+   "mage",
+   "mge",
+   "mamath",
+   "puluwanda",
+   "puluwan",
+   "pluwanda",
+   "puluvanda",
+   "thiyenawa",
+   "thiyenawada",
+   "tiyenawa",
+   "thiyanawa",
+   "wayasa",
+   "vayasa",
+   "bara",
+   "rudhira",
+   "rudhiraya",
+   "kohomada",
+   "kawadda",
+   "kawda",
+   "koheda",
+   "mokakda",
+   "mokada",
+   "monawada",
+   "kiyada",
+   "keeyada",
+   "keeyak",
+   "nadda",
+   "oneda",
+   "ekak",
+   "passe",
+   "kalin",
+   "aye",
+   "ayeth",
+   "denna",
+   "dhenna",
+   "dunna",
+   "dunnata",
+   "gannawa",
+   "gaththa",
+   "karanna",
+   "karala",
+   "giyaa",
+   "giyoth",
+   "gihin",
+   "awoth",
+   "pachcha",
+   "pachchak",
+   "beheth",
+   "behethak",
+   "diyawadiyawa",
+   "gabbini",
+   "kiri",
+   "leda",
+   "ledak",
+   "asaneepa",
+   "wideshaya",
+   "sathkama",
+   "dath",
+   "ennatha",
+   "madya",
+   "mathpan",
+   "beema",
+   "bonna",
+   "kanna",
+   "kama",
+   "wathura",
+   "nidimata",
+   "hadunumpatha",
+   "rohala",
+   "langama",
+   "sitiyama",
+   "kandawura",
+   "welawa",
+   "paya",
+   "masa",
+   "awurudu",
+   "dawas",
+   "ne",
+   "nam"
+  ],
+  "ta": [
+   "ethanai",
+   "naan",
+   "nan",
+   "enakku",
+   "irukku",
+   "irukka",
+   "irukkiradhu",
+   "mudiyuma",
+   "mudiyumaa",
+   "seyyalama",
+   "seiyalama",
+   "kodukkalama",
+   "thaanam",
+   "ratham",
+   "raththam",
+   "vayathu",
+   "vayadhu",
+   "edai",
+   "eppadi",
+   "enna",
+   "evvalavu",
+   "eppo",
+   "enge",
+   "engu",
+   "yaar",
+   "illai",
+   "aama",
+   "venum",
+   "vendum",
+   "sapida",
+   "sappida",
+   "marunthu",
+   "marundhu",
+   "noi",
+   "kudikka",
+   "thookam",
+   "maatham",
+   "varusham",
+   "pugai",
+   "tholaipesi",
+   "mugam"
+  ]
+ },
+ "stopwords": {
+  "latin": [
+   "last",
+   "next",
+   "give",
+   "gives",
+   "giving",
+   "gave",
+   "given",
+   "get",
+   "yesterday",
+   "today",
+   "tomorrow",
+   "ago",
+   "now",
+   "recently",
+   "later",
+   "need",
+   "needs",
+   "want",
+   "wants",
+   "wanted",
+   "help",
+   "rules",
+   "rule",
+   "information",
+   "info",
+   "details",
+   "detail",
+   "question",
+   "ask",
+   "asking",
+   "possible",
+   "allowed",
+   "able",
+   "anything",
+   "something",
+   "person",
+   "people",
+   "someone",
+   "everyone",
+   "good",
+   "bad",
+   "like",
+   "see",
+   "say",
+   "way",
+   "use",
+   "make",
+   "go",
+   "going",
+   "come",
+   "one",
+   "two",
+   "three",
+   "four",
+   "five",
+   "six",
+   "seven",
+   "eight",
+   "nine",
+   "ten",
+   "a",
+   "an",
+   "the",
+   "is",
+   "are",
+   "am",
+   "was",
+   "were",
+   "be",
+   "been",
+   "do",
+   "does",
+   "did",
+   "can",
+   "could",
+   "should",
+   "would",
+   "will",
+   "shall",
+   "may",
+   "might",
+   "must",
+   "i",
+   "me",
+   "my",
+   "mine",
+   "we",
+   "us",
+   "our",
+   "you",
+   "your",
+   "he",
+   "she",
+   "it",
+   "its",
+   "they",
+   "them",
+   "their",
+   "this",
+   "that",
+   "these",
+   "those",
+   "of",
+   "to",
+   "in",
+   "on",
+   "at",
+   "for",
+   "with",
+   "from",
+   "by",
+   "about",
+   "as",
+   "if",
+   "or",
+   "and",
+   "but",
+   "so",
+   "than",
+   "then",
+   "there",
+   "here",
+   "what",
+   "which",
+   "who",
+   "whom",
+   "how",
+   "when",
+   "why",
+   "any",
+   "some",
+   "much",
+   "many",
+   "more",
+   "most",
+   "very",
+   "too",
+   "also",
+   "just",
+   "please",
+   "tell",
+   "know",
+   "want",
+   "get",
+   "got",
+   "have",
+   "has",
+   "had",
+   "having",
+   "not",
+   "no",
+   "yes",
+   "ok",
+   "okay",
+   "hi",
+   "hello",
+   "hey",
+   "thanks",
+   "thank"
+  ],
+  "si": [
+   "කළාට",
+   "ගියාට",
+   "ඊයේ",
+   "අද",
+   "දැන්",
+   "දෙන",
+   "දෙන්න",
+   "දුන්",
+   "දුන්න",
+   "දුන්නා",
+   "ගන්න",
+   "ගත්ත",
+   "ඕන",
+   "ඕනද",
+   "මම",
+   "මට",
+   "මගේ",
+   "ඔබ",
+   "ඔබට",
+   "ඔබේ",
+   "ඔයා",
+   "ඔයාට",
+   "කළ",
+   "හැකිද",
+   "හැකි",
+   "පුළුවන්ද",
+   "පුලුවන්ද",
+   "පුළුවන්",
+   "පුලුවන්",
+   "නම්",
+   "යුතුද",
+   "කුමක්ද",
+   "මොනවාද",
+   "කීයද",
+   "කොහොමද",
+   "කෙසේද",
+   "කවදාද",
+   "ඇයි",
+   "එක",
+   "මේ",
+   "ඒ",
+   "හා",
+   "හෝ",
+   "නමුත්",
+   "තියෙනවා",
+   "තිබේ",
+   "තිබෙන",
+   "තියෙන",
+   "දිය"
+  ],
+  "ta": [
+   "ஒரு",
+   "ஆகிறது",
+   "ஆகிவிட்டது",
+   "நேற்று",
+   "இன்று",
+   "இப்போது",
+   "எப்போது",
+   "எப்படி",
+   "ஏன்",
+   "எது",
+   "யார்",
+   "நான்",
+   "என்",
+   "எனக்கு",
+   "நீங்கள்",
+   "உங்கள்",
+   "முடியுமா",
+   "செய்யலாமா",
+   "என்ன",
+   "எவ்வளவு",
+   "எப்படி",
+   "ஆம்",
+   "இல்லை",
+   "மற்றும்",
+   "அல்லது",
+   "ஆனால்",
+   "இது",
+   "அது"
+  ]
+ },
+ "domain": {
+  "latin": [
+   "blood",
+   "donate",
+   "after",
+   "before"
+  ],
+  "si": [
+   "ලේ",
+   "රුධිර",
+   "රුධිරය",
+   "දාන",
+   "දානය",
+   "දායක",
+   "පරිත්‍යාග",
+   "පසු",
+   "පස්සේ",
+   "පස්සෙ",
+   "කලින්"
+  ],
+  "ta": [
+   "இரத்த",
+   "ரத்த",
+   "தான",
+   "கொடை",
+   "பிறகு",
+   "பின்னர்"
+  ]
+ }
+}

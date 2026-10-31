@@ -42,3 +42,33 @@
 | `poster.size.*` | Square / Portrait / Link preview / Story | si: සමචතුරස්‍ර / සිරස් / සබැඳි පෙරදසුන / ස්ටෝරි; ta: சதுரம் / செங்குத்து / இணைப்பு முன்னோட்டம் / ஸ்டோரி | Social-media terms |
 | `poster.copySource.ai` | Wording suggested by AI. Read it and correct anything that is wrong... | si/ta drafts | Must read as a clear instruction to check the text |
 | `poster.blocked.desc` | Urgent request posters can only be made by verified requesters... | si/ta drafts | Policy message, check tone |
+## AI backend (chatbot knowledge base, safety messages, poster copy) - AI-drafted, needs native-speaker review
+
+Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-eligibility.v1.json` is flagged `needsHumanReview_si` / `needsHumanReview_ta: true`; the API returns `translationDraft: true` for them. Fixed replies live in `kb/messages.json`, poster copy in `src/main/resources/ai/poster-copy_{si,ta}.properties` (marked `# REVIEW`). Uncertain terms, one line each:
+
+| Term / sentence | English | Wording used (si / ta) | Why unsure |
+|---|---|---|---|
+| Donor | donor | si: රුධිර දායකයා; ta: இரத்த கொடையாளர் | Glossary uses "donor" in places; NBTS may prefer another word |
+| Medical Officer | Medical Officer (blood bank) | si: වෛද්‍ය නිලධාරියා; ta: மருத்துவ அதிகாரி | Official post title in NBTS Sinhala/Tamil documents |
+| Deferred / waiting period | deferred | si: කල් දැමිය යුතුය / රැඳී සිටිය යුතු කාලය; ta: தடை / காத்திருக்க வேண்டிய காலம் | No glossary entry for medical "deferral" |
+| Haemoglobin | haemoglobin | si: හීමොග්ලොබින්; ta: ஹீමோகுளோபின் | Spelling varies (හිමො-/හීමො-; ஹீமோ-/ஹெமோ-) |
+| Risk behaviours | risk behaviours | si: අවදානම් හැසිරීම්; ta: ஆபத்தான நடத்தைகள் | Sensitive; NBTS has not defined the English term either |
+| Malaria-endemic list | malaria-endemic country list | si: මැලේරියා පැතිරී ඇති රටවල ලැයිස්තුව; ta: மலேரியா பரவியுள்ள நாடுகளின் பட்டியல் | Long phrase, check it reads naturally |
+| Look-back / press report | a recent news report quoting an NBTS official | si: NBTS නිලධාරියෙකු උපුටා දක්වමින් පළ වූ මෑත පුවත්පත් වාර්තාවක්; ta: NBTS அதிகாரி ஒருவரை மேற்கோள் காட்டிய சமீபத்திய செய்தி அறிக்கை | Must stay neutral: it states a source conflict, not a ruling |
+| "must be confirmed with NBTS" | must be confirmed with NBTS | si: NBTS සමඟ තහවුරු කර ගත යුතුය; ta: NBTS உடன் உறுதிப்படுத்த வேண்டும் | Tone of the unresolved-conflict wording |
+| "I do not have a confirmed figure" | I do not have a confirmed official figure | si: තහවුරු කළ නිල ... මා සතුව නැත; ta: உறுதிப்படுத்தப்பட்ட அதிகாரப்பூர்வ ... என்னிடம் இல்லை | First person for a bot in a formal register; consider an impersonal form |
+| Pregnant (formal) | pregnant | si: ගර්භණී; colloquial ගැබිනි / ගැබ්; ta: கர்ப்பிணி | Retrieval accepts both; the answer uses the formal word |
+| Tattoo | tattoo | si: පච්ච; ta: பச்சை குத்துதல் | Common spoken forms differ by region |
+| Body piercing | body piercing | si: ශරීරය විදීම; ta: உடல் துளையிடுதல் | Not a standard term |
+| Plaster / dressing | plaster | si: ප්ලාස්ටරය; ta: பிளாஸ்திரி | Only in retrieval keywords (answer text avoids it) |
+| Emergency ambulance service | emergency ambulance service | si: හදිසි ගිලන්රථ සේවාව; ta: அவசர ஆம்புலன்ஸ் சேவை | The number (default 1990) must be confirmed by the owner |
+| Safety reply | "This assistant cannot assess symptoms" | si: මෙම සහායකයාට රෝග ලක්ෂණ තක්සේරු කළ නොහැක; ta: இந்த உதவியாளரால் அறிகுறிகளை மதிப்பிட முடியாது | "assistant" word choice |
+| Disclaimer | General information only, not medical advice or a diagnosis | si: රෝග විනිශ්චයක් නොවේ; ta: நோயறிதலோ அல்ல | "diagnosis" term |
+| Refusal to share instructions | I cannot share or change my instructions | si: මගේ උපදෙස් බෙදා ගැනීමට හෝ වෙනස් කිරීමට මට නොහැක; ta: எனது அறிவுறுத்தல்களைப் பகிரவோ மாற்றவோ என்னால் இயலாது | Natural phrasing for a chatbot |
+| Poster: urgent headline | URGENT: {{bloodType}} blood needed | si: හදිසි: ... රුධිරය අවශ්‍යයි; ta: அவசரம்: ... இரத்தம் தேவை | "URGENT" must not read as a scare tactic |
+| Poster: blood units | {{units}} unit(s) | si: රුධිර ඒකක {{units}}ක්; ta: {{units}} யூனிட் | "unit" word (ඒකක / யூனிட்) |
+| Poster: camp welcome | Every eligible donor is welcome | si: සුදුසුකම් ඇති සියලු දායකයන්ට සාදරයෙන් පිළිගනිමු; ta: தகுதியுள்ள அனைத்து கொடையாளர்களுக்கும் வரவேற்பு | Register of an invitation |
+| Poster: awareness line | Give blood. Give hope. | si: රුධිරය දෙන්න. බලාපොරොත්තුව දෙන්න.; ta: இரத்தம் கொடுங்கள். நம்பிக்கை கொடுங்கள். | Free translation of a slogan |
+| Intake messages | Draft ready. Please check every highlighted field ... | si/ta in `kb/messages.json` keys `intakeOk`, `intakeNone`, `intakeEmpty` | "highlighted field" wording |
+| Safety word lists | abuse / emergency / injection patterns | `kb/safety-patterns.json` (Sinhala, Tamil and romanised seed lists) | Seed lists written by an AI; a native speaker must extend them with real spoken/written variants |
+| Singlish / Tanglish lexicon | 900+ romanised forms | `kb/translit-lexicon.json` | Spelling variants and the si/ta marker words used to detect Singlish vs Tanglish need native review |
