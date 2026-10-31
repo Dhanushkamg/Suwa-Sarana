@@ -83,6 +83,7 @@ public class CorsConfig {
                                 "Origin",
                                 "X-Requested-With",
                                 "X-Request-Id",
+                                "Last-Event-ID", // SSE replay (fetch-based stream, since EventSource cannot send Authorization)
                                 "Cache-Control"
                         )
                         .exposedHeaders("Authorization", "X-Request-Id", "Retry-After")
