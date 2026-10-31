@@ -1,0 +1,230 @@
+{
+ "description": "Regex lists (Java syntax, applied case-insensitively to the lower-cased question with zero-width joiners removed). 'latin' patterns get word boundaries on both sides; 'script' patterns (Sinhala/Tamil) only a left boundary because those languages attach suffixes. SEED LISTS: a native speaker must extend and review them.",
+ "emergencyStrong": {
+  "latin": [
+   "chest\\s+(pain|pains|hurts?|hurting|tight(ness)?|pressure)",
+   "pain\\s+in\\s+(my\\s+)?chest",
+   "heart\\s+attack",
+   "(can'?t|cannot|can\\s+not|unable\\s+to|difficulty|trouble)\\s+(to\\s+)?breath(e|ing)?",
+   "short(ness)?\\s+of\\s+breath",
+   "breathless",
+   "(heavy|severe|excessive|uncontrolled|non[- ]?stop)\\s+bleeding",
+   "bleeding\\s+(won'?t|will\\s+not|does\\s*n'?t|doesnt|not)\\s+stop",
+   "(fainted|fainting|passed\\s+out|pass\\s+out|unconscious|collapsed|blacked\\s+out|black\\s+out)",
+   "(seizure|seizures|convulsion|convulsions)",
+   "(swelling|swollen)\\s+(of\\s+)?(my\\s+)?(face|lips|throat|tongue)",
+   "allergic\\s+reaction",
+   "anaphyla\\w+",
+   "suicid\\w+",
+   "(want|going)\\s+to\\s+(die|kill\\s+myself)",
+   "pupuwe\\s+(wedana|pain|rid)\\w*",
+   "papuwe\\s+(wedana|pain|rid)\\w*",
+   "sihiya\\s+na(thi|ethi)\\s*(wuna|wenawa|unaa?)?",
+   "husma\\s+(ganna\\s+)?(amaru|bari|baha|baa)\\w*",
+   "nenju\\s+(vali|valikuthu)\\w*",
+   "mayakkam\\s+(adichu|vandhu|vanthu)\\w*",
+   "rudhira\\s+wahanaya\\s+(nawathinne|nawathenne)\\s+na\\w*"
+  ],
+  "script": [
+   "පපුවේ\\s*(වේදනා|රිදෙ|රිදුම)",
+   "පපුව\\s*රිදෙ",
+   "හුස්ම\\s*ගන්න\\s*(බැහැ|බැ|අමාරු|බැරි)",
+   "සිහිය\\s*(නැති|නැතිවෙ|නැතිවු)",
+   "මූර්ඡා",
+   "අධික\\s*රුධිර\\s*වහන",
+   "රුධිර\\s*වහනය\\s*නවතින",
+   "හෘදයාබාධ",
+   "நெஞ்சு\\s*வலி",
+   "மார்பு\\s*வலி",
+   "மூச்சு\\s*(விட|திணறல்)",
+   "மூச்சுத்\\s*திணறல்",
+   "மயக்கம்\\s*(போட்ட|அடைந்த|வந்த)",
+   "மயங்கி",
+   "நினைவிழ",
+   "அதிக\\s*(இரத்த|ரத்த)ப்?\\s*போக்கு",
+   "(இரத்த|ரத்த)ப்?\\s*போக்கு\\s*நிற்க",
+   "மாரடைப்பு"
+  ]
+ },
+ "emergencyWeak": {
+  "latin": [
+   "dizzy",
+   "dizziness",
+   "light[- ]?headed",
+   "giddy",
+   "nausea",
+   "nauseous",
+   "vomit\\w*",
+   "feel(ing)?\\s+(weak|unwell|sick|faint)",
+   "bruis\\w+",
+   "severe\\s+pain",
+   "hisa\\s+karakaw\\w*",
+   "karakawenawa",
+   "okkaraya?"
+  ],
+  "script": [
+   "හිස\\s*කැරකෙ",
+   "කරකැවිල්ල",
+   "ඔක්කාර",
+   "தலைச்சுற்ற",
+   "குமட்டல்"
+  ]
+ },
+ "selfContext": {
+  "latin": [
+   "i\\s+(feel|am\\s+feeling|felt|have|got|am\\s+having|was\\s+having)",
+   "i'?m\\s+(feeling|having|dizzy|sick)",
+   "my\\s+(arm|head|chest|stomach|body)",
+   "right\\s+now",
+   "just\\s+now",
+   "since\\s+(yesterday|morning|last\\s+night)",
+   "today",
+   "yesterday",
+   "last\\s+night",
+   "mata",
+   "dan",
+   "iye",
+   "ada",
+   "enakku",
+   "naan"
+  ],
+  "script": [
+   "මට\\s",
+   "දැන්",
+   "ඊයේ",
+   "අද\\s",
+   "நான்",
+   "எனக்கு",
+   "இப்போது",
+   "நேற்று",
+   "இன்று"
+  ]
+ },
+ "injection": {
+  "latin": [
+   "ignore\\s+(all\\s+|any\\s+|the\\s+|your\\s+)?(previous|prior|above|earlier|preceding|system)?\\s*(instructions?|rules?|prompts?|messages?|guidelines?)",
+   "disregard\\s+(all\\s+|the\\s+|your\\s+|any\\s+)?(previous|prior|above|instructions?|rules?|guidelines?)",
+   "forget\\s+(all\\s+|everything\\s+|your\\s+)?(previous|prior|above|instructions?|rules?|that)",
+   "(reveal|show|print|display|repeat|output|tell\\s+me|give\\s+me|dump|leak|share|expose|write\\s+out)\\s+(me\\s+)?(your|the|ur)\\s+(full\\s+|whole\\s+|entire\\s+|complete\\s+)?(system\\s+|initial\\s+|hidden\\s+|original\\s+|secret\\s+|internal\\s+)?(prompt|instructions?|rules?|knowledge\\s*base|configuration|config|api\\s*key|source\\s*code|json)",
+   "(print|show|dump|reveal|display)\\s+(the\\s+)?(full\\s+|whole\\s+|entire\\s+|complete\\s+)?(system\\s+prompt|knowledge\\s*base|kb)",
+   "system\\s+prompt",
+   "(developer|dan|jailbreak|god|admin|debug|sudo|unrestricted)\\s+mode",
+   "you\\s+are\\s+now\\s+(a|an|the|my|in)\\s",
+   "act\\s+as\\s+(a|an|if|my|the)\\s",
+   "pretend\\s+(to\\s+be|that\\s+you|you\\s+are)",
+   "(new|updated|override)\\s+instructions?",
+   "override\\s+(your|the|all)\\s",
+   "do\\s+anything\\s+now",
+   "api[\\s_-]?key",
+   "prompt\\s+injection",
+   "</?\\s*(system|assistant|user|instructions?|facts|user_question)\\s*>",
+   "\\[\\s*(system|inst|instructions?)\\s*\\]",
+   "#{2,}\\s*(system|instruction)",
+   "(oya|oyaage|oyage)\\s+(system\\s+)?(prompt|instructions?)",
+   "kalin\\s+(thiyena\\s+)?(instructions?|upades\\w*)\\s+(nawatthanna|ignore|bala\\s*nokara|amathaka)\\w*",
+   "upades\\w*\\s+(amathaka|ignore|nosalakanna)\\w*"
+  ],
+  "script": [
+   "පෙර\\s*(තිබූ\\s*)?උපදෙස්\\s*(නොසලකා|අමතක|නොසළකා)",
+   "උපදෙස්\\s*(නොසලකා|අමතක\\s*කර)",
+   "ඔබේ\\s*(system|පද්ධති)\\s*(prompt|උපදෙස්)",
+   "முந்தைய\\s*(அறிவுறுத்தல்|கட்டளை|வழிமுறை)\\w*\\s*(புறக்கணி|மற)",
+   "(அறிவுறுத்தல்|கட்டளை)களை\\s*(புறக்கணி|மற)",
+   "உங்கள்\\s*(system\\s*prompt|கணினி\\s*அறிவுறுத்தல்)"
+  ]
+ },
+ "abuse": {
+  "latin": [
+   "f+u+c+k\\w*",
+   "shit\\w*",
+   "bitch\\w*",
+   "bastard\\w*",
+   "asshole\\w*",
+   "cunt\\w*",
+   "dickhead",
+   "moron\\w*",
+   "idiot\\w*",
+   "stupid\\s+(bot|ai|assistant|machine)",
+   "useless\\s+(bot|ai|assistant)",
+   "shut\\s+up",
+   "hutta\\w*",
+   "huththa\\w*",
+   "huttha\\w*",
+   "pakaya",
+   "ponnaya",
+   "wesi\\w*",
+   "modaya",
+   "balla\\b",
+   "balli\\b"
+  ],
+  "script": [
+   "හුත්ත",
+   "පකයා",
+   "පොන්නයා",
+   "වේසි",
+   "මෝඩයා",
+   "முட்டாள்",
+   "லூசு"
+  ]
+ },
+ "greeting": {
+  "latin": [
+   "hi+",
+   "hello+",
+   "hey+",
+   "good\\s+(morning|afternoon|evening|day)",
+   "ayubowan",
+   "aayubowan",
+   "vanakkam",
+   "namaste",
+   "hola",
+   "hallo"
+  ],
+  "script": [
+   "ආයුබෝවන්",
+   "හෙලෝ",
+   "வணக்கம்",
+   "ஹலோ"
+  ]
+ },
+ "thanks": {
+  "latin": [
+   "thanks?",
+   "thank\\s+you",
+   "thanx",
+   "thx",
+   "sthuthi\\w*",
+   "istuti\\w*",
+   "nandri"
+  ],
+  "script": [
+   "ස්තූතියි",
+   "ස්තුති",
+   "நன்றி"
+  ]
+ },
+ "platform": {
+  "latin": [
+   "password",
+   "log\\s*in",
+   "login",
+   "sign\\s*(in|up)",
+   "my\\s+account",
+   "(this|your)\\s+(app|website|site|platform)",
+   "\\bbug\\b",
+   "\\berror\\b",
+   "crash\\w*",
+   "not\\s+working",
+   "otp",
+   "verification\\s+code",
+   "reset\\s+(my\\s+)?password",
+   "delete\\s+my\\s+account"
+  ],
+  "script": [
+   "මුරපදය",
+   "ගිණුම",
+   "கடவுச்சொல்",
+   "கணக்கு"
+  ]
+ }
+}

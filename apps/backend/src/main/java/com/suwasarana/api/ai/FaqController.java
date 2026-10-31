@@ -6,19 +6,27 @@ import com.suwasarana.api.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/faq")
-@Tag(name = "AI Donor FAQ", description = "Grounded donor eligibility, deferral rules, and trilingual guidance FAQ assistant")
+@Tag(name = "AI Donor FAQ", description = "Retrieval-grounded donor eligibility assistant (English, Sinhala, Tamil, Singlish)")
 public class FaqController {
 
-    @Autowired
-    private DonorFaqAiService donorFaqAiService;
+    private final DonorFaqAiService donorFaqAiService;
 
-    @Operation(summary = "Ask donor eligibility FAQ question", description = "Answers donor eligibility and deferral rule questions grounded in official National Blood Transfusion Service guidelines (EN/SI/TA).")
+    public FaqController(DonorFaqAiService donorFaqAiService) {
+        this.donorFaqAiService = donorFaqAiService;
+    }
+
+    @Operation(summary = "Ask a donor eligibility question",
+            description = "Answers only from the curated, versioned NBTS knowledge base (every answer cites its sources). "
+                    + "If the knowledge base has no confirmed answer the reply says so and points to the Medical Officer / NBTS. "
+                    + "Emergency symptoms get a short safety reply. Public endpoint; rate limiting is applied by the servlet filter.")
     @PostMapping("/ask")
     public ResponseEntity<ApiResponse<FaqAnswerDto>> askQuestion(@Valid @RequestBody FaqQuestionDto request) {
         FaqAnswerDto answer = donorFaqAiService.askQuestion(request);

@@ -1,0 +1,387 @@
+{
+ "description": "Well-known hospitals mapped to their district, used ONLY to infer a district when the text names a hospital and no district. Coordinates are deliberately NOT stored per hospital (not verified); the district centroid is used and flagged approximate. Extend with the NBTS blood bank list.",
+ "hospitals": [
+  {
+   "name": "National Hospital of Sri Lanka",
+   "district": "Colombo",
+   "aliases": [
+    "national hospital colombo",
+    "national hospital of sri lanka",
+    "nhsl",
+    "national hospital",
+    "colombo national hospital",
+    "ජාතික රෝහල",
+    "தேசிய வைத்தியசாலை"
+   ]
+  },
+  {
+   "name": "Castle Street Hospital for Women",
+   "district": "Colombo",
+   "aliases": [
+    "castle street hospital",
+    "castle street"
+   ]
+  },
+  {
+   "name": "Lady Ridgeway Hospital for Children",
+   "district": "Colombo",
+   "aliases": [
+    "lady ridgeway",
+    "lrh colombo",
+    "ලේඩි රිජ්වේ"
+   ]
+  },
+  {
+   "name": "De Soysa Maternity Hospital",
+   "district": "Colombo",
+   "aliases": [
+    "de soysa",
+    "desoysa"
+   ]
+  },
+  {
+   "name": "Colombo South Teaching Hospital",
+   "district": "Colombo",
+   "aliases": [
+    "kalubowila",
+    "colombo south teaching hospital",
+    "colombo south hospital"
+   ]
+  },
+  {
+   "name": "Sri Jayewardenepura General Hospital",
+   "district": "Colombo",
+   "aliases": [
+    "sri jayewardenepura",
+    "jayewardenepura hospital",
+    "sjgh",
+    "kotte hospital"
+   ]
+  },
+  {
+   "name": "National Cancer Institute Maharagama",
+   "district": "Colombo",
+   "aliases": [
+    "apeksha hospital",
+    "maharagama cancer",
+    "cancer hospital maharagama",
+    "maharagama hospital"
+   ]
+  },
+  {
+   "name": "Homagama Base Hospital",
+   "district": "Colombo",
+   "aliases": [
+    "homagama hospital",
+    "homagama base"
+   ]
+  },
+  {
+   "name": "Avissawella Base Hospital",
+   "district": "Colombo",
+   "aliases": [
+    "avissawella hospital",
+    "avissawella base"
+   ]
+  },
+  {
+   "name": "Mulleriyawa Base Hospital",
+   "district": "Colombo",
+   "aliases": [
+    "mulleriyawa",
+    "colombo east base hospital"
+   ]
+  },
+  {
+   "name": "Gampaha District General Hospital",
+   "district": "Gampaha",
+   "aliases": [
+    "gampaha general hospital",
+    "gampaha hospital",
+    "gampaha district general"
+   ]
+  },
+  {
+   "name": "Colombo North Teaching Hospital Ragama",
+   "district": "Gampaha",
+   "aliases": [
+    "ragama hospital",
+    "ragama teaching hospital",
+    "colombo north teaching hospital",
+    "ragama"
+   ]
+  },
+  {
+   "name": "Negombo General Hospital",
+   "district": "Gampaha",
+   "aliases": [
+    "negombo hospital",
+    "negombo general",
+    "negombo base"
+   ]
+  },
+  {
+   "name": "Wathupitiwala Base Hospital",
+   "district": "Gampaha",
+   "aliases": [
+    "wathupitiwala",
+    "watupitiwala"
+   ]
+  },
+  {
+   "name": "Nagoda Teaching Hospital Kalutara",
+   "district": "Kalutara",
+   "aliases": [
+    "nagoda hospital",
+    "nagoda teaching",
+    "kalutara hospital",
+    "kalutara general hospital"
+   ]
+  },
+  {
+   "name": "Panadura Base Hospital",
+   "district": "Kalutara",
+   "aliases": [
+    "panadura hospital",
+    "panadura base"
+   ]
+  },
+  {
+   "name": "Horana Base Hospital",
+   "district": "Kalutara",
+   "aliases": [
+    "horana hospital",
+    "horana base"
+   ]
+  },
+  {
+   "name": "Teaching Hospital Kandy",
+   "district": "Kandy",
+   "aliases": [
+    "kandy teaching hospital",
+    "kandy general hospital",
+    "kandy national hospital",
+    "kandy hospital",
+    "මහනුවර රෝහල"
+   ]
+  },
+  {
+   "name": "Peradeniya Teaching Hospital",
+   "district": "Kandy",
+   "aliases": [
+    "peradeniya hospital",
+    "peradeniya teaching"
+   ]
+  },
+  {
+   "name": "Gampola Base Hospital",
+   "district": "Kandy",
+   "aliases": [
+    "gampola hospital"
+   ]
+  },
+  {
+   "name": "Matale General Hospital",
+   "district": "Matale",
+   "aliases": [
+    "matale hospital",
+    "matale district general"
+   ]
+  },
+  {
+   "name": "Nuwara Eliya District General Hospital",
+   "district": "Nuwara Eliya",
+   "aliases": [
+    "nuwara eliya hospital",
+    "nuwaraeliya hospital"
+   ]
+  },
+  {
+   "name": "Karapitiya Teaching Hospital",
+   "district": "Galle",
+   "aliases": [
+    "karapitiya",
+    "teaching hospital karapitiya",
+    "galle teaching hospital",
+    "කරාපිටිය",
+    "கராப்பிட்டிய"
+   ]
+  },
+  {
+   "name": "Matara Provincial General Hospital",
+   "district": "Matara",
+   "aliases": [
+    "matara general hospital",
+    "matara hospital",
+    "matara district general"
+   ]
+  },
+  {
+   "name": "Hambantota District General Hospital",
+   "district": "Hambantota",
+   "aliases": [
+    "hambantota hospital",
+    "hambantota general"
+   ]
+  },
+  {
+   "name": "Tangalle Base Hospital",
+   "district": "Hambantota",
+   "aliases": [
+    "tangalle hospital"
+   ]
+  },
+  {
+   "name": "Teaching Hospital Jaffna",
+   "district": "Jaffna",
+   "aliases": [
+    "jaffna teaching hospital",
+    "jaffna hospital",
+    "jaffna general hospital",
+    "யாழ்ப்பாணம் போதனா வைத்தியசாலை"
+   ]
+  },
+  {
+   "name": "Kilinochchi District General Hospital",
+   "district": "Kilinochchi",
+   "aliases": [
+    "kilinochchi hospital",
+    "kilinochchi general"
+   ]
+  },
+  {
+   "name": "Mannar District General Hospital",
+   "district": "Mannar",
+   "aliases": [
+    "mannar hospital",
+    "mannar general"
+   ]
+  },
+  {
+   "name": "Vavuniya District General Hospital",
+   "district": "Vavuniya",
+   "aliases": [
+    "vavuniya hospital",
+    "vavuniya general"
+   ]
+  },
+  {
+   "name": "Mullaitivu District Hospital",
+   "district": "Mullaitivu",
+   "aliases": [
+    "mullaitivu hospital",
+    "mullaitivu general"
+   ]
+  },
+  {
+   "name": "Teaching Hospital Batticaloa",
+   "district": "Batticaloa",
+   "aliases": [
+    "batticaloa teaching hospital",
+    "batticaloa hospital",
+    "batticaloa general hospital"
+   ]
+  },
+  {
+   "name": "Ampara District General Hospital",
+   "district": "Ampara",
+   "aliases": [
+    "ampara hospital",
+    "ampara general"
+   ]
+  },
+  {
+   "name": "Kalmunai Base Hospital",
+   "district": "Ampara",
+   "aliases": [
+    "kalmunai hospital",
+    "kalmunai base"
+   ]
+  },
+  {
+   "name": "Trincomalee District General Hospital",
+   "district": "Trincomalee",
+   "aliases": [
+    "trincomalee hospital",
+    "trincomalee general",
+    "trinco hospital"
+   ]
+  },
+  {
+   "name": "Teaching Hospital Kurunegala",
+   "district": "Kurunegala",
+   "aliases": [
+    "kurunegala teaching hospital",
+    "kurunegala hospital",
+    "kurunegala general hospital"
+   ]
+  },
+  {
+   "name": "Puttalam Base Hospital",
+   "district": "Puttalam",
+   "aliases": [
+    "puttalam hospital"
+   ]
+  },
+  {
+   "name": "Chilaw Base Hospital",
+   "district": "Puttalam",
+   "aliases": [
+    "chilaw hospital",
+    "chilaw base"
+   ]
+  },
+  {
+   "name": "Teaching Hospital Anuradhapura",
+   "district": "Anuradhapura",
+   "aliases": [
+    "anuradhapura teaching hospital",
+    "anuradhapura hospital"
+   ]
+  },
+  {
+   "name": "Polonnaruwa District General Hospital",
+   "district": "Polonnaruwa",
+   "aliases": [
+    "polonnaruwa hospital",
+    "polonnaruwa general"
+   ]
+  },
+  {
+   "name": "Badulla Provincial General Hospital",
+   "district": "Badulla",
+   "aliases": [
+    "badulla hospital",
+    "badulla general",
+    "badulla provincial"
+   ]
+  },
+  {
+   "name": "Monaragala District General Hospital",
+   "district": "Monaragala",
+   "aliases": [
+    "monaragala hospital",
+    "moneragala hospital",
+    "monaragala general"
+   ]
+  },
+  {
+   "name": "Teaching Hospital Ratnapura",
+   "district": "Ratnapura",
+   "aliases": [
+    "ratnapura teaching hospital",
+    "ratnapura hospital",
+    "ratnapura general hospital"
+   ]
+  },
+  {
+   "name": "Kegalle District General Hospital",
+   "district": "Kegalle",
+   "aliases": [
+    "kegalle hospital",
+    "kegalle general",
+    "kegalla hospital"
+   ]
+  }
+ ]
+}
