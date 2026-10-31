@@ -36,6 +36,14 @@ public final class Times {
         return LocalDateTime.now(ZoneOffset.UTC);
     }
 
+    /**
+     * The UTC {@link LocalDateTime} of an entity "moment" field as a real instant, so a DTO serialises it with a trailing
+     * {@code Z} ({@code 2026-10-31T07:37:38.33Z}) and a browser cannot misread it as local time. {@code null}-safe.
+     */
+    public static java.time.Instant instantOf(LocalDateTime utc) {
+        return utc == null ? null : utc.toInstant(ZoneOffset.UTC);
+    }
+
     /** Wall-clock time in the clock's zone (Asia/Colombo): donor-visible times such as slot starts. */
     public static LocalDateTime colomboNow(Clock clock) {
         return LocalDateTime.now(clock);

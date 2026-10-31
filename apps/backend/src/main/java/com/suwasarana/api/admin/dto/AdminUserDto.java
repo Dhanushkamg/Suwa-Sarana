@@ -1,5 +1,7 @@
 package com.suwasarana.api.admin.dto;
 
+import com.suwasarana.api.common.Times;
+
 import com.suwasarana.api.user.User;
 
 import java.time.Instant;
@@ -18,7 +20,7 @@ public class AdminUserDto {
     private boolean emailVerified;
     private String preferredLanguage;
     private String authProvider;
-    private LocalDateTime registeredAt;
+    private Instant registeredAt;
     private Long verificationReviewedBy;
     private Instant verificationReviewedAt;
     private String verificationReason;
@@ -36,7 +38,7 @@ public class AdminUserDto {
         d.emailVerified = u.isEmailVerified();
         d.preferredLanguage = u.getPreferredLanguage();
         d.authProvider = u.getAuthProvider().name();
-        d.registeredAt = u.getCreatedAt();
+        d.registeredAt = Times.instantOf(u.getCreatedAt());
         d.verificationReviewedBy = u.getVerificationReviewedBy();
         d.verificationReviewedAt = u.getVerificationReviewedAt();
         d.verificationReason = u.getVerificationReason();
@@ -54,7 +56,7 @@ public class AdminUserDto {
     public boolean isEmailVerified() { return emailVerified; }
     public String getPreferredLanguage() { return preferredLanguage; }
     public String getAuthProvider() { return authProvider; }
-    public LocalDateTime getRegisteredAt() { return registeredAt; }
+    public Instant getRegisteredAt() { return registeredAt; }
     public Long getVerificationReviewedBy() { return verificationReviewedBy; }
     public Instant getVerificationReviewedAt() { return verificationReviewedAt; }
     public String getVerificationReason() { return verificationReason; }

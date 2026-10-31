@@ -1,5 +1,8 @@
 package com.suwasarana.api.circle.dto;
 
+import com.suwasarana.api.common.Times;
+import java.time.Instant;
+
 import com.suwasarana.api.request.Urgency;
 import java.time.LocalDateTime;
 
@@ -10,7 +13,7 @@ public class CircleInfoDto {
     private Urgency urgency;
     private String hospitalName;
     private String district;
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
     private boolean isExpired;
 
     public CircleInfoDto() {}
@@ -24,7 +27,7 @@ public class CircleInfoDto {
         this.urgency = urgency;
         this.hospitalName = hospitalName;
         this.district = district;
-        this.expiresAt = expiresAt;
+        this.expiresAt = Times.instantOf(expiresAt);
         this.isExpired = isExpired;
     }
 
@@ -46,8 +49,8 @@ public class CircleInfoDto {
     public String getDistrict() { return district; }
     public void setDistrict(String district) { this.district = district; }
 
-    public LocalDateTime getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
+    public Instant getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = Times.instantOf(expiresAt); }
 
     public boolean isExpired() { return isExpired; }
     public void setExpired(boolean expired) { isExpired = expired; }

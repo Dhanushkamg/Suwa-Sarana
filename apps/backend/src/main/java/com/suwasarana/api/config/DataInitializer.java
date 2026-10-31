@@ -208,6 +208,7 @@ public class DataInitializer implements CommandLineRunner {
             user.setPasswordHash(passwordEncoder.encode(password));
             user.setRole(role);
             user.setVerificationStatus(status);
+            user.setEmailVerifiedAt(java.time.Instant.now()); // dev accounts count as confirmed (VerificationGuard)
             userRepository.save(user);
             log.info("Initialized test account {} with role: {} and status: {}", com.suwasarana.api.email.LoggingEmailSender.maskEmail(email), role, status);
         } catch (Exception e) {

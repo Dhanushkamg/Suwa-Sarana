@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# local scratch-run secrets (run-integ.sh)
+.integ-secrets

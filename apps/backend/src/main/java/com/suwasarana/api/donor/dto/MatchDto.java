@@ -1,5 +1,8 @@
 package com.suwasarana.api.donor.dto;
 
+import com.suwasarana.api.common.Times;
+import java.time.Instant;
+
 import com.suwasarana.api.matching.MatchStatus;
 import com.suwasarana.api.request.RequestStatus;
 import com.suwasarana.api.request.Urgency;
@@ -10,8 +13,8 @@ public class MatchDto {
 
     private Long id;
     private MatchStatus status;
-    private LocalDateTime createdAt;
-    private LocalDateTime respondedAt;
+    private Instant createdAt;
+    private Instant respondedAt;
     private RequestSummary request;
     private java.math.BigDecimal distanceKm;
 
@@ -23,7 +26,7 @@ public class MatchDto {
         private String district;
         private short unitsNeeded;
         private RequestStatus status;
-        private LocalDateTime expiresAt;
+        private Instant expiresAt;
         private Double latitude;
         private Double longitude;
         private short currentRadiusKm;
@@ -42,8 +45,8 @@ public class MatchDto {
         public void setUnitsNeeded(short unitsNeeded) { this.unitsNeeded = unitsNeeded; }
         public RequestStatus getStatus() { return status; }
         public void setStatus(RequestStatus status) { this.status = status; }
-        public LocalDateTime getExpiresAt() { return expiresAt; }
-        public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
+        public Instant getExpiresAt() { return expiresAt; }
+        public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = Times.instantOf(expiresAt); }
         public Double getLatitude() { return latitude; }
         public void setLatitude(Double latitude) { this.latitude = latitude; }
         public Double getLongitude() { return longitude; }
@@ -56,10 +59,10 @@ public class MatchDto {
     public void setId(Long id) { this.id = id; }
     public MatchStatus getStatus() { return status; }
     public void setStatus(MatchStatus status) { this.status = status; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getRespondedAt() { return respondedAt; }
-    public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = respondedAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = Times.instantOf(createdAt); }
+    public Instant getRespondedAt() { return respondedAt; }
+    public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = Times.instantOf(respondedAt); }
     public java.math.BigDecimal getDistanceKm() { return distanceKm; }
     public void setDistanceKm(java.math.BigDecimal distanceKm) { this.distanceKm = distanceKm; }
     public RequestSummary getRequest() { return request; }

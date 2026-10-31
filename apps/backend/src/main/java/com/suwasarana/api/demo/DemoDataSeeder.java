@@ -217,6 +217,7 @@ public class DemoDataSeeder implements ApplicationRunner {
             u.setPasswordHash(hash);
             u.setRole(role);
             u.setVerificationStatus(status);
+            u.setEmailVerifiedAt(clock.instant()); // demo mailboxes count as confirmed: institutions need that to publish (VerificationGuard)
             u.setCreatedAt(now.minusDays(40 + rnd.nextInt(60)));
             u.setUpdatedAt(now);
             count("users", 1);

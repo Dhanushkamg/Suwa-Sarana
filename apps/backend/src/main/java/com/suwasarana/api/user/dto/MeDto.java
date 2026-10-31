@@ -1,5 +1,7 @@
 package com.suwasarana.api.user.dto;
 
+import com.suwasarana.api.common.Times;
+
 import com.suwasarana.api.user.User;
 
 import java.time.Instant;
@@ -25,7 +27,7 @@ public class MeDto {
     private Instant consentedAt;
     /** True when the user has not yet accepted the current terms version (ask them to accept via POST /api/users/me/consent). */
     private boolean consentRequired;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public static MeDto of(User u, String currentConsentVersion) {
         MeDto d = new MeDto();
@@ -46,7 +48,7 @@ public class MeDto {
         d.consentVersion = u.getConsentVersion();
         d.consentedAt = u.getConsentedAt();
         d.consentRequired = u.getConsentVersion() == null || !u.getConsentVersion().equals(currentConsentVersion);
-        d.createdAt = u.getCreatedAt();
+        d.createdAt = Times.instantOf(u.getCreatedAt());
         return d;
     }
 
@@ -67,5 +69,5 @@ public class MeDto {
     public String getConsentVersion() { return consentVersion; }
     public Instant getConsentedAt() { return consentedAt; }
     public boolean isConsentRequired() { return consentRequired; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public Instant getCreatedAt() { return createdAt; }
 }

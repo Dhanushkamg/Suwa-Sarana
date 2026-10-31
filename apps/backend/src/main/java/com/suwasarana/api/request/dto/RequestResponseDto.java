@@ -1,5 +1,8 @@
 package com.suwasarana.api.request.dto;
 
+import com.suwasarana.api.common.Times;
+import java.time.Instant;
+
 import com.suwasarana.api.request.RequestStatus;
 import com.suwasarana.api.request.Urgency;
 import java.time.LocalDateTime;
@@ -15,12 +18,12 @@ public class RequestResponseDto {
     private Double longitude;
     private RequestStatus status;
     private short currentRadiusKm;
-    private LocalDateTime createdAt;
-    private LocalDateTime expiresAt;
+    private Instant createdAt;
+    private Instant expiresAt;
     private Integer fraudRiskScore;
     private String aiFlagReason;
-    private LocalDateTime triagedAt;
-    private LocalDateTime closedAt;
+    private Instant triagedAt;
+    private Instant closedAt;
     private String closeReason;
     /** Owner/admin views only: donors who accepted, and donations confirmed so far. */
     private Long acceptedCount;
@@ -59,11 +62,11 @@ public class RequestResponseDto {
     public short getCurrentRadiusKm() { return currentRadiusKm; }
     public void setCurrentRadiusKm(short currentRadiusKm) { this.currentRadiusKm = currentRadiusKm; }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = Times.instantOf(createdAt); }
 
-    public LocalDateTime getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
+    public Instant getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = Times.instantOf(expiresAt); }
 
     public Integer getFraudRiskScore() { return fraudRiskScore; }
     public void setFraudRiskScore(Integer fraudRiskScore) { this.fraudRiskScore = fraudRiskScore; }
@@ -71,11 +74,11 @@ public class RequestResponseDto {
     public String getAiFlagReason() { return aiFlagReason; }
     public void setAiFlagReason(String aiFlagReason) { this.aiFlagReason = aiFlagReason; }
 
-    public LocalDateTime getTriagedAt() { return triagedAt; }
-    public void setTriagedAt(LocalDateTime triagedAt) { this.triagedAt = triagedAt; }
+    public Instant getTriagedAt() { return triagedAt; }
+    public void setTriagedAt(LocalDateTime triagedAt) { this.triagedAt = Times.instantOf(triagedAt); }
 
-    public LocalDateTime getClosedAt() { return closedAt; }
-    public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
+    public Instant getClosedAt() { return closedAt; }
+    public void setClosedAt(LocalDateTime closedAt) { this.closedAt = Times.instantOf(closedAt); }
 
     public String getCloseReason() { return closeReason; }
     public void setCloseReason(String closeReason) { this.closeReason = closeReason; }

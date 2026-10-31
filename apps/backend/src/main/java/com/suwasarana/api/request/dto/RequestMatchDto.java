@@ -1,5 +1,8 @@
 package com.suwasarana.api.request.dto;
 
+import com.suwasarana.api.common.Times;
+import java.time.Instant;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.suwasarana.api.matching.MatchStatus;
 
@@ -29,8 +32,8 @@ public class RequestMatchDto {
     private String bloodType;
     private BigDecimal distanceKm;
     private MatchStatus status;
-    private LocalDateTime notifiedAt;
-    private LocalDateTime respondedAt;
+    private Instant notifiedAt;
+    private Instant respondedAt;
     private Boolean donated;
     private Contact contact;
 
@@ -44,10 +47,10 @@ public class RequestMatchDto {
     public void setDistanceKm(BigDecimal distanceKm) { this.distanceKm = distanceKm; }
     public MatchStatus getStatus() { return status; }
     public void setStatus(MatchStatus status) { this.status = status; }
-    public LocalDateTime getNotifiedAt() { return notifiedAt; }
-    public void setNotifiedAt(LocalDateTime notifiedAt) { this.notifiedAt = notifiedAt; }
-    public LocalDateTime getRespondedAt() { return respondedAt; }
-    public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = respondedAt; }
+    public Instant getNotifiedAt() { return notifiedAt; }
+    public void setNotifiedAt(LocalDateTime notifiedAt) { this.notifiedAt = Times.instantOf(notifiedAt); }
+    public Instant getRespondedAt() { return respondedAt; }
+    public void setRespondedAt(LocalDateTime respondedAt) { this.respondedAt = Times.instantOf(respondedAt); }
     public Boolean getDonated() { return donated; }
     public void setDonated(Boolean donated) { this.donated = donated; }
     public Contact getContact() { return contact; }
