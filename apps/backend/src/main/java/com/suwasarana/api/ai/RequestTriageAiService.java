@@ -3,6 +3,7 @@ package com.suwasarana.api.ai;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.suwasarana.api.ai.TriageResult.Reason;
+import com.suwasarana.api.common.Times;
 import com.suwasarana.api.request.BloodRequest;
 import com.suwasarana.api.request.RequestRepository;
 import com.suwasarana.api.request.Urgency;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,7 +41,15 @@ public class RequestTriageAiService {
     @Autowired(required = false)
     private AiTriageRecordRepository recordRepository;
 
+    /** THE application clock; moments are taken as UTC through {@link Times}. The default only serves plain unit tests. */
+    @Autowired(required = false)
+    private Clock clock = Clock.systemUTC();
+
     private final ObjectMapper mapper = new ObjectMapper();
+
+    private LocalDateTime utcNow() {
+        return Times.utcNow(clock);
+    }
 
     /** Computes the explained score without saving anything. */
     public TriageResult evaluate(BloodRequest request) {
@@ -48,7 +58,7 @@ public class RequestTriageAiService {
         boolean isVerified = requester != null && requester.getVerificationStatus() == VerificationStatus.VERIFIED;
 
         if (requester != null && requester.getId() != null) {
-            LocalDateTime dayAgo = LocalDateTime.now().minusHours(24);
+            LocalDateTime dayAgo = utcNow().minusHours(24);
             long recentCount = requestRepository.findByRequesterId(requester.getId()).stream()
                     .filter(r -> r.getCreatedAt() != null && r.getCreatedAt().isAfter(dayAgo)
                             && r.getId() != null && !r.getId().equals(request.getId()))
@@ -82,7 +92,7 @@ public class RequestTriageAiService {
         reasons.sort(Comparator.comparingInt(Reason::weight).reversed());
         int raw = reasons.stream().mapToInt(Reason::weight).sum();
         int score = Math.min(100, Math.max(0, raw));
-        return new TriageResult(score, raw, List.copyOf(reasons), TriageResult.ENGINE_VERSION, LocalDateTime.now(),
+        return new TriageResult(score, raw, List.copyOf(reasons), TriageResult.ENGINE_VERSION, utcNow(),
                 score >= TriageResult.REVIEW_THRESHOLD);
     }
 
@@ -154,7 +164,7 @@ public class RequestTriageAiService {
         if (latest.isEmpty()) return false;
         AiTriageRecord rec = latest.get();
         rec.setReviewedBy(reviewerUserId);
-        rec.setReviewedAt(LocalDateTime.now());
+        rec.setReviewedAt(utcNow());
         rec.setReviewDecision(decision == null || decision.isBlank() ? "REVIEWED" : decision.trim().toUpperCase());
         String n = note == null ? null : note.trim();
         rec.setReviewNote(n == null || n.isEmpty() ? null : (n.length() > 500 ? n.substring(0, 500) : n));

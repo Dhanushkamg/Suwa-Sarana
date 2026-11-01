@@ -1,5 +1,6 @@
 package com.suwasarana.api.ai;
 
+import com.suwasarana.api.common.Times;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,7 +35,7 @@ public class AiTriageRecord {
     private String engineVersion;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = Times.utcNow();
 
     @Column(name = "reviewed_by")
     private Long reviewedBy;
