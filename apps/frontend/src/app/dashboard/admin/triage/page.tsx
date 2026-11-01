@@ -8,6 +8,7 @@ import { fetchTriageQueue, reviewTriage } from '@/lib/api/admin';
 import { apiMessage } from '@/lib/api/common';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/Toast';
 import { ButtonLink } from '@/components/dash/ButtonLink';
 import { BloodTypeTile } from '@/components/dash/IconTile';
@@ -39,9 +40,9 @@ export default function AdminTriageQueuePage() {
     setResolvingId(id);
     setActionError(null);
     try {
-      await reviewTriage(id, t('dashUi.admin.dismissNote'));
-      // The server zeroes the score but keeps the row: show it as reviewed straight away
-      queue.mutate((rows) => rows.map((r) => (r.id === id ? { ...r, fraudRiskScore: 0, aiFlagReason: undefined } : r)));
+      await reviewTriage(id, t('dashUi.admin.dismissNote'), 'DISMISSED');
+      // The server keeps the AI score and its reasons and stores who reviewed it beside them: show the row as reviewed
+      queue.mutate((rows) => rows.map((r) => (r.id === id ? { ...r, reviewed: true, reviewDecision: 'DISMISSED' } : r)));
       toast.show(t('dashUi.admin.flagDismissed'), 'success');
     } catch (err: unknown) {
       setActionError(apiMessage(err, t('dash.dismissFailed')));
@@ -186,7 +187,10 @@ export default function AdminTriageQueuePage() {
                             {t('common.view')}
                           </ButtonLink>
 
-                          {score > 0 && (
+                          {req.reviewed && (
+                            <StatusBadge value={req.reviewDecision ?? 'REVIEWED'} tone="neutral" label={t(`dashUi.triage.decision.${req.reviewDecision ?? 'REVIEWED'}`)} />
+                          )}
+                          {score > 0 && !req.reviewed && (
                             <Button type="button" variant="secondary" onClick={() => handleResolve(req.id)} loading={resolvingId === req.id} disabled={resolvingId !== null}>
                               {resolvingId !== req.id && <Check className="h-4 w-4" aria-hidden="true" />}
                               {t('adminDashboard.dismissFlag')}
@@ -196,8 +200,26 @@ export default function AdminTriageQueuePage() {
                       </div>
                     </div>
 
-                    {/* AI explainable flag reason */}
-                    {req.aiFlagReason && (
+                    {/* Why the rule engine gave this score: one line per reason code, heaviest first */}
+                    {req.reasons.length > 0 && (
+                      <div className="mt-5 flex items-start gap-3 border-s-2 border-line-strong ps-4">
+                        <Bot className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+                        <div className="min-w-0">
+                          <span className={EYEBROW}>{t('dashUi.triage.reasonsTitle')}</span>
+                          <ul className="mt-1.5 space-y-1">
+                            {req.reasons.map((r) => (
+                              <li key={r.code} className="break-words text-sm leading-relaxed text-foreground">
+                                {t(`dashUi.triage.reason.${r.code}`)} <span className="tabular-nums text-gray-500">(+{format.number(r.weight)})</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-1.5 text-xs text-gray-500">{t('dashUi.triage.ruleBased')}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI explainable flag reason (the plain-text summary the server stored) */}
+                    {req.reasons.length === 0 && req.aiFlagReason && (
                       <div className="mt-5 flex items-start gap-3 border-s-2 border-line-strong ps-4">
                         <Bot className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
                         <div className="min-w-0">

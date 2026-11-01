@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, Users, AlertTriangle } from 'lucide-react';
-import { fetchDistrictSummary, nationalTotals, type DistrictRow } from '@/lib/api/admin';
+import { ANALYTICS_PATHS, districtTotals, fetchDistrictSummary, fetchNationalSummary, type DistrictRow, type NationalSummary } from '@/lib/api/admin';
 import { apiMessage } from '@/lib/api/common';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -17,6 +17,7 @@ import { Stat } from '@/components/dash/Stat';
 export default function HeatmapPage() {
   const { t } = useI18n();
   const [districts, setDistricts] = useState<DistrictRow[]>([]);
+  const [national, setNational] = useState<NationalSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +26,9 @@ export default function HeatmapPage() {
     setLoading(true);
     setError(null);
     try {
-      setDistricts(await fetchDistrictSummary('/analytics/district-summary'));
+      const [rows, summary] = await Promise.all([fetchDistrictSummary(ANALYTICS_PATHS.districtSummary), fetchNationalSummary(false)]);
+      setDistricts(rows);
+      setNational(summary);
       return true;
     } catch (err: unknown) {
       setError(apiMessage(err, ''));
@@ -40,7 +43,7 @@ export default function HeatmapPage() {
     fetchAnalytics();
   }, [fetchAnalytics]);
 
-  const totals = useMemo(() => nationalTotals(districts), [districts]);
+  const totals = useMemo(() => districtTotals(districts), [districts]);
 
   return (
     <div>
@@ -76,10 +79,10 @@ export default function HeatmapPage() {
               <Stat label={t('dash.criticalZones')} value={totals.criticalDistricts} tone="danger" icon={<AlertTriangle />} className="h-full" />
             </Rise>
             <Rise delay={0.08}>
-              <Stat label={t('adminDashboard.activeRequests')} value={totals.activeRequests} tone="warning" icon={<Activity />} className="h-full" />
+              <Stat label={t('adminDashboard.activeRequests')} value={national ? national.activeRequests : totals.activeRequests} tone="warning" icon={<Activity />} className="h-full" />
             </Rise>
             <Rise delay={0.12}>
-              <Stat label={t('adminDashboard.availableDonors')} value={totals.donors} tone="success" icon={<Users />} className="h-full" />
+              <Stat label={t('adminDashboard.availableDonors')} value={national ? national.availableDonors : totals.availableDonors} tone="success" icon={<Users />} className="h-full" />
             </Rise>
           </div>
 

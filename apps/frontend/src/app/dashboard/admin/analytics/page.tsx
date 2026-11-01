@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { Users, Droplets, AlertTriangle, TrendingUp, Filter, Search } from 'lucide-react';
-import { fetchDistrictSummary, nationalTotals, type DistrictRow } from '@/lib/api/admin';
+import { fetchDistrictSummary, fetchNationalSummary, SHORTAGE_LEVELS, type DistrictRow } from '@/lib/api/admin';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -20,18 +20,22 @@ import { CARD, EYEBROW } from '@/components/dash/styles';
 import { useAsync } from '@/components/dash/useAsync';
 import { cn } from '@/lib/utils';
 
-type LevelFilter = 'ALL' | 'CRITICAL' | 'WARNING' | 'BALANCED' | 'SURPLUS';
-const LEVELS: LevelFilter[] = ['ALL', 'CRITICAL', 'WARNING', 'BALANCED', 'SURPLUS'];
+type LevelFilter = 'ALL' | (typeof SHORTAGE_LEVELS)[number];
+const LEVELS: LevelFilter[] = ['ALL', ...SHORTAGE_LEVELS];
+const loadAdminSummary = () => fetchNationalSummary(true);
 
 export default function AdminAnalyticsHeatmapPage() {
   const { t, format } = useI18n();
   const data = useAsync(fetchDistrictSummary);
+  const national = useAsync(loadAdminSummary);
   const [filter, setFilter] = useState<LevelFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedName, setSelectedName] = useState<string | null>(null);
 
   const districts = useMemo(() => (data.state.status === 'ready' ? data.state.data : []), [data.state]);
-  const totals = useMemo(() => nationalTotals(districts), [districts]);
+  const kpi = national.state.status === 'ready' ? national.state.data : null;
+  const criticalDistricts = useMemo(() => districts.filter((d) => d.shortageLevel === 'CRITICAL').length, [districts]);
+  const refreshAll = useCallback(async () => (await Promise.all([data.reload(), national.reload()])).every(Boolean), [data, national]);
   const selectedDistrict = districts.find((d) => d.district === selectedName) ?? null;
 
   // Stable identity: the map rebuilds its markers (and closes the open popup) whenever this function changes
@@ -51,7 +55,7 @@ export default function AdminAnalyticsHeatmapPage() {
         title={t('adminDashboard.heatmapTitle')}
         description={t('adminDashboard.heatmapDesc')}
         backHref="/dashboard/admin"
-        actions={<RefreshButton onClick={data.reload} loading={loading} label={t('adminDashboard.refreshTelemetry')} />}
+        actions={<RefreshButton onClick={refreshAll} loading={loading} label={t('adminDashboard.refreshTelemetry')} />}
       />
 
       {loading ? (
@@ -73,30 +77,43 @@ export default function AdminAnalyticsHeatmapPage() {
         <EmptyState icon={<Droplets className="h-10 w-10" aria-hidden="true" />} title={t('dashUi.noDistrictData')} description={t('dashUi.noDistrictDataDesc')} />
       ) : (
         <div className="space-y-8">
-          {/* KPI summary: sums of the district totals; the fulfilment rate is weighted by request count */}
+          {/* KPI summary: GET /api/admin/analytics/summary (a rate of null is "No data") */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Rise delay={0.04}>
-              <Stat label={t('adminDashboard.availableDonors')} value={totals.donors} tone="success" icon={<Users />} hint={t('dashUi.admin.donorsHint')} className="h-full" />
+              <Stat
+                label={t('adminDashboard.availableDonors')}
+                value={kpi ? kpi.availableDonors : null}
+                tone="success"
+                icon={<Users />}
+                hint={kpi ? t('dashUi.kpi.availableHint', { registered: format.number(kpi.registeredDonors) }) : t('dashUi.admin.donorsHint')}
+                className="h-full"
+              />
             </Rise>
             <Rise delay={0.08}>
-              <Stat label={t('adminDashboard.activeRequests')} value={totals.activeRequests} icon={<Droplets />} hint={t('adminDashboard.openEmergencies')} className="h-full" />
+              <Stat label={t('adminDashboard.activeRequests')} value={kpi ? kpi.activeRequests : null} icon={<Droplets />} hint={t('adminDashboard.openEmergencies')} className="h-full" />
             </Rise>
             <Rise delay={0.12}>
-              <Stat label={t('adminDashboard.criticalShortages')} value={totals.criticalDistricts} tone="danger" icon={<AlertTriangle />} hint={t('adminDashboard.urgentMobilization')} className="h-full" />
+              <Stat label={t('adminDashboard.criticalShortages')} value={criticalDistricts} tone="danger" icon={<AlertTriangle />} hint={t('adminDashboard.urgentMobilization')} className="h-full" />
             </Rise>
             <Rise delay={0.16}>
               <Stat
                 label={t('adminDashboard.nationalFulfillment')}
-                value={totals.fulfillmentRate}
+                value={kpi ? kpi.fulfillmentRate : null}
                 suffix="%"
-                meter={totals.fulfillmentRate ?? undefined}
+                meter={kpi?.fulfillmentRate ?? undefined}
                 tone="primary"
                 icon={<TrendingUp />}
-                hint={t('dashUi.admin.fulfilmentHint')}
+                hint={kpi ? t('dashUi.kpi.fulfilmentWindow', { days: kpi.windowDays }) : t('dashUi.admin.fulfilmentHint')}
                 className="h-full"
               />
             </Rise>
           </div>
+          {kpi && (
+            <p className="text-sm text-gray-500">
+              {t('dashUi.kpi.coverage', { found: kpi.districtsWithData, total: kpi.districtsTotal })}
+              {kpi.unitsOutstanding !== undefined && ` ${t('dashUi.kpi.unitsOutstanding', { units: kpi.unitsOutstanding })}`}
+            </p>
+          )}
 
           {/* Map / table and district focus */}
           <div className="grid gap-6 lg:grid-cols-3">
@@ -136,8 +153,10 @@ export default function AdminAnalyticsHeatmapPage() {
                   <div className="space-y-5">
                     <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-line">
                       {[
-                        { label: t('adminDashboard.availableDonors'), value: selectedDistrict.donorCount, tone: 'text-success-text' },
+                        { label: t('adminDashboard.availableDonors'), value: selectedDistrict.availableDonors, tone: 'text-success-text' },
+                        { label: t('dashUi.kpi.registeredDonors'), value: selectedDistrict.registeredDonors, tone: 'text-foreground' },
                         { label: t('adminDashboard.activeRequests'), value: selectedDistrict.activeRequests, tone: 'text-warning-text' },
+                        { label: t('dashUi.kpi.awaiting'), value: selectedDistrict.awaitingRequests, tone: 'text-foreground' },
                         { label: t('adminDashboard.fulfilledRequests'), value: selectedDistrict.fulfilledRequests, tone: 'text-foreground' },
                         { label: t('adminDashboard.totalRequests'), value: selectedDistrict.totalRequests, tone: 'text-foreground' },
                       ].map((m) => (
@@ -167,7 +186,7 @@ export default function AdminAnalyticsHeatmapPage() {
                 )}
               </div>
 
-              <p className="mt-6 border-t border-line pt-4 text-sm leading-relaxed text-gray-500">{t('dashUi.admin.metricsDefinition')}</p>
+              <p className="mt-6 border-t border-line pt-4 text-sm leading-relaxed text-gray-500">{t('dashUi.admin.metricsDefinition', { days: kpi?.windowDays ?? 30 })}</p>
             </Panel>
           </div>
         </div>

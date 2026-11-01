@@ -85,3 +85,13 @@ Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-elig
 | `authFlow.googleLink*` | Link your Google account / An account for {email} already exists ... | si: ඔබේ Google ගිණුම සම්බන්ධ කරන්න; ta: உங்கள் Google கணக்கை இணைக்கவும் | "link accounts" wording |
 | `authFlow.verifyEmailIdle`, `resendVerificationHelp`, `verificationSent`, `signInToResend`, `emailAlreadyVerified` | Sign in and we can send a new one ... | si/ta drafts | Reworded because resending a verification link now needs a signed-in user |
 | `authFlow.invite.*`, `pub.meta.acceptInvite`, `pub.eyebrowInvite` | Accept your invitation ... administrator | si: ඔබේ ආරාධනය පිළිගන්න; ta: உங்கள் அழைப்பை ஏற்கவும் | "administrator" = පරිපාලක / நிர்வாகி per glossary |
+
+## FE integration: admin queue, analytics, triage - needs native-speaker review
+
+| Key | English | Wording used (si / ta) | Why unsure |
+|---|---|---|---|
+| `dashUi.kpi.*`, `dashUi.admin.metricsDefinition` | Matched, awaiting donation / Last {days} days / Fulfilment rate = fulfilled ÷ (fulfilled + expired + cancelled) | si: ගැළපී ඇත, රුධිර දානය බලාපොරොත්තුවෙන්; ta: பொருந்தியது, இரத்த தானத்துக்காகக் காத்திருக்கிறது | New definition of the rate (30-day window); "expired" / "cancelled" request terms |
+| `dashUi.shortage.NO_DATA`, `pub.level.NO_DATA`, `pub.levelDesc.*` | No data; "... available donors for each unit of blood still needed" | si: දත්ත නැත; ta: தரவு இல்லை | The shortage rule is now per unit of blood still needed (was per request) |
+| `dashUi.reportReason.*` | Fake or misleading / Duplicate request / Spam / Abusive content / Other reason | si/ta drafts | "Spam" loan word |
+| `dashUi.triage.*` | Why this request was flagged / The score comes from fixed rules, not machine learning / Flag dismissed | si/ta drafts for the six reason codes | Tone: calm, no accusation of the requester |
+| `dashUi.admin.queue*`, `emailUnverified`, `dashUi.reasonTooShort` | Hospitals and blood banks / Patients and families | si: රෝහල් සහ රුධිර බැංකු; ta: மருத்துவமனைகள் மற்றும் இரத்த வங்கிகள் | |

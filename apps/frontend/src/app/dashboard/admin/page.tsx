@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ShieldAlert, BarChart3, Flag, UserCheck, MapPin, ArrowUpRight, Droplets, Users, TrendingUp, CheckCircle2, Activity } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useLowData } from '@/lib/lowData';
-import { fetchDistrictSummary, fetchFlaggedReports, fetchPendingVerifications, nationalTotals, type DistrictRow } from '@/lib/api/admin';
+import { fetchDistrictSummary, fetchFlaggedReports, fetchNationalSummary, fetchPendingVerifications, type DistrictRow } from '@/lib/api/admin';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Tabs';
 import { Table, Td, Th } from '@/components/ui/Table';
@@ -54,10 +54,13 @@ function DistrictBars({ rows, max }: { rows: DistrictRow[]; max: number }) {
   );
 }
 
+const loadAdminSummary = () => fetchNationalSummary(true);
+
 export default function AdminDashboardPage() {
   const { t, format } = useI18n();
   const { lowData } = useLowData();
   const summary = useAsync(fetchDistrictSummary);
+  const national = useAsync(loadAdminSummary);
   const reports = useAsync(fetchFlaggedReports);
   const pending = useAsync(fetchPendingVerifications);
   const [viewChoice, setViewChoice] = useState<'chart' | 'table' | null>(null);
@@ -65,15 +68,16 @@ export default function AdminDashboardPage() {
   const view = viewChoice ?? (lowData ? 'table' : 'chart');
 
   const refreshAll = useCallback(async () => {
-    const results = await Promise.all([summary.reload(), reports.reload(), pending.reload()]);
+    const results = await Promise.all([summary.reload(), national.reload(), reports.reload(), pending.reload()]);
     return results.every(Boolean);
-  }, [summary, reports, pending]);
+  }, [summary, national, reports, pending]);
 
   const rows = useMemo(() => (summary.state.status === 'ready' ? summary.state.data : []), [summary.state]);
-  const totals = useMemo(() => nationalTotals(rows), [rows]);
+  const kpi = national.state.status === 'ready' ? national.state.data : null;
   const withRequests = useMemo(() => rows.filter((r) => r.totalRequests > 0).sort((a, b) => b.totalRequests - a.totalRequests), [rows]);
   const maxCount = withRequests[0]?.totalRequests ?? 0;
   const summaryLoading = summary.state.status === 'loading';
+  const kpiLoading = national.state.status === 'loading';
 
   const hubLinks = [
     { href: '/dashboard/admin/verifications', icon: UserCheck, title: t('adminDashboard.verifications'), desc: t('adminDashboard.verificationsDesc') },
@@ -116,29 +120,49 @@ export default function AdminDashboardPage() {
           </Notice>
         )}
 
-        {/* KPIs: national figures are sums of the API's district totals; no data shows "No data", never a made-up number */}
-        {summaryLoading ? (
+        {national.state.status === 'error' && (
+          <Notice
+            tone="error"
+            action={
+              <Button type="button" variant="secondary" onClick={() => void national.reload()}>
+                {t('dash.retry')}
+              </Button>
+            }
+          >
+            {national.state.message || t('dash.loadFailed')}
+          </Notice>
+        )}
+
+        {/* KPIs: the national figures come from GET /api/admin/analytics/summary; no data shows "No data", never a made-up number */}
+        {kpiLoading ? (
           <StatsSkeleton count={4} className="sm:grid-cols-2 lg:grid-cols-4" />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Rise delay={0.04}>
-              <Stat label={t('adminDashboard.totalRequests')} value={summary.state.status === 'ready' ? totals.totalRequests : null} icon={<Droplets />} hint={t('dashUi.admin.totalHint')} className="h-full" />
+              <Stat label={t('adminDashboard.activeRequests')} value={kpi ? kpi.activeRequests : null} tone="warning" icon={<Activity />} hint={t('adminDashboard.openEmergencies')} className="h-full" />
             </Rise>
             <Rise delay={0.08}>
-              <Stat label={t('adminDashboard.activeRequests')} value={summary.state.status === 'ready' ? totals.activeRequests : null} tone="warning" icon={<Activity />} hint={t('adminDashboard.openEmergencies')} className="h-full" />
+              <Stat label={t('dashUi.kpi.awaiting')} value={kpi ? kpi.awaitingRequests : null} icon={<Droplets />} hint={t('dashUi.kpi.awaitingHint')} className="h-full" />
             </Rise>
             <Rise delay={0.12}>
-              <Stat label={t('adminDashboard.availableDonors')} value={summary.state.status === 'ready' ? totals.donors : null} tone="success" icon={<Users />} hint={t('dashUi.admin.donorsHint')} className="h-full" />
+              <Stat
+                label={t('adminDashboard.availableDonors')}
+                value={kpi ? kpi.availableDonors : null}
+                tone="success"
+                icon={<Users />}
+                hint={kpi ? t('dashUi.kpi.availableHint', { registered: format.number(kpi.registeredDonors) }) : undefined}
+                className="h-full"
+              />
             </Rise>
             <Rise delay={0.16}>
               <Stat
                 label={t('adminDashboard.nationalFulfillment')}
-                value={summary.state.status === 'ready' ? totals.fulfillmentRate : null}
+                value={kpi ? kpi.fulfillmentRate : null}
                 suffix="%"
-                meter={totals.fulfillmentRate ?? undefined}
+                meter={kpi?.fulfillmentRate ?? undefined}
                 tone="primary"
                 icon={<TrendingUp />}
-                hint={t('dashUi.admin.fulfilmentHint')}
+                hint={kpi ? t('dashUi.kpi.fulfilmentWindow', { days: kpi.windowDays }) : undefined}
                 className="h-full"
               />
             </Rise>
@@ -301,7 +325,7 @@ export default function AdminDashboardPage() {
                         <p className="text-sm font-medium text-foreground">
                           {t('common.request')} <Link href={`/dashboard/requests/${report.requestId}`} className="text-primary-text underline-offset-4 hover:underline">#{report.requestId}</Link>
                         </p>
-                        <p className="mt-0.5 break-words text-sm leading-relaxed text-gray-400">{report.reason}</p>
+                        <p className="mt-0.5 break-words text-sm leading-relaxed text-gray-400">{t(`dashUi.reportReason.${report.reason}`)}</p>
                         {report.createdAt && <p className="mt-1 text-sm text-gray-500">{format.dateTime(report.createdAt)}</p>}
                       </div>
                     </li>

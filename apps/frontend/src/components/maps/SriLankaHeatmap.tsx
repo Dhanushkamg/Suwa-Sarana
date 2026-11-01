@@ -11,16 +11,17 @@ import { createSriLankaMap } from './leafletSetup';
 import { MapLegend, type LegendItem } from './MapLegend';
 import { TONE, captionHtml, cellHtml, pillHtml, statusMarkerHtml, titleHtml, type MapGlyph, type MapShape, type MapTone } from './mapStyles';
 
+/** What the map needs from a district row (a DistrictRow from lib/api/admin satisfies it). */
 export interface DistrictSummary {
   district: string;
   latitude: number;
   longitude: number;
-  donorCount: number;
+  availableDonors: number;
   activeRequests: number;
-  fulfilledRequests: number;
-  totalRequests: number;
-  fulfillmentRate: number;
-  shortageLevel: 'CRITICAL' | 'WARNING' | 'BALANCED' | 'SURPLUS';
+  /** Percent; null = no data. */
+  fulfillmentRate: number | null;
+  /** NO_DATA is its own grey symbol: it is never drawn as balanced. */
+  shortageLevel: 'CRITICAL' | 'WARNING' | 'BALANCED' | 'SURPLUS' | 'NO_DATA';
 }
 
 interface Props {
@@ -37,8 +38,9 @@ const LEVELS: Record<Level, { shape: MapShape; glyph: MapGlyph; tone: MapTone; p
   WARNING: { shape: 'diamond', glyph: 'alert', tone: 'warning', pulse: 'marker-pulse-warning', quiet: false },
   BALANCED: { shape: 'circle', glyph: 'check', tone: 'success', pulse: '', quiet: true },
   SURPLUS: { shape: 'square', glyph: 'plus', tone: 'info', pulse: '', quiet: true },
+  NO_DATA: { shape: 'circle', glyph: 'dot', tone: 'muted', pulse: '', quiet: true },
 };
-const LEVEL_ORDER: Level[] = ['CRITICAL', 'WARNING', 'BALANCED', 'SURPLUS'];
+const LEVEL_ORDER: Level[] = ['CRITICAL', 'WARNING', 'BALANCED', 'SURPLUS', 'NO_DATA'];
 
 export default function SriLankaHeatmap({ districts, filter = 'ALL', onSelectDistrict }: Props) {
   const { t, format } = useI18n();
@@ -63,7 +65,7 @@ export default function SriLankaHeatmap({ districts, filter = 'ALL', onSelectDis
     () =>
       JSON.stringify([
         filter,
-        districts.map((d) => [d.district, d.latitude, d.longitude, d.donorCount, d.activeRequests, d.fulfilledRequests, d.totalRequests, d.fulfillmentRate, d.shortageLevel]),
+        districts.map((d) => [d.district, d.latitude, d.longitude, d.availableDonors, d.activeRequests, d.fulfillmentRate, d.shortageLevel]),
       ]),
     [districts, filter]
   );
@@ -111,13 +113,13 @@ export default function SriLankaHeatmap({ districts, filter = 'ALL', onSelectDis
     const shown = districtsRef.current.filter((d) => filter === 'ALL' || d.shortageLevel === filter);
 
     shown.forEach((d) => {
-      const level = LEVELS[d.shortageLevel] ?? LEVELS.BALANCED;
+      const level = LEVELS[d.shortageLevel] ?? LEVELS.NO_DATA;
       const levelLabel = t(`pub.level.${d.shortageLevel}`);
       const accessibleName = t('pub.mapMarkerLabel', {
         district: d.district,
         level: levelLabel,
         requests: d.activeRequests,
-        donors: d.donorCount,
+        donors: d.availableDonors,
       });
 
       const icon = L.divIcon({
@@ -130,7 +132,7 @@ export default function SriLankaHeatmap({ districts, filter = 'ALL', onSelectDis
 
       const marker = L.marker([d.latitude, d.longitude], { icon, title: accessibleName, keyboard: true });
 
-      const hasRate = d.fulfillmentRate != null && Number.isFinite(Number(d.fulfillmentRate)) && d.totalRequests > 0;
+      const hasRate = d.fulfillmentRate != null && Number.isFinite(Number(d.fulfillmentRate));
       const rate = hasRate ? Math.max(0, Math.min(100, Number(d.fulfillmentRate))) : 0;
       const popupContent = `
         <div style="padding:16px;min-width:230px;font-family:inherit;color:var(--foreground);">
@@ -141,7 +143,7 @@ export default function SriLankaHeatmap({ districts, filter = 'ALL', onSelectDis
           ${captionHtml(escapeHtml(t(`pub.levelDesc.${d.shortageLevel}`, { ...SHORTAGE_RULES })), '0 0 14px 0')}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
             ${cellHtml(escapeHtml(t('pub.mapActiveRequests')), escapeHtml(format.number(d.activeRequests)), TONE.danger.text)}
-            ${cellHtml(escapeHtml(t('pub.mapAvailableDonors')), escapeHtml(format.number(d.donorCount)), TONE.success.text)}
+            ${cellHtml(escapeHtml(t('pub.mapAvailableDonors')), escapeHtml(format.number(d.availableDonors)), TONE.success.text)}
           </div>
           <div style="padding:10px;border-radius:10px;border:1px solid var(--line);font-size:13px;color:var(--muted);">
             <div style="display:flex;justify-content:space-between;gap:10px;${hasRate ? 'margin-bottom:6px;' : ''}">

@@ -13,6 +13,7 @@ const LEVEL_TONE: Record<ShortageLevel, BadgeTone> = {
   WARNING: 'warning',
   BALANCED: 'success',
   SURPLUS: 'info',
+  NO_DATA: 'neutral',
 };
 
 /** Shortage level as icon + localised text + colour. */
@@ -81,7 +82,7 @@ export function DistrictTable({ rows, caption, selected, onSelect, emptyText }: 
                 <Td>
                   <ShortageBadge level={d.shortageLevel} />
                 </Td>
-                <Td className="text-end tabular-nums">{format.number(d.donorCount)}</Td>
+                <Td className="text-end tabular-nums">{format.number(d.availableDonors)}</Td>
                 <Td className="text-end tabular-nums">{format.number(d.activeRequests)}</Td>
                 <Td className="text-end tabular-nums">{format.number(d.fulfilledRequests)}</Td>
                 <Td className="text-end tabular-nums">

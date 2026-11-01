@@ -19,6 +19,9 @@ interface ConfirmDialogProps {
   reasonLabel?: string;
   reasonHelp?: string;
   reasonRequired?: boolean;
+  /** Minimum / maximum length of the reason (the verification API wants 3 to 500 characters). */
+  reasonMinLength?: number;
+  reasonMaxLength?: number;
   /** Runs on confirm. Throw (or reject) to keep the dialog open and show `errorMessage(err)`. */
   onConfirm: (reason: string) => Promise<void>;
   errorMessage?: (err: unknown) => string;
@@ -35,6 +38,8 @@ export function ConfirmDialog({
   reasonLabel,
   reasonHelp,
   reasonRequired = false,
+  reasonMinLength,
+  reasonMaxLength = 500,
   onConfirm,
   errorMessage,
 }: ConfirmDialogProps) {
@@ -63,6 +68,10 @@ export function ConfirmDialog({
       setFieldError(t('dashUi.reasonRequired'));
       return;
     }
+    if (reasonLabel && reasonMinLength && reason.trim().length > 0 && reason.trim().length < reasonMinLength) {
+      setFieldError(t('dashUi.reasonTooShort', { min: reasonMinLength }));
+      return;
+    }
     setFieldError(undefined);
     setError(null);
     setBusy(true);
@@ -85,7 +94,7 @@ export function ConfirmDialog({
               <textarea
                 {...p}
                 rows={4}
-                maxLength={500}
+                maxLength={reasonMaxLength}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 className="w-full resize-y rounded-xl border border-line-strong bg-surface px-4 py-3 text-sm leading-relaxed text-foreground placeholder:text-muted hover:border-foreground/25 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20 aria-[invalid=true]:border-danger"

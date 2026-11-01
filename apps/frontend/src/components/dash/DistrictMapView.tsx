@@ -39,8 +39,8 @@ export function DistrictMapView({ rows, filter = 'ALL', query = '', selected, on
     const q = query.trim().toLowerCase();
     return rows.filter((r) => (filter === 'ALL' || r.shortageLevel === filter) && (!q || r.district.toLowerCase().includes(q)));
   }, [rows, filter, query]);
-  // The map component wants a plain number rate; "no data" is shown as 0 there (the table shows the real "No data")
-  const mapRows = useMemo<DistrictSummary[]>(() => rows.map((r) => ({ ...r, fulfillmentRate: r.fulfillmentRate ?? 0 })), [rows]);
+  // DistrictRow already has the shape the map needs (a rate of null shows "No data" in the popup)
+  const mapRows = rows satisfies DistrictSummary[];
 
   // Stable identity: a new function on every render would make the map rebuild its markers and close the open popup
   const handleSelect = useCallback(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ShieldCheck, ShieldX, AlertCircle, Building2, User, Phone, Mail, CalendarClock, Search, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -22,17 +22,23 @@ import { useI18n } from '@/lib/i18n';
 import { apiMessage } from '@/lib/api/common';
 import {
   decideVerification,
-  EndpointUnavailableError,
   fetchPendingVerifications,
+  isInstitutionRole,
+  VERIFICATION_REASON_MAX,
+  VERIFICATION_REASON_MIN,
   type PendingVerification,
   type VerificationDecision,
 } from '@/lib/api/admin';
+import { FilterChips } from '@/components/dash/FilterChips';
 
 export default function AdminVerificationsPage() {
   const { t, format } = useI18n();
   const toast = useToast();
   const { user } = useAuthStore();
-  const list = useAsync(fetchPendingVerifications);
+  const [queue, setQueue] = useState<'INSTITUTIONS' | 'REQUESTERS'>('INSTITUTIONS');
+  // Institutions (hospitals, blood banks) are the default queue; patient/family requesters are listed with role=REQUESTER
+  const fetchQueue = useCallback(() => fetchPendingVerifications(queue === 'REQUESTERS' ? 'REQUESTER' : undefined), [queue]);
+  const list = useAsync(fetchQueue);
   const [query, setQuery] = useState('');
   const [deciding, setDeciding] = useState<{ user: PendingVerification; decision: VerificationDecision } | null>(null);
 
@@ -72,8 +78,7 @@ export default function AdminVerificationsPage() {
     toast.show(decision === 'APPROVE' ? t('dash.approvedMsg', { email: name }) : t('dash.rejectedMsg', { email: name }), 'success');
   };
 
-  const errorFor = (err: unknown) =>
-    err instanceof EndpointUnavailableError ? t('dashUi.admin.decisionUnavailable') : apiMessage(err, deciding?.decision === 'APPROVE' ? t('dash.approveFailed') : t('dash.rejectFailed'));
+  const errorFor = (err: unknown) => apiMessage(err, deciding?.decision === 'APPROVE' ? t('dash.approveFailed') : t('dash.rejectFailed'));
 
   const approving = deciding?.decision === 'APPROVE';
   const targetName = deciding ? deciding.user.fullName || deciding.user.organisation || deciding.user.email : '';
@@ -87,6 +92,18 @@ export default function AdminVerificationsPage() {
         backHref="/dashboard/admin"
         actions={<RefreshButton onClick={list.reload} loading={list.state.status === 'loading'} />}
       />
+
+      <div className="mb-6">
+        <FilterChips
+          label={t('dashUi.admin.queueFilter')}
+          value={queue}
+          onChange={setQueue}
+          options={[
+            { value: 'INSTITUTIONS', label: t('dashUi.admin.queueInstitutions') },
+            { value: 'REQUESTERS', label: t('dashUi.admin.queueRequesters') },
+          ]}
+        />
+      </div>
 
       {list.state.status === 'loading' ? (
         <div role="status" aria-label={t('adminDashboard.loadingPending')}>
@@ -130,7 +147,7 @@ export default function AdminVerificationsPage() {
             <Rise delay={0.04}>
               <ul className={`${CARD} divide-y divide-line overflow-hidden`}>
                 {filtered.map((u) => {
-                  const isOrg = u.role === 'HOSPITAL_REQUESTER' || u.role === 'BLOOD_BANK_REQUESTER';
+                  const isOrg = isInstitutionRole(u.role);
                   const name = u.fullName || u.organisation || u.email;
                   return (
                     <li key={u.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
@@ -150,6 +167,7 @@ export default function AdminVerificationsPage() {
                           <p className="flex items-center gap-1.5 break-all text-sm text-gray-400">
                             <Mail className="h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
                             {u.email}
+                            {!u.emailVerified && <span className="shrink-0 text-warning-text">({t('dashUi.admin.emailUnverified')})</span>}
                           </p>
                           <p className="flex items-center gap-1.5 text-sm text-gray-400">
                             <Phone className="h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
@@ -196,6 +214,8 @@ export default function AdminVerificationsPage() {
         reasonLabel={t('dashUi.admin.reasonLabel')}
         reasonHelp={approving ? t('dashUi.admin.reasonHelpApprove') : t('dashUi.admin.reasonHelpReject')}
         reasonRequired
+        reasonMinLength={VERIFICATION_REASON_MIN}
+        reasonMaxLength={VERIFICATION_REASON_MAX}
         onConfirm={confirm}
         errorMessage={errorFor}
       />

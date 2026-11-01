@@ -1219,7 +1219,8 @@
       "CRITICAL": "Critical shortage",
       "WARNING": "Warning",
       "BALANCED": "Balanced",
-      "SURPLUS": "Surplus"
+      "SURPLUS": "Surplus",
+      "NO_DATA": "No data"
     },
     "notif": {
       "unread": "Unread",
@@ -1275,7 +1276,7 @@
       "reviewVerifications": "Review verifications",
       "totalHint": "Requests in every status",
       "donorsHint": "Registered donors who are available",
-      "fulfilmentHint": "Fulfilled requests divided by all requests",
+      "fulfilmentHint": "Fulfilled out of fulfilled, expired and cancelled requests",
       "barsNote": "Bar length is proportional to the number of requests; the largest district fills the bar.",
       "noRequestsYet": "No requests have been made yet.",
       "openAnalytics": "Open analytics",
@@ -1288,7 +1289,7 @@
       "searchDistrict": "Search a district",
       "inspectMetrics": "Choose a district on the map or in the table to see its figures.",
       "noDistrictSelected": "No district selected.",
-      "metricsDefinition": "Fulfilment rate = fulfilled requests divided by all requests made. With no requests it shows \"No data\".",
+      "metricsDefinition": "Fulfilment rate = fulfilled requests ÷ (fulfilled + expired + cancelled) over the last {days} days. When none were closed it shows \"No data\".",
       "noCamps": "No donation camps",
       "noCampsDesc": "Camps appear here once they are organised.",
       "scoreOf100": "{score} out of 100",
@@ -1307,7 +1308,11 @@
       "reasonHelpApprove": "Write briefly what you checked (for example: hospital registration number confirmed).",
       "reasonHelpReject": "Write why it is rejected. It is saved in the audit record.",
       "decisionUnavailable": "Verification decisions are not available on this server yet. Please try again later.",
-      "decisionNote": "Every decision needs a reason, and it is saved in the audit record."
+      "decisionNote": "Every decision needs a reason, and it is saved in the audit record.",
+      "queueFilter": "Which accounts to review",
+      "queueInstitutions": "Hospitals and blood banks",
+      "queueRequesters": "Patients and families",
+      "emailUnverified": "email not confirmed yet"
     },
     "inv": {
       "title": "Blood stock",
@@ -1369,6 +1374,40 @@
       "searchAreaText": "Searching for donors within {km} km of {hospital}, {district}.",
       "coordsHint": "The location follows the centre of the district. Press \"Use my location\" for a more exact point.",
       "locationFromText": "Using the location found in your description"
+    },
+    "reasonTooShort": "Write at least {min} characters.",
+    "kpi": {
+      "awaiting": "Matched, awaiting donation",
+      "awaitingHint": "Donors have accepted; the donation is not confirmed yet",
+      "availableHint": "Out of {registered} registered donors",
+      "fulfilmentWindow": "Last {days} days",
+      "registeredDonors": "Registered donors",
+      "coverage": "Districts with data: {found} of {total}.",
+      "unitsOutstanding": "Units of blood still needed: {units}."
+    },
+    "reportReason": {
+      "FAKE_OR_MISLEADING": "Fake or misleading",
+      "DUPLICATE": "Duplicate request",
+      "SPAM": "Spam",
+      "ABUSIVE_CONTENT": "Abusive content",
+      "OTHER": "Other reason"
+    },
+    "triage": {
+      "reasonsTitle": "Why this request was flagged",
+      "ruleBased": "The score comes from fixed rules, not machine learning. It never changes a request on its own.",
+      "decision": {
+        "REVIEWED": "Reviewed",
+        "DISMISSED": "Flag dismissed",
+        "CONFIRMED": "Concern confirmed"
+      },
+      "reason": {
+        "REQUESTER_HIGH_FREQUENCY": "The requester made many requests recently",
+        "REQUESTER_REPEAT_24H": "The requester made another request in the last 24 hours",
+        "UNVERIFIED_HIGH_UNITS": "Many units asked for by an unverified requester",
+        "UNVERIFIED_MODERATE_UNITS": "A moderate number of units asked for by an unverified requester",
+        "SUSPICIOUS_HOSPITAL_NAME": "The hospital name looks unusual",
+        "UNVERIFIED_CRITICAL": "Critical urgency from an unverified requester"
+      }
     }
   },
   "pub": {
@@ -1485,13 +1524,15 @@
       "CRITICAL": "Critical",
       "WARNING": "Low",
       "BALANCED": "Balanced",
-      "SURPLUS": "Surplus"
+      "SURPLUS": "Surplus",
+      "NO_DATA": "No data"
     },
     "levelDesc": {
-      "CRITICAL": "Fewer than {critical} available donors for each active request",
-      "WARNING": "{critical} to fewer than {warning} available donors for each active request",
-      "BALANCED": "Enough donors for the current requests, or no active requests",
-      "SURPLUS": "{surplusDonors} or more available donors and no active requests"
+      "CRITICAL": "Fewer than {critical} available donors for each unit of blood still needed",
+      "WARNING": "{critical} to fewer than {warning} available donors for each unit of blood still needed",
+      "BALANCED": "Enough available donors for the units still needed, or nothing is needed right now",
+      "SURPLUS": "{surplusDonors} or more available donors and no active requests",
+      "NO_DATA": "No registered donors and no requests here yet"
     },
     "posterTagline": "Community blood drive",
     "posterPresentedBy": "Presented by",
