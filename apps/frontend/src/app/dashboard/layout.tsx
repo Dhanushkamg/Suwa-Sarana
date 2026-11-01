@@ -2,10 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Heart, Home, Droplets, Bell, ShieldCheck, Plus, Building2, Map, MapPin, Calendar, UserCheck, BarChart3, Package } from 'lucide-react';
+import { Heart, Home, Droplets, Bell, ShieldCheck, Plus, Building2, Map, MapPin, Calendar, UserCheck, BarChart3, Package, UserCog } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import { DashShell, type DashNavItem } from '@/components/dash/DashShell';
+import { EmailVerifyBanner } from '@/components/account/EmailVerifyBanner';
 import { homeForRole } from '@/lib/auth';
 import { resetUnread, useUnreadCount, useUnreadPolling } from '@/lib/api/notifications';
 import type { User } from '@/types';
@@ -66,6 +67,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const bell = { href: '/dashboard/notifications', label: t('common.notifications'), icon: Bell, badge: unread };
+  // Every role has an account page (profile, language, phone, password, privacy)
+  const account = { href: '/dashboard/account', label: t('dashUi.nav.account'), icon: UserCog };
 
   const getNavItems = (): DashNavItem[] => {
     switch (user?.role) {
@@ -76,6 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { href: '/dashboard/donor/heatmap', label: t('layout.supplyHeatmap'), icon: Map },
           { href: '/camps', label: t('adminDashboard.camps'), icon: Calendar },
           bell,
+          account,
         ];
       case 'HOSPITAL_REQUESTER':
         return [
@@ -85,6 +89,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { href: '/dashboard/inventory', label: t('dashUi.nav.inventory'), icon: Package },
           { href: '/camps', label: t('layout.allDonationCamps'), icon: Calendar },
           bell,
+          account,
         ];
       case 'BLOOD_BANK_REQUESTER':
         return [
@@ -92,6 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { href: '/dashboard/inventory', label: t('dashUi.nav.inventory'), icon: Package },
           { href: '/camps', label: t('layout.allDonationCamps'), icon: Calendar },
           bell,
+          account,
         ];
       case 'ADMIN':
         return [
@@ -101,6 +107,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { href: '/dashboard/requests', label: t('layout.allBloodRequests'), icon: Droplets },
           { href: '/dashboard/admin/camps', label: t('layout.campsMapView'), icon: MapPin },
           bell,
+          account,
         ];
       case 'REQUESTER':
       default:
@@ -109,6 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { href: '/dashboard/requests/new', label: t('bloodRequests.newRequest'), icon: Plus },
           { href: '/dashboard/requests', label: t('common.bloodRequests'), icon: Droplets },
           bell,
+          account,
         ];
     }
   };
@@ -117,6 +125,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <DashShell navItems={navItems} user={user} onLogout={handleLogout}>
+      <EmailVerifyBanner />
       {children}
     </DashShell>
   );
