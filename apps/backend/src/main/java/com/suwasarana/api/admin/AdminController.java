@@ -1,10 +1,13 @@
 package com.suwasarana.api.admin;
 
 import com.suwasarana.api.admin.dto.ReportDto;
+import com.suwasarana.api.admin.dto.TriageQueueItemDto;
 import com.suwasarana.api.admin.dto.TriageReviewDto;
+import com.suwasarana.api.security.ClientIp;
+import com.suwasarana.api.security.UserDetailsImpl;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.suwasarana.api.common.ApiResponse;
-import com.suwasarana.api.request.BloodRequest;
-import com.suwasarana.api.request.dto.RequestResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -31,41 +34,23 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(adminService.getReports()));
     }
 
-    @Operation(summary = "Get AI triage queue", description = "Retrieves active emergency requisitions prioritized by fraud risk score for moderation.")
+    @Operation(summary = "Get AI triage queue", description = "Active requisitions prioritised by AI risk score, each with the reasons (code + weight) behind the score; "
+            + "requests a person already reviewed are listed after the pending ones. The score is never changed by a review.")
     @GetMapping("/triage/queue")
-    public ResponseEntity<ApiResponse<List<RequestResponseDto>>> getTriageQueue() {
-        List<BloodRequest> queue = adminService.getTriageQueue();
-        List<RequestResponseDto> dtos = queue.stream().map(this::mapToDto).toList();
-        return ResponseEntity.ok(ApiResponse.success(dtos));
+    public ResponseEntity<ApiResponse<List<TriageQueueItemDto>>> getTriageQueue() {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getTriageQueue()));
     }
 
-    @Operation(summary = "Review triaged request", description = "Admin marks a triaged request as reviewed with optional audit notes.")
+    @Operation(summary = "Review triaged request", description = "Records who reviewed the AI flag, when, the decision (REVIEWED, DISMISSED or CONFIRMED) and a note, "
+            + "beside the untouched AI score, and writes an audit-log entry.")
     @PutMapping("/triage/{id}/review")
     public ResponseEntity<ApiResponse<Void>> reviewTriage(
             @PathVariable Long id,
-            @Valid @RequestBody(required = false) TriageReviewDto body) {
-        String notes = body != null ? body.getNotes() : null;
-        adminService.reviewTriageRequest(id, notes);
+            @Valid @RequestBody(required = false) TriageReviewDto body,
+            @AuthenticationPrincipal UserDetailsImpl admin,
+            HttpServletRequest http) {
+        adminService.reviewTriageRequest(id, admin.getId(), body != null ? body.getDecision() : null,
+                body != null ? body.getNotes() : null, ClientIp.of(http));
         return ResponseEntity.ok(ApiResponse.success(null, "Triage review recorded successfully"));
-    }
-
-    private RequestResponseDto mapToDto(BloodRequest request) {
-        RequestResponseDto dto = new RequestResponseDto();
-        dto.setId(request.getId());
-        dto.setPatientBloodType(request.getPatientBloodType());
-        dto.setUnitsNeeded(request.getUnitsNeeded());
-        dto.setUrgency(request.getUrgency());
-        dto.setHospitalName(request.getHospitalName());
-        dto.setDistrict(request.getDistrict());
-        dto.setLatitude(request.getLatitude());
-        dto.setLongitude(request.getLongitude());
-        dto.setStatus(request.getStatus());
-        dto.setCurrentRadiusKm(request.getCurrentRadiusKm());
-        dto.setCreatedAt(request.getCreatedAt());
-        dto.setExpiresAt(request.getExpiresAt());
-        dto.setFraudRiskScore(request.getFraudRiskScore());
-        dto.setAiFlagReason(request.getAiFlagReason());
-        dto.setTriagedAt(request.getTriagedAt());
-        return dto;
     }
 }

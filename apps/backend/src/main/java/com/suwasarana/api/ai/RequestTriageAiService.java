@@ -98,9 +98,10 @@ public class RequestTriageAiService {
 
     /**
      * Evaluates, stores the explained result and fills the legacy request columns (score, short reason text, time).
-     * The request status is never touched.
+     * The request status is never touched. A failure must not mark the caller's transaction rollback-only: request
+     * creation logs it and carries on (see RequestService.createRequest).
      */
-    @Transactional
+    @Transactional(noRollbackFor = RuntimeException.class)
     public BloodRequest triageRequest(BloodRequest request) {
         if (request == null) return null;
         TriageResult result = evaluate(request);
@@ -149,6 +150,19 @@ public class RequestTriageAiService {
         }
         return new TriageResult(rec.getScore(), rec.getRawScore(), reasons, rec.getEngineVersion(), rec.getCreatedAt(),
                 rec.getScore() >= TriageResult.REVIEW_THRESHOLD);
+    }
+
+    /** Who reviewed the latest stored result, when and with what decision; empty when it was never reviewed. */
+    @Transactional(readOnly = true)
+    public Optional<ReviewInfo> latestReview(Long requestId) {
+        if (recordRepository == null) return Optional.empty();
+        return recordRepository.findFirstByRequestIdOrderByCreatedAtDescIdDesc(requestId)
+                .filter(r -> r.getReviewedAt() != null)
+                .map(r -> new ReviewInfo(r.getReviewedBy(), r.getReviewedAt(), r.getReviewDecision(), r.getReviewNote()));
+    }
+
+    /** The recorded human review of an AI triage result. {@code reviewedAt} is a UTC moment. */
+    public record ReviewInfo(Long reviewedBy, LocalDateTime reviewedAt, String decision, String note) {
     }
 
     /**

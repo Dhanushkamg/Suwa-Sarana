@@ -26,6 +26,8 @@ import java.util.Set;
 @Service
 public class RequestService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RequestService.class);
+
     private static final Set<RequestStatus> ACTIVE = EnumSet.of(RequestStatus.OPEN, RequestStatus.ESCALATING, RequestStatus.MATCHED);
     private static final Set<RequestStatus> VISIBLE_TO_DONORS = EnumSet.of(RequestStatus.OPEN, RequestStatus.ESCALATING);
 
@@ -114,7 +116,8 @@ public class RequestService {
         try {
             savedRequest = requestTriageAiService.triageRequest(savedRequest);
         } catch (Exception e) {
-            // Triage error should never block request creation
+            // a triage error must never block request creation, but it must not vanish either: class name and request id only (no PII)
+            log.error("AI triage failed for request {}: {}", savedRequest.getId(), e.getClass().getSimpleName());
         }
 
         // Immediate matching. Donors are alerted only after this transaction commits (see MatchNotificationListener).
