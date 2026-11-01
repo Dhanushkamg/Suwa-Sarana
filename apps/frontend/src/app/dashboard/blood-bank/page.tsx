@@ -4,7 +4,7 @@ import { Package, TriangleAlert } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import CampManagerDashboard from '@/components/camps/CampManagerDashboard';
 import { useI18n } from '@/lib/i18n';
-import { fetchStock, stockLevel } from '@/lib/api/inventory';
+import { fetchStock } from '@/lib/api/inventory';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ButtonLink } from '@/components/dash/ButtonLink';
 import { PageHeader } from '@/components/dash/PageHeader';
@@ -30,8 +30,8 @@ export default function BloodBankDashboardPage() {
   }
 
   const ready = stock.state.status === 'ready';
-  const rows = stock.state.status === 'ready' ? stock.state.data : [];
-  const below = rows.filter((r) => ['low', 'out'].includes(stockLevel(r))).length;
+  const lines = stock.state.status === 'ready' ? stock.state.data.lines : [];
+  const below = lines.filter((l) => l.status === 'LOW' || l.status === 'CRITICAL').length;
 
   return (
     <div>
@@ -57,14 +57,14 @@ export default function BloodBankDashboardPage() {
             <Rise delay={0.04}>
               <Stat
                 label={t('dashUi.inv.totalUnits')}
-                value={ready && rows.length ? rows.reduce((sum, r) => sum + r.units, 0) : null}
+                value={ready && lines.length ? lines.reduce((sum, l) => sum + l.units, 0) : null}
                 icon={<Package />}
                 hint={stock.state.status === 'unavailable' ? t('dashUi.inv.unavailableTitle') : undefined}
                 className="h-full"
               />
             </Rise>
             <Rise delay={0.08}>
-              <Stat label={t('dashUi.inv.belowMinimum')} value={ready && rows.length ? below : null} tone={below ? 'warning' : 'success'} icon={<TriangleAlert />} className="h-full" />
+              <Stat label={t('dashUi.inv.belowMinimum')} value={ready && lines.length ? below : null} tone={below ? 'warning' : 'success'} icon={<TriangleAlert />} className="h-full" />
             </Rise>
           </div>
         )}

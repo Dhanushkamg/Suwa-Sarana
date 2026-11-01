@@ -1,5 +1,5 @@
 import { apiMessage, unwrap } from '@/lib/auth';
-import { toDate } from '@/lib/dates';
+import { colomboDay, toDate } from '@/lib/dates';
 
 export { apiMessage, unwrap };
 
@@ -41,8 +41,6 @@ export function asDate(value: unknown): Date | null {
   return toDate(value);
 }
 
-const COLOMBO_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Colombo', year: 'numeric', month: '2-digit', day: '2-digit' });
-
 /** Date input value (YYYY-MM-DD): a plain date stays as sent, a moment becomes the Colombo calendar day. */
 export function asDateInput(value: unknown): string {
   if (typeof value === 'string') {
@@ -50,7 +48,7 @@ export function asDateInput(value: unknown): string {
     if (plain) return plain[1];
   }
   const d = toDate(value);
-  return d ? COLOMBO_DAY.format(d) : '';
+  return d ? colomboDay(d) : '';
 }
 
 export const num = (v: unknown, fallback = 0): number => {

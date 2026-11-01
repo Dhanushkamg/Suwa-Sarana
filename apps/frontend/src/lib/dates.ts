@@ -61,3 +61,21 @@ export function toTimeOfDay(value: unknown): Date | null {
 }
 
 export const TIME_FORMAT: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
+
+const COLOMBO_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Colombo', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+/** The Sri Lankan calendar day (YYYY-MM-DD) of an instant: what "today" means for expiry dates, camps and slots. */
+export function colomboDay(date: Date): string {
+  return COLOMBO_DAY.format(date);
+}
+
+/** Today in Sri Lanka as YYYY-MM-DD (not the browser's or UTC's date). */
+export function todayInColombo(now: Date = new Date()): string {
+  return colomboDay(now);
+}
+
+/** YYYY-MM-DD plus a number of days (calendar arithmetic, no time zone involved). */
+export function addDaysToDay(day: string, days: number): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}

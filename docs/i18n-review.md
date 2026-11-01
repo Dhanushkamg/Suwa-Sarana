@@ -95,3 +95,13 @@ Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-elig
 | `dashUi.reportReason.*` | Fake or misleading / Duplicate request / Spam / Abusive content / Other reason | si/ta drafts | "Spam" loan word |
 | `dashUi.triage.*` | Why this request was flagged / The score comes from fixed rules, not machine learning / Flag dismissed | si/ta drafts for the six reason codes | Tone: calm, no accusation of the requester |
 | `dashUi.admin.queue*`, `emailUnverified`, `dashUi.reasonTooShort` | Hospitals and blood banks / Patients and families | si: රෝහල් සහ රුධිර බැංකු; ta: மருத்துவமனைகள் மற்றும் இரத்த வங்கிகள் | |
+
+## FE integration: blood stock - needs native-speaker review
+
+| Key | English | Wording used (si / ta) | Why unsure |
+|---|---|---|---|
+| `dashUi.inv.status.*` | In stock / Low / Critical / Expiring soon | si: තොගයේ ඇත / අඩුයි / අවදානම් මට්ටමේ / ඉක්මනින් කල් ඉකුත් වේ; ta: இருப்பில் உள்ளது / குறைவு / அபாய நிலை / விரைவில் காலாவதியாகும் | "Critical" for stock level vs. the shortage level wording elsewhere |
+| `dashUi.inv.component.RBC` | Red cells | si: රතු රුධිර සෛල; ta: சிவப்பணுக்கள் | Replaces RED_CELLS (the server enum is RBC); use the NBTS spelling |
+| `dashUi.inv.lowLevel*`, `criticalLevel*`, `setThresholdDesc` | Low level / Critical level (at or below) | "අඩු මට්ටම / අවදානම් මට්ටම"; "குறைந்த அளவு / அபாய அளவு" | "threshold" terms |
+| `dashUi.inv.issue*`, `discard*`, `reason.*` | Issue units / Discard / Collection, Issued, Expired, Correction, Discarded | si/ta drafts | Blood-bank vocabulary ("issue" = hand out to a patient) |
+| `dashUi.inv.tickerOn/Off`, `publicSignals*` | Low and critical stock is shown on the public home page ... | si/ta drafts | Privacy wording (no donor details are shown) |
