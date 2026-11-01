@@ -148,7 +148,7 @@ jobs:
 
       # The lockfile is in pnpm 12 format; older pnpm versions cannot read it.
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 12.3.4
 
