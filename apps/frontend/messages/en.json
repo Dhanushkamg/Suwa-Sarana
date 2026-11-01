@@ -1208,7 +1208,8 @@
       "EXPIRED": "Expired",
       "NO_RESPONSE": "No response",
       "COMPLETED": "Donated",
-      "UNKNOWN": "Unknown status"
+      "UNKNOWN": "Unknown status",
+      "NO_SHOW": "Did not donate"
     },
     "campStatus": {
       "SCHEDULED": "Scheduled",
@@ -1432,7 +1433,18 @@
       "volunteers": "Volunteers ({count})",
       "searchAreaText": "Searching for donors within {km} km of {hospital}, {district}.",
       "coordsHint": "The location follows the centre of the district. Press \"Use my location\" for a more exact point.",
-      "locationFromText": "Using the location found in your description"
+      "locationFromText": "Using the location found in your description",
+      "closeReasonLegend": "Why are you closing it? (optional)",
+      "closeReason": {
+        "NO_LONGER_NEEDED": "The blood is no longer needed",
+        "FOUND_DONOR_ELSEWHERE": "I found a donor elsewhere",
+        "OTHER": "Another reason"
+      },
+      "progress": "{accepted} donors accepted. {confirmed} of {needed} units confirmed as donated.",
+      "progressShort": "{accepted} accepted, {confirmed} donated",
+      "closedOn": "Closed on {date}.",
+      "closedOnWithReason": "Closed on {date}. Reason: {reason}.",
+      "coarseLocation": "The location is shown only approximately (about 1 km)."
     },
     "reasonTooShort": "Write at least {min} characters.",
     "kpi": {
@@ -1467,7 +1479,18 @@
         "SUSPICIOUS_HOSPITAL_NAME": "The hospital name looks unusual",
         "UNVERIFIED_CRITICAL": "Critical urgency from an unverified requester"
       }
-    }
+    },
+    "matchesSummary": "{accepted} accepted, {confirmed} donations confirmed, {needed} units needed.",
+    "respondedAt": "Answered {date}",
+    "contactHidden": "The phone number is hidden once the outcome is recorded.",
+    "markDonated": "Donated",
+    "markNotDonated": "Did not donate",
+    "recordDonatedTitle": "Did {name} donate?",
+    "recordDonatedDesc": "This is saved in the donor's donation history and the donor must wait before donating again. It cannot be undone here.",
+    "recordNotDonatedTitle": "{name} did not donate?",
+    "recordNotDonatedDesc": "The donor's reliability score goes down. Only confirm this if the donor accepted and did not come.",
+    "donationRecorded": "Donation recorded.",
+    "noShowRecorded": "Saved: the donor did not donate."
   },
   "pub": {
     "authHeadline": "The nearest donor is closer than you think.",

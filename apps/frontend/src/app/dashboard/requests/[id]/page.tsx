@@ -9,13 +9,14 @@ import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { API_BASE_URL } from '@/lib/constants';
 import { apiMessage, apiStatus, asDate, asList, unwrap } from '@/lib/api/common';
-import { closeRequest, fetchRequest, fulfilRequest, isRequestLive } from '@/lib/api/requests';
+import { closeRequest, fetchRequest, fulfilRequest, isRequestLive, type CloseReason } from '@/lib/api/requests';
 import { NOTIFICATION_PATHS } from '@/lib/api/notifications';
 import { lowDataInterval, useLowData } from '@/lib/lowData';
 import { buttonClasses, Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
+import { CloseRequestDialog } from '@/components/dash/CloseRequestDialog';
 import { ConfirmDialog } from '@/components/dash/ConfirmDialog';
 import { BloodTypeTile, IconTile } from '@/components/dash/IconTile';
 import { MatchesDrawer } from '@/components/dash/MatchesDrawer';
@@ -245,11 +246,16 @@ export default function RequestLiveStatusPage() {
     }
   };
 
-  const runAction = async () => {
-    if (action === 'fulfil') await fulfilRequest(requestId);
-    else if (action === 'close') await closeRequest(requestId);
+  const runFulfil = async () => {
+    await fulfilRequest(requestId);
     await loadRequest();
-    toast.show(action === 'fulfil' ? t('dashUi.req.fulfilledToast') : t('dashUi.req.closedToast'), 'success');
+    toast.show(t('dashUi.req.fulfilledToast'), 'success');
+  };
+
+  const runClose = async (reason: CloseReason | undefined) => {
+    await closeRequest(requestId, reason);
+    await loadRequest();
+    toast.show(t('dashUi.req.closedToast'), 'success');
   };
 
   if (loading) {
@@ -304,6 +310,7 @@ export default function RequestLiveStatusPage() {
     ? circleInvite.inviteUrl || `${typeof window !== 'undefined' ? window.location.origin : ''}/circle/${circleInvite.inviteToken}`
     : '';
   const expires = asDate(requestData.expiresAt);
+  const closedAt = asDate(requestData.closedAt);
   const canClose = role !== 'ADMIN' && !circleForbidden && isRequestLive(requestData.status);
 
   const facts: { label: string; value: ReactNode }[] = [
@@ -392,6 +399,23 @@ export default function RequestLiveStatusPage() {
             ))}
           </dl>
         </Rise>
+
+        {/* How far the search has got (counters are only sent to the owner and admins) */}
+        {requestData.acceptedCount != null && requestData.confirmedDonations != null && (
+          <Rise delay={0.07}>
+            <Notice tone="info" icon={<Users />}>
+              {t('dashUi.req.progress', { accepted: requestData.acceptedCount, confirmed: requestData.confirmedDonations, needed: requestData.unitsNeeded ?? 0 })}
+            </Notice>
+          </Rise>
+        )}
+        {requestData.closedAt && closedAt && (
+          <Notice tone="info" icon={<CircleX />}>
+            {requestData.closeReason
+              ? t('dashUi.req.closedOnWithReason', { date: format.dateTime(closedAt, { dateStyle: 'medium', timeStyle: 'short' }), reason: t(`dashUi.req.closeReason.${requestData.closeReason}`) })
+              : t('dashUi.req.closedOn', { date: format.dateTime(closedAt, { dateStyle: 'medium', timeStyle: 'short' }) })}
+          </Notice>
+        )}
+        {requestData.coarseLocation && <Notice tone="info">{t('dashUi.req.coarseLocation')}</Notice>}
 
         {/* Replacement-donor private circle (owner only) */}
         {!circleForbidden && (
@@ -554,18 +578,18 @@ export default function RequestLiveStatusPage() {
         />
       )}
 
-      <MatchesDrawer requestId={matchesOpen ? requestData.id : null} hospitalName={requestData.hospitalName} onClose={() => setMatchesOpen(false)} />
+      <MatchesDrawer requestId={matchesOpen ? requestData.id : null} hospitalName={requestData.hospitalName} onClose={() => setMatchesOpen(false)} onChanged={() => void loadRequest()} />
 
       <ConfirmDialog
-        open={action !== null}
+        open={action === 'fulfil'}
         onClose={() => setAction(null)}
-        title={action === 'fulfil' ? t('dashUi.req.fulfilTitle') : t('dashUi.req.closeTitle')}
-        description={action === 'fulfil' ? t('dashUi.req.fulfilDesc') : t('dashUi.req.closeDesc')}
-        confirmLabel={action === 'fulfil' ? t('dashUi.req.markFulfilled') : t('dashUi.req.closeRequest')}
-        confirmVariant={action === 'fulfil' ? 'primary' : 'danger'}
-        onConfirm={runAction}
+        title={t('dashUi.req.fulfilTitle')}
+        description={t('dashUi.req.fulfilDesc')}
+        confirmLabel={t('dashUi.req.markFulfilled')}
+        onConfirm={runFulfil}
         errorMessage={(err) => apiMessage(err, t('common.error'))}
       />
+      <CloseRequestDialog open={action === 'close'} onClose={() => setAction(null)} onConfirm={runClose} />
     </div>
   );
 }

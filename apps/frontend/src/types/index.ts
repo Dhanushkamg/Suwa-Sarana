@@ -31,7 +31,19 @@ export interface BloodRequest {
   latitude?: number;
   longitude?: number;
   currentRadiusKm: number;
+  /** ISO instant with Z. */
+  createdAt?: string;
   expiresAt: string;
+  /** When the request was fulfilled, cancelled or expired (ISO instant); null while it is live. */
+  closedAt?: string | null;
+  /** CloseReason set by the owner: NO_LONGER_NEEDED | FOUND_DONOR_ELSEWHERE | OTHER. */
+  closeReason?: string | null;
+  /** Donors who said yes. null for everybody except the owner and admins. */
+  acceptedCount?: number | null;
+  /** Donations the owner confirmed. null for everybody except the owner and admins. */
+  confirmedDonations?: number | null;
+  /** True when latitude/longitude were rounded (about 1 km) because the viewer does not own the request. */
+  coarseLocation?: boolean;
 }
 
 export interface AuthState {

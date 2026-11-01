@@ -105,3 +105,12 @@ Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-elig
 | `dashUi.inv.lowLevel*`, `criticalLevel*`, `setThresholdDesc` | Low level / Critical level (at or below) | "අඩු මට්ටම / අවදානම් මට්ටම"; "குறைந்த அளவு / அபாய அளவு" | "threshold" terms |
 | `dashUi.inv.issue*`, `discard*`, `reason.*` | Issue units / Discard / Collection, Issued, Expired, Correction, Discarded | si/ta drafts | Blood-bank vocabulary ("issue" = hand out to a patient) |
 | `dashUi.inv.tickerOn/Off`, `publicSignals*` | Low and critical stock is shown on the public home page ... | si/ta drafts | Privacy wording (no donor details are shown) |
+
+## FE integration: request matches and closing - needs native-speaker review
+
+| Key | English | Wording used (si / ta) | Why unsure |
+|---|---|---|---|
+| `dashUi.markDonated`, `markNotDonated`, `recordDonatedDesc`, `recordNotDonatedDesc`, `matchStatus.NO_SHOW` | Donated / Did not donate / "The donor's reliability score goes down ..." | si: රුධිර දානය කළා / රුධිර දානය කළේ නැත; ta: இரத்த தானம் செய்தார் / இரத்த தானம் செய்யவில்லை | Consequences wording (waiting period, reliability score) must be gentle and exact |
+| `dashUi.matchesSummary`, `req.progress`, `req.progressShort` | "{accepted} accepted, {confirmed} donations confirmed, {needed} units needed" | si/ta drafts | Counter wording |
+| `dashUi.req.closeReason.*`, `closeReasonLegend` | The blood is no longer needed / I found a donor elsewhere / Another reason | si/ta drafts | |
+| `dashUi.req.closedOn*`, `coarseLocation` | Closed on {date}. Reason: {reason}. / The location is shown only approximately | si/ta drafts | |

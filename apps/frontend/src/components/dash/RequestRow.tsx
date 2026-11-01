@@ -2,8 +2,9 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, Clock, Droplets, MapPin } from 'lucide-react';
+import { ArrowUpRight, Clock, Droplets, MapPin, Users } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
+import { toDate } from '@/lib/dates';
 import type { BloodRequest } from '@/types';
 import { BloodTypeTile } from './IconTile';
 import { Meta } from './Meta';
@@ -25,7 +26,7 @@ interface RequestRowProps {
 /** One blood request as a list row: blood group badge, hospital, status chips, meta facts, trailing hint. */
 export function RequestRow({ req, href, cta, actions, className }: RequestRowProps) {
   const { t, format } = useI18n();
-  const expires = req.expiresAt ? new Date(req.expiresAt) : null;
+  const expires = toDate(req.expiresAt);
   return (
     <div className={cn('flex flex-col sm:flex-row sm:items-stretch', ROW_HOVER, className)}>
       <Link
@@ -45,6 +46,9 @@ export function RequestRow({ req, href, cta, actions, className }: RequestRowPro
                 {req.district} <span className="text-gray-500">({t('dash.radiusKm', { km: format.number(req.currentRadiusKm) })})</span>
               </Meta>
               {req.unitsNeeded !== undefined && <Meta icon={<Droplets />}>{t('dashUi.units', { count: req.unitsNeeded })}</Meta>}
+              {req.acceptedCount != null && req.confirmedDonations != null && (
+                <Meta icon={<Users />}>{t('dashUi.req.progressShort', { accepted: req.acceptedCount, confirmed: req.confirmedDonations })}</Meta>
+              )}
               {expires && (
                 <Meta icon={<Clock />}>
                   {t('bloodRequests.expires')} {format.dateTime(expires, { dateStyle: 'short', timeStyle: 'short' })}
