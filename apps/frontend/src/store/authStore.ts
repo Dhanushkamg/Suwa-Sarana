@@ -3,6 +3,7 @@ import { AuthState, User } from '@/types';
 import axios from 'axios';
 import { API_BASE_URL } from '@/lib/constants';
 import { AuthData, hasSessionHint, setSessionHint, toUser, unwrap } from '@/lib/auth';
+import { getActiveLocale } from '@/lib/i18n';
 
 /**
  * Authentication store — the access token lives in memory ONLY.
@@ -44,7 +45,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       initPromise = (async () => {
         try {
           if (hasSessionHint()) {
-            const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+            const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true, headers: { 'Accept-Language': getActiveLocale() } });
             const auth = unwrap<AuthData>(res.data);
             set({ accessToken: auth.accessToken, user: toUser(auth), isAuthenticated: true });
           }
@@ -67,7 +68,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         {},
         {
           withCredentials: true,
-          headers: get().accessToken ? { Authorization: `Bearer ${get().accessToken}` } : {},
+          headers: { 'Accept-Language': getActiveLocale(), ...(get().accessToken ? { Authorization: `Bearer ${get().accessToken}` } : {}) },
         }
       );
     } catch {

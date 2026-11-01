@@ -139,3 +139,7 @@ Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-elig
 ## FE integration: account area (/dashboard/account) - needs native-speaker review
 
 All `account.*` strings (about 60) and `dashUi.nav.account` are si/ta drafts. Please look at: `account.deleteWarning`, `deleteDialogDesc`, `deleteDesc` (irreversible erasure, tone must be calm and exact; the Personal Data Protection Act No. 9 of 2022 wording should come from the privacy notice), `account.consentRequired` / `consentedOn` (terms and privacy policy names must match `auth.termsLink` / `auth.privacyLink`), `account.emailUnconfirmedHelp` and `emailBannerDesc` (what stays locked until the e-mail is confirmed), `account.language` / `languageHelp` ("language for SMS and e-mail" vs the website language), `account.confirmSmsOption`.
+
+## FE integration: misc
+
+`authFlow.errors.retryInSeconds` / `retryInMinutes` are appended to 429 and lock-out messages. `common.edit` ("Edit"). The unit tests in `apps/frontend/src/lib/__tests__/apiError.test.ts` and `.../api/__tests__/notifications.test.ts` fail when a server error code or notification key has no en/si/ta text, so new backend codes show up there first.
