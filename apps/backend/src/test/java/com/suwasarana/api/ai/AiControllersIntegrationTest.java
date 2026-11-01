@@ -1,87 +1,31 @@
 package com.suwasarana.api.ai;
 
-import com.suwasarana.api.auth.AuthService;
-import com.suwasarana.api.auth.dto.AuthResponse;
-import com.suwasarana.api.auth.dto.RegisterDto;
-import com.suwasarana.api.auth.otp.OtpVerification;
-import com.suwasarana.api.auth.otp.OtpVerificationRepository;
+import com.suwasarana.api.testsupport.LifecycleIntegrationBase;
 import com.suwasarana.api.user.Role;
 import com.suwasarana.api.user.User;
-import com.suwasarana.api.user.UserRepository;
 import com.suwasarana.api.user.VerificationStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.nullValue;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** HTTP-level checks of the AI endpoints with the real Spring context (H2). */
-@SpringBootTest
-@ActiveProfiles("test")
-class AiControllersIntegrationTest {
+/** HTTP-level checks of the AI endpoints through the real security chain, services and error handler (H2). */
+class AiControllersIntegrationTest extends LifecycleIntegrationBase {
 
-    @Autowired
-    private WebApplicationContext context;
-    @Autowired
-    private AuthService authService;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private OtpVerificationRepository otpRepository;
-
-    private MockMvc mvc;
-    private String pendingToken;
-    private String verifiedToken;
+    private User pending;
+    private User verified;
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-        pendingToken = register(false);
-        verifiedToken = register(true);
-        // registering authenticates the test thread; the unauthenticated checks below need a clean context
-        org.springframework.security.core.context.SecurityContextHolder.clearContext();
-        org.springframework.security.test.context.TestSecurityContextHolder.clearContext();
-    }
-
-    private String register(boolean verified) {
-        String phone = "0779" + String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
-        OtpVerification otp = new OtpVerification();
-        otp.setPhoneNumber(phone);
-        otp.setOtpCode("123456");
-        otp.setVerified(true);
-        otp.setExpiresAt(LocalDateTime.now().plusMinutes(30));
-        otpRepository.save(otp);
-        RegisterDto dto = new RegisterDto();
-        dto.setEmail("ai_" + UUID.randomUUID() + "@test.com");
-        dto.setPhoneNumber(phone);
-        dto.setFirstName("Ai");
-        dto.setLastName("Tester");
-        dto.setPassword("password12");
-        dto.setRole(Role.REQUESTER);
-        AuthResponse auth = authService.register(dto, "127.0.0.1");
-        if (verified) {
-            User u = userRepository.findById(auth.getUserId()).orElseThrow();
-            u.setVerificationStatus(VerificationStatus.VERIFIED);
-            userRepository.save(u);
-        }
-        return auth.getAccessToken();
+        pending = user("aipending", Role.REQUESTER, VerificationStatus.PENDING);
+        verified = user("aiverified", Role.REQUESTER, VerificationStatus.VERIFIED);
     }
 
     @Test
@@ -133,30 +77,34 @@ class AiControllersIntegrationTest {
     void posterCopy() throws Exception {
         String urgent = "{\"template\":\"URGENT_REQUEST\",\"language\":\"en\",\"facts\":{\"bloodType\":\"O+\",\"units\":\"2\",\"hospital\":\"Karapitiya Teaching Hospital\",\"district\":\"Galle\",\"contactPhone\":\"0771234567\"}}";
         mvc.perform(post("/api/ai/poster-copy").contentType(MediaType.APPLICATION_JSON).content(urgent)).andExpect(status().isUnauthorized());
-        mvc.perform(post("/api/ai/poster-copy").header("Authorization", "Bearer " + pendingToken).contentType(MediaType.APPLICATION_JSON).content(urgent))
+        mvc.perform(post("/api/ai/poster-copy").with(as(pending)).contentType(MediaType.APPLICATION_JSON).content(urgent))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("poster.unverified_requester"))
-                .andExpect(jsonPath("$.success").value(false));
-        mvc.perform(post("/api/ai/poster-copy").header("Authorization", "Bearer " + verifiedToken).contentType(MediaType.APPLICATION_JSON).content(urgent))
+                .andExpect(jsonPath("$.success").value(false))
+                // the standard error envelope: code at the top level, request id and timestamp present
+                .andExpect(jsonPath("$.requestId").exists())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.message").isNotEmpty());
+        mvc.perform(post("/api/ai/poster-copy").with(as(verified)).contentType(MediaType.APPLICATION_JSON).content(urgent))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.headline").value("URGENT: O+ blood needed"))
                 .andExpect(jsonPath("$.data.usedLlm").value(false))
                 .andExpect(jsonPath("$.data.hashtags[*]", hasItem("#Galle")));
         String withPatient = urgent.replace("\"facts\":{", "\"facts\":{\"patientName\":\"Nimal\",");
-        mvc.perform(post("/api/ai/poster-copy").header("Authorization", "Bearer " + verifiedToken).contentType(MediaType.APPLICATION_JSON).content(withPatient))
+        mvc.perform(post("/api/ai/poster-copy").with(as(verified)).contentType(MediaType.APPLICATION_JSON).content(withPatient))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("poster.patient_name_not_allowed"));
-        mvc.perform(post("/api/ai/poster-copy").header("Authorization", "Bearer " + pendingToken).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/ai/poster-copy").with(as(pending)).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"template\":\"AWARENESS\",\"language\":\"si\",\"facts\":{}}"))
                 .andExpect(status().isOk());
-        mvc.perform(post("/api/ai/poster-copy").header("Authorization", "Bearer " + verifiedToken).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/ai/poster-copy").with(as(verified)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"template\":\"NOPE\",\"language\":\"en\",\"facts\":{}}")).andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("POST /api/requests/ai-draft keeps working and never invents a district")
     void aiDraft() throws Exception {
-        mvc.perform(post("/api/requests/ai-draft").header("Authorization", "Bearer " + verifiedToken).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/requests/ai-draft").with(as(verified)).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"text\":\"Need 2 units of O+ blood urgently somewhere\",\"locale\":\"en\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.patientBloodType").value("O+"))

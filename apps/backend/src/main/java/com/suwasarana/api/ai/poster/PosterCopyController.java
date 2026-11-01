@@ -13,10 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
  * Short poster copy (headline, body, caption, hashtags) for urgent requests, camps, awareness and thank-you posters.
  * Any authenticated user may use it; an URGENT_REQUEST poster additionally needs a VERIFIED requester (or an admin).
@@ -40,18 +36,10 @@ public class PosterCopyController {
                     + "when a patient/personal field is sent.")
     @PostMapping("/poster-copy")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> posterCopy(@AuthenticationPrincipal UserDetailsImpl user, @Valid @RequestBody PosterCopyRequestDto request) {
-        try {
-            PosterCopyResponseDto copy = service.generate(user == null ? null : user.getId(), request);
-            return ResponseEntity.ok(ApiResponse.success(copy, "Poster copy generated"));
-        } catch (PosterException e) {
-            Map<String, Object> body = new LinkedHashMap<>();
-            body.put("success", false);
-            body.put("message", e.getMessage());
-            body.put("code", e.getCode());
-            body.put("data", Map.of("code", e.getCode()));
-            body.put("timestamp", LocalDateTime.now().toString());
-            return ResponseEntity.status(e.getStatus()).body(body);
-        }
+    public ResponseEntity<ApiResponse<PosterCopyResponseDto>> posterCopy(@AuthenticationPrincipal UserDetailsImpl user,
+                                                                         @Valid @RequestBody PosterCopyRequestDto request) {
+        // refusals are PosterException (an ApiException): the global handler renders the standard error envelope
+        PosterCopyResponseDto copy = service.generate(user == null ? null : user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success(copy, "Poster copy generated"));
     }
 }
