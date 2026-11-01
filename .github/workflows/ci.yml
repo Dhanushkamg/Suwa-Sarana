@@ -65,7 +65,7 @@ jobs:
 
       # Build only (no push): proves the multi-stage Dockerfile works. Deploy workflows push to ECR.
       - name: Build image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./apps/backend
           push: false
