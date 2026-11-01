@@ -72,3 +72,16 @@ Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-elig
 | Intake messages | Draft ready. Please check every highlighted field ... | si/ta in `kb/messages.json` keys `intakeOk`, `intakeNone`, `intakeEmpty` | "highlighted field" wording |
 | Safety word lists | abuse / emergency / injection patterns | `kb/safety-patterns.json` (Sinhala, Tamil and romanised seed lists) | Seed lists written by an AI; a native speaker must extend them with real spoken/written variants |
 | Singlish / Tanglish lexicon | 900+ romanised forms | `kb/translit-lexicon.json` | Spelling variants and the si/ta marker words used to detect Singlish vs Tanglish need native review |
+
+## FE integration (server error codes, account recovery, invitation) - needs native-speaker review
+
+| Key | English | Wording used (si / ta) | Why unsure |
+|---|---|---|---|
+| `authFlow.errors.<code>` (about 115 server codes, see `docs/API-CONTRACT.md` section 12) | e.g. "The email or password is incorrect." | plain formal register, re-using the glossary terms (මුරපදය / கடவுச்சொல், සත්‍යාපන කේතය / சரிபார்ப்புக் குறியீடு) | Whole set is AI-drafted; check tone of the security messages (`auth.account.locked`, `auth.account.suspended`, `auth.register.duplicate`) |
+| `authFlow.errors.auth.register.duplicate` | An account with these details already exists. Try signing in instead. | si: ... දැනටමත් ඇත. ඒ වෙනුවට පිවිසීමට උත්සාහ කරන්න.; ta: ... ஏற்கெனவே உள்ளது. அதற்குப் பதிலாக உள்நுழைய முயற்சிக்கவும். | Deliberately one text for "email taken" and "phone taken" (no account enumeration) |
+| `authFlow.errors.retryInSeconds` / `retryInMinutes` | Try again in 45 seconds / 3 minutes. | si: තත්පර {seconds}කින් නැවත උත්සාහ කරන්න.; ta: {seconds} வினாடிகளுக்குப் பிறகு மீண்டும் முயற்சிக்கவும். | Sinhala/Tamil use one plural form here |
+| `authFlow.errors.slot.*`, `request.*`, `inventory.*` | "This time slot is fully booked." ... | "වේලාව" for slot (as in the backend SMS texts), "අලුත් අඩු/අවදානම් මට්ටම" for low / critical stock level | "slot" and "stock level" terms are not in the glossary |
+| `authFlow.errors.poster.*` | "Posters must not contain a patient's name ..." | si/ta drafts | Policy wording |
+| `authFlow.googleLink*` | Link your Google account / An account for {email} already exists ... | si: ඔබේ Google ගිණුම සම්බන්ධ කරන්න; ta: உங்கள் Google கணக்கை இணைக்கவும் | "link accounts" wording |
+| `authFlow.verifyEmailIdle`, `resendVerificationHelp`, `verificationSent`, `signInToResend`, `emailAlreadyVerified` | Sign in and we can send a new one ... | si/ta drafts | Reworded because resending a verification link now needs a signed-in user |
+| `authFlow.invite.*`, `pub.meta.acceptInvite`, `pub.eyebrowInvite` | Accept your invitation ... administrator | si: ඔබේ ආරාධනය පිළිගන්න; ta: உங்கள் அழைப்பை ஏற்கவும் | "administrator" = පරිපාලක / நிர்வாகி per glossary |

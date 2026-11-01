@@ -3,31 +3,37 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, Loader2, Mail } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Button, buttonClasses } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/pub/Alert';
 import { AuthHeading } from '@/components/pub/AuthHeading';
 import { parseApiError } from '@/components/pub/apiErrors';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
+import { useAuthStore } from '@/store/authStore';
 
 type State = 'idle' | 'verifying' | 'verified' | 'failed';
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Landing page of the emailed verification link: /verify-email?token=... Also lets the user ask for a fresh link. */
+/**
+ * Landing page of the emailed verification link: /verify-email?token=...
+ * POST /api/auth/verify-email {token} is public. Asking for a NEW link (POST /api/auth/resend-verification, no body) needs a
+ * signed-in user, so the resend button is only shown when signed in; otherwise the page says "sign in to get a new link".
+ */
 function VerifyEmailBody() {
   const { t } = useI18n();
   const token = useSearchParams().get('token') ?? '';
+  const { initialize, isInitialized, isAuthenticated, user, updateUser } = useAuthStore();
   const [state, setState] = useState<State>(token ? 'verifying' : 'idle');
   const [message, setMessage] = useState('');
   const started = useRef(false);
 
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [resendError, setResendError] = useState('');
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   // A token is single use: guard against React StrictMode running the effect twice
   useEffect(() => {
@@ -35,29 +41,34 @@ function VerifyEmailBody() {
     started.current = true;
     apiClient
       .post('/auth/verify-email', { token })
-      .then(() => setState('verified'))
+      .then(() => {
+        setState('verified');
+        updateUser({ emailVerified: true });
+      })
       .catch((err: unknown) => {
-        setMessage(parseApiError(err, t, { fallback: t('authFlow.errors.TOKEN_INVALID') }).message);
+        setMessage(parseApiError(err, t, { fallback: t('authFlow.errors.auth.emailVerification.invalid') }).message);
         setState('failed');
       });
-  }, [token, t]);
+  }, [token, t, updateUser]);
 
-  const resend = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const resend = async () => {
     setResendError('');
-    setEmailError('');
-    if (!email.trim()) return setEmailError(t('authFlow.emailRequired'));
-    if (!EMAIL_RE.test(email.trim())) return setEmailError(t('authFlow.emailInvalid'));
     setSending(true);
     try {
-      await apiClient.post('/auth/resend-verification', { email: email.trim() });
+      await apiClient.post('/auth/resend-verification');
       setSent(true);
     } catch (err: unknown) {
-      setResendError(parseApiError(err, t, { fallback: t('authFlow.linkSendFailed') }).message);
+      const parsed = parseApiError(err, t, { fallback: t('authFlow.linkSendFailed') });
+      if (parsed.code === 'auth.emailVerification.alreadyVerified') updateUser({ emailVerified: true });
+      setResendError(parsed.message);
     } finally {
       setSending(false);
     }
   };
+
+  const alreadyVerified = isAuthenticated && user?.emailVerified === true;
+  const canResend = state !== 'verified' && isInitialized && isAuthenticated && !alreadyVerified;
+  const mustSignIn = state !== 'verified' && isInitialized && !isAuthenticated;
 
   return (
     <div>
@@ -80,8 +91,8 @@ function VerifyEmailBody() {
                 <p className="mt-2 text-sm leading-relaxed text-foreground">{t('authFlow.emailVerifiedDesc')}</p>
               </div>
             </div>
-            <Link href="/login" className={buttonClasses('primary', 'lg', 'w-full')}>
-              {t('auth.signIn')}
+            <Link href={isAuthenticated ? '/dashboard' : '/login'} className={buttonClasses('primary', 'lg', 'w-full')}>
+              {isAuthenticated ? t('dash.overview') : t('auth.signIn')}
             </Link>
           </div>
         )}
@@ -90,36 +101,29 @@ function VerifyEmailBody() {
       </div>
 
       {(state === 'failed' || state === 'idle') && (
-        <form onSubmit={resend} noValidate className="mt-6 space-y-5">
-          <p className="text-sm leading-relaxed text-gray-400">{t('authFlow.resendVerificationHelp')}</p>
-          {resendError && <Alert>{resendError}</Alert>}
-          {sent ? (
-            <Alert tone="success">{t('authFlow.verificationSent')}</Alert>
-          ) : (
+        <div className="mt-6 space-y-5">
+          {alreadyVerified && <Alert tone="success">{t('authFlow.emailAlreadyVerified')}</Alert>}
+
+          {canResend && (
             <>
-              <Input
-                id="verify-email-address"
-                type="email"
-                inputMode="email"
-                label={t('auth.email')}
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setEmailError('');
-                }}
-                error={emailError}
-                icon={<Mail className="h-4 w-4" aria-hidden="true" />}
-                autoComplete="email"
-                autoCapitalize="none"
-                spellCheck={false}
-              />
-              <Button type="submit" size="lg" className="w-full" loading={sending}>
-                {t('authFlow.resendVerification')}
-              </Button>
+              <p className="text-sm leading-relaxed text-gray-400">{t('authFlow.resendVerificationHelp', { email: user?.email ?? '' })}</p>
+              {resendError && <Alert>{resendError}</Alert>}
+              {sent ? (
+                <Alert tone="success">{t('authFlow.verificationSent')}</Alert>
+              ) : (
+                <Button type="button" size="lg" className="w-full" loading={sending} onClick={resend}>
+                  {t('authFlow.resendVerification')}
+                </Button>
+              )}
             </>
           )}
-        </form>
+
+          {mustSignIn && (
+            <Link href="/login" className={buttonClasses('secondary', 'lg', 'w-full')}>
+              {t('authFlow.signInToResend')}
+            </Link>
+          )}
+        </div>
       )}
 
       <p className="mt-10 border-t border-line pt-6 text-center text-sm">

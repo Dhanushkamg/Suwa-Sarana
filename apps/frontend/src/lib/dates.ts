@@ -1,8 +1,11 @@
 /**
- * Tolerant date/time parsing for API values. The backend sends java.time values that may arrive as
- * ISO strings ("2026-10-14", "2026-10-14T09:30:00", "...Z"), as arrays ([2026,10,14] / [2026,10,14,9,30]) or as
- * epoch seconds. Values without a zone are Sri Lanka wall-clock time (UTC+05:30); callers format with
- * useI18n().format, which renders in Asia/Colombo, so the wall-clock time round-trips exactly.
+ * Tolerant date/time parsing for API values (docs/API-CONTRACT.md 0.2). The backend sends:
+ *  - moments (createdAt, expiresAt, closedAt, bookedAt ...) as ISO instants with a trailing "Z" (or an offset such as
+ *    "+05:30"): the exact instant, parsed as is and shown in Asia/Colombo by useI18n().format;
+ *  - wall-clock values read in Sri Lanka (slot/camp startTime and endTime, "2026-12-05T10:00:00", "09:00:00", "2026-12-05")
+ *    without a zone: these are Colombo time and must NOT be shifted by the browser's time zone. They are anchored at
+ *    UTC+05:30 here, and because the formatter renders in Asia/Colombo the wall-clock time round-trips exactly;
+ *  - legacy shapes: arrays ([2026,10,14,9,30]) and epoch seconds/milliseconds.
  */
 const COLOMBO_OFFSET_MIN = 330;
 

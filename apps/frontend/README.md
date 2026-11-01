@@ -20,6 +20,19 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Talking to the backend
+
+The API base URL comes from `NEXT_PUBLIC_API_URL` (it includes `/api`). Copy `.env.example` to `.env.local`.
+The committed example points at `http://localhost:8081/api`: on the development machine the Spring Boot backend runs on
+port **8081** because Apache owns 8080 (`docs/LOCAL-RUN.md`, `apps/backend/run-integ.sh`). If your backend uses its default
+port, set `NEXT_PUBLIC_API_URL=http://localhost:8080/api`. No port is hard-coded in the source: `src/lib/constants.ts`
+reads the variable (its fallback is only the backend's default port) and `next.config.ts` derives the CSP `connect-src` from it.
+
+The backend must list the frontend origin in `CORS_ALLOWED_ORIGIN` (`http://localhost:3000` in dev). The contract is in
+`docs/API-CONTRACT.md`; error codes are translated through `authFlow.errors.<code>` (see `src/lib/apiError.ts`).
+
+Checks: `npx tsc --noEmit`, `npx eslint src`, `npx vitest run`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

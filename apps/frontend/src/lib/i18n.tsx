@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { createTranslator, createFormatter } from 'use-intl/core';
+import { toDate } from '@/lib/dates';
 import en from '../../messages/en.json';
 import si from '../../messages/si.json';
 import ta from '../../messages/ta.json';
@@ -33,6 +34,38 @@ interface I18nContextValue {
     date: (value: Date | string | number, options?: Intl.DateTimeFormatOptions) => string;
     dateTime: (value: Date | string | number, options?: Intl.DateTimeFormatOptions) => string;
   };
+}
+
+/** The language the UI is showing right now; read by non-React code (API client, error messages). */
+let activeLocale: Locale | null = null;
+
+/** Saved choice (localStorage), read once for code that runs before the provider's effect (first API calls). */
+function readSavedLocale(): Locale {
+  try {
+    const saved = typeof localStorage === 'undefined' ? null : localStorage.getItem(LOCALE_KEY);
+    return isLocale(saved) ? saved : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+export function getActiveLocale(): Locale {
+  return (activeLocale ??= readSavedLocale());
+}
+
+const localeListeners = new Set<(locale: Locale) => void>();
+
+/** Called when the person picks a language in the UI (not when the saved one is restored on load). */
+export function onUserLocaleChange(listener: (locale: Locale) => void): () => void {
+  localeListeners.add(listener);
+  return () => {
+    localeListeners.delete(listener);
+  };
+}
+
+/** Translate in the language currently shown (for code that has no access to the React context). */
+export function translateCurrent(key: string, values?: Values): string {
+  return translateIn(getActiveLocale(), key, values);
 }
 
 const identity = (key: string) => key;
@@ -78,10 +111,18 @@ export function formatterIn(locale: Locale): I18nContextValue['format'] {
   const f = createFormatter({ locale: INTL_LOCALE[locale], timeZone: 'Asia/Colombo' });
   return {
     number: (value, options) => f.number(value, options as Parameters<typeof f.number>[1]),
-    date: (value, options) => f.dateTime(new Date(value), (options ?? { dateStyle: 'medium' }) as Parameters<typeof f.dateTime>[1]),
+    date: (value, options) => f.dateTime(asInstant(value), (options ?? { dateStyle: 'medium' }) as Parameters<typeof f.dateTime>[1]),
     dateTime: (value, options) =>
-      f.dateTime(new Date(value), (options ?? { dateStyle: 'medium', timeStyle: 'short' }) as Parameters<typeof f.dateTime>[1]),
+      f.dateTime(asInstant(value), (options ?? { dateStyle: 'medium', timeStyle: 'short' }) as Parameters<typeof f.dateTime>[1]),
   };
+}
+
+/**
+ * Strings from the API: "...Z" instants are exact; zone-less values are Colombo wall-clock (see lib/dates.ts).
+ * An unparsable value renders as "Invalid Date" for Intl, so fall back to the epoch only after toDate failed.
+ */
+function asInstant(value: Date | string | number): Date {
+  return toDate(value) ?? new Date(value);
 }
 
 function isLocale(value: unknown): value is Locale {
@@ -97,6 +138,10 @@ export function I18nProvider({
 }) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
+  useEffect(() => {
+    activeLocale = locale;
+  }, [locale]);
+
   // Restore the saved language after hydration
   useEffect(() => {
     try {
@@ -104,6 +149,7 @@ export function I18nProvider({
       if (isLocale(saved)) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setLocaleState(saved);
+        activeLocale = saved;
         document.documentElement.lang = saved;
       }
     } catch {
@@ -112,7 +158,9 @@ export function I18nProvider({
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
+    activeLocale = next;
     setLocaleState(next);
+    localeListeners.forEach((l) => l(next));
     document.documentElement.lang = next;
     try {
       localStorage.setItem(LOCALE_KEY, next);
@@ -139,9 +187,9 @@ export function I18nProvider({
     return {
       number: (value: number, options?: Intl.NumberFormatOptions) => f.number(value, options as Parameters<typeof f.number>[1]),
       date: (value: Date | string | number, options?: Intl.DateTimeFormatOptions) =>
-        f.dateTime(new Date(value), (options ?? { dateStyle: 'medium' }) as Parameters<typeof f.dateTime>[1]),
+        f.dateTime(asInstant(value), (options ?? { dateStyle: 'medium' }) as Parameters<typeof f.dateTime>[1]),
       dateTime: (value: Date | string | number, options?: Intl.DateTimeFormatOptions) =>
-        f.dateTime(new Date(value), (options ?? { dateStyle: 'medium', timeStyle: 'short' }) as Parameters<typeof f.dateTime>[1]),
+        f.dateTime(asInstant(value), (options ?? { dateStyle: 'medium', timeStyle: 'short' }) as Parameters<typeof f.dateTime>[1]),
     };
   }, [locale]);
 

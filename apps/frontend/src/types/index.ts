@@ -4,6 +4,12 @@ export interface User {
   phoneNumber: string;
   role: 'DONOR' | 'REQUESTER' | 'HOSPITAL_REQUESTER' | 'BLOOD_BANK_REQUESTER' | 'ADMIN';
   verificationStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  firstName?: string;
+  lastName?: string;
+  /** False until the e-mail link is opened; institutions cannot publish before that (403 email.verificationRequired). */
+  emailVerified?: boolean;
+  /** 'en' | 'si' | 'ta': the language the server uses for SMS and e-mail. */
+  preferredLanguage?: string;
 }
 
 export interface DonorProfile {
@@ -38,6 +44,8 @@ export interface AuthState {
   login: (token: string, user: User) => void;
   logout: () => Promise<void>;
   setAccessToken: (token: string) => void;
+  /** Merge changed profile fields (name, language, e-mail verified ...) into the signed-in user. */
+  updateUser: (patch: Partial<User>) => void;
 }
 
 export interface DonationSlot {

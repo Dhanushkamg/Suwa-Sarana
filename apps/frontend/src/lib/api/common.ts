@@ -1,4 +1,5 @@
 import { apiMessage, unwrap } from '@/lib/auth';
+import { toDate } from '@/lib/dates';
 
 export { apiMessage, unwrap };
 
@@ -33,26 +34,23 @@ export function asList<T>(body: unknown): T[] {
 }
 
 /**
- * Dates arrive as ISO strings, epoch numbers, or (if the server's Jackson config writes timestamps)
- * arrays like [2026, 3, 14, 9, 30]. Returns null for anything unusable.
+ * A Date from any shape the API sends (see lib/dates.ts): instants with Z, zone-less Colombo wall-clock strings,
+ * arrays, epoch numbers. Returns null for anything unusable.
  */
 export function asDate(value: unknown): Date | null {
-  if (value == null || value === '') return null;
-  if (Array.isArray(value) && value.length >= 3) {
-    const [y, mo, d, h = 0, mi = 0, s = 0] = value.map(Number);
-    const date = new Date(y, mo - 1, d, h, mi, s);
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-  const date = new Date(value as string | number);
-  return Number.isNaN(date.getTime()) ? null : date;
+  return toDate(value);
 }
 
-/** Date input value (YYYY-MM-DD) from any of the shapes above. */
+const COLOMBO_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Colombo', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+/** Date input value (YYYY-MM-DD): a plain date stays as sent, a moment becomes the Colombo calendar day. */
 export function asDateInput(value: unknown): string {
-  const d = asDate(value);
-  if (!d) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  if (typeof value === 'string') {
+    const plain = /^(\d{4}-\d{2}-\d{2})(?:[T ][\d:.]*)?$/.exec(value); // no zone: already a Colombo calendar date
+    if (plain) return plain[1];
+  }
+  const d = toDate(value);
+  return d ? COLOMBO_DAY.format(d) : '';
 }
 
 export const num = (v: unknown, fallback = 0): number => {

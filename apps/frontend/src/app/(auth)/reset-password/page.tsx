@@ -14,7 +14,7 @@ import apiClient from '@/lib/apiClient';
 
 const MIN_PASSWORD = 10;
 
-/** Landing page of the emailed reset link: /reset-password?token=... (single-use token, sent to the API in the body, never logged in the URL again). */
+/** Landing page of the emailed reset link: /reset-password?token=... (single-use token, sent to POST /api/auth/reset-password/token in the body; the phone-code route keeps POST /api/auth/reset-password). */
 function ResetPasswordForm() {
   const { t } = useI18n();
   const token = useSearchParams().get('token') ?? '';
@@ -47,7 +47,7 @@ function ResetPasswordForm() {
 
     setLoading(true);
     try {
-      await apiClient.post('/auth/reset-password', { token, newPassword: password });
+      await apiClient.post('/auth/reset-password/token', { token, newPassword: password });
       setDone(true);
     } catch (err: unknown) {
       const parsed = parseApiError(err, t, { fallback: t('common.error'), fieldAliases: { newPassword: 'password' } });
@@ -80,7 +80,7 @@ function ResetPasswordForm() {
         </div>
       ) : !token ? (
         <>
-          <Alert>{t('authFlow.errors.TOKEN_INVALID')}</Alert>
+          <Alert>{t('authFlow.errors.auth.reset.tokenInvalid')}</Alert>
           <p className="mt-6 text-center text-sm">
             <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-primary-text underline underline-offset-4">
               {t('authFlow.requestNewLink')}

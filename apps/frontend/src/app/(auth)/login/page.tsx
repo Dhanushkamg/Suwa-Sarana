@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/Button';
@@ -16,17 +16,13 @@ import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { AuthData, homeForRole, toUser, unwrap } from '@/lib/auth';
-import { GOOGLE_TOKEN_KEY } from './googleToken';
-
-interface GoogleVerifyResponse {
-  requiresRegistration?: boolean;
-  authResponse?: AuthData;
-}
+import { GOOGLE_LINK_EMAIL_KEY, GOOGLE_LINK_TOKEN_KEY, GOOGLE_TOKEN_KEY, type GoogleVerifyResult } from './googleToken';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
   const { login, initialize, isAuthenticated, user } = useAuthStore();
   const formRef = useRef<HTMLFormElement>(null);
@@ -37,6 +33,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  // A Google account whose e-mail already has a password account: ask for that password once to link them
+  const [linking, setLinking] = useState<{ idToken: string; email: string } | null>(null);
   // Focus the first invalid field after the errors have rendered
   const [focusTick, setFocusTick] = useState(0);
 
@@ -44,6 +42,17 @@ export default function LoginPage() {
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // The register page can hand over a Google token that needs linking (?google=link)
+  useEffect(() => {
+    if (searchParams.get('google') !== 'link') return;
+    try {
+      const idToken = sessionStorage.getItem(GOOGLE_LINK_TOKEN_KEY);
+      if (idToken) setLinking({ idToken, email: sessionStorage.getItem(GOOGLE_LINK_EMAIL_KEY) ?? '' });
+    } catch {
+      // sessionStorage unavailable: the person simply uses the Google button again
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isAuthenticated && user) router.replace(homeForRole(user.role));
@@ -76,12 +85,12 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const res = await apiClient.post('/auth/login', { username: email.trim(), email: email.trim(), password });
+      const res = await apiClient.post('/auth/login', { username: email.trim(), password });
       handleAuthSuccess(unwrap<AuthData>(res.data));
     } catch (err: unknown) {
       const parsed = parseApiError(err, t, {
         fallback: t('common.error'),
-        byStatus: { 401: 'INVALID_CREDENTIALS' },
+        byStatus: { 401: 'auth.credentials.invalid' },
         fieldAliases: { username: 'email' },
       });
       setError(parsed.message);
@@ -97,8 +106,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await apiClient.post('/auth/google/verify', { idToken });
-      const data = unwrap<GoogleVerifyResponse>(res.data);
-      if (data.requiresRegistration) {
+      const data = unwrap<GoogleVerifyResult>(res.data);
+      if (data.requiresLinking) {
+        setLinking({ idToken, email: data.email ?? '' });
+        setPassword('');
+      } else if (data.requiresRegistration) {
         // New Google user: the register page collects the rest of the profile and verifies the phone.
         // The token goes through sessionStorage rather than the URL so it never lands in history or logs.
         sessionStorage.setItem(GOOGLE_TOKEN_KEY, idToken);
@@ -112,6 +124,71 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const handleLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linking) return;
+    setError('');
+    if (!password) {
+      setFieldErrors({ password: t('authFlow.passwordRequired') });
+      setFocusTick((n) => n + 1);
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await apiClient.post('/auth/google/link', { idToken: linking.idToken, password });
+      try {
+        sessionStorage.removeItem(GOOGLE_LINK_TOKEN_KEY);
+        sessionStorage.removeItem(GOOGLE_LINK_EMAIL_KEY);
+      } catch {
+        // ignore
+      }
+      handleAuthSuccess(unwrap<AuthData>(res.data));
+    } catch (err: unknown) {
+      const parsed = parseApiError(err, t, { fallback: t('authGoogle.googleAuthFailed'), byStatus: { 401: 'auth.credentials.invalid' } });
+      setError(parsed.message);
+      if (parsed.fields.password) {
+        setFieldErrors({ password: parsed.fields.password });
+        setFocusTick((n) => n + 1);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (linking) {
+    return (
+      <div>
+        <AuthHeading eyebrow={t('pub.eyebrowSignIn')} title={t('authFlow.googleLinkTitle')} subtitle={t('authFlow.googleLinkDesc', { email: linking.email })} />
+        {error && <Alert className="mb-6">{error}</Alert>}
+        <form ref={formRef} onSubmit={handleLink} noValidate className="space-y-5">
+          <PasswordField
+            id="link-password"
+            name="password"
+            label={t('auth.password')}
+            visible={showPassword}
+            onVisibleChange={setShowPassword}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (fieldErrors.password) setFieldErrors((f) => ({ ...f, password: undefined }));
+            }}
+            error={fieldErrors.password}
+            placeholder="••••••••"
+            autoComplete="current-password"
+          />
+          <div className="space-y-2 pt-3">
+            <Button type="submit" size="lg" className="w-full" loading={loading}>
+              {t('authFlow.googleLinkButton')}
+            </Button>
+            <Button type="button" variant="ghost" size="lg" className="w-full" onClick={() => { setLinking(null); setPassword(''); setError(''); }}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -191,5 +268,14 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  const { t } = useI18n();
+  return (
+    <Suspense fallback={<div role="status" className="text-sm text-gray-400">{t('a11y.loading')}</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

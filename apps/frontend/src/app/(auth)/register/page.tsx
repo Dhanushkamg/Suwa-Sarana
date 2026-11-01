@@ -22,12 +22,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { AuthData, homeForRole, isValidPhone, normalizePhone, toUser, unwrap } from '@/lib/auth';
-import { GOOGLE_TOKEN_KEY } from '../login/googleToken';
-
-interface GoogleVerifyResponse {
-  requiresRegistration?: boolean;
-  authResponse?: AuthData;
-}
+import { GOOGLE_LINK_EMAIL_KEY, GOOGLE_LINK_TOKEN_KEY, GOOGLE_TOKEN_KEY, type GoogleVerifyResult } from '../login/googleToken';
 
 const RESEND_SECONDS = 60;
 const MIN_PASSWORD = 10;
@@ -50,7 +45,7 @@ type Form = {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const reduce = useReducedMotion();
   const login = useAuthStore((s) => s.login);
 
@@ -187,6 +182,8 @@ function RegisterForm() {
         role: form.role,
         otpCode: form.otpCode.trim(),
         acceptTerms: true,
+        // The server answers SMS and e-mail in this language (changeable later under Account)
+        preferredLanguage: locale,
       };
       const res = isGoogle
         ? await apiClient.post('/auth/google/register', { ...common, idToken: googleToken })
@@ -224,8 +221,13 @@ function RegisterForm() {
     setLoading(true);
     try {
       const res = await apiClient.post('/auth/google/verify', { idToken });
-      const data = unwrap<GoogleVerifyResponse>(res.data);
-      if (data.requiresRegistration) {
+      const data = unwrap<GoogleVerifyResult>(res.data);
+      if (data.requiresLinking) {
+        // An account with this e-mail already exists: link it on the sign-in page (needs that account's password)
+        sessionStorage.setItem(GOOGLE_LINK_TOKEN_KEY, idToken);
+        sessionStorage.setItem(GOOGLE_LINK_EMAIL_KEY, data.email ?? '');
+        router.push('/login?google=link');
+      } else if (data.requiresRegistration) {
         setGoogleToken(idToken);
         setStep('info');
       } else if (data.authResponse) {

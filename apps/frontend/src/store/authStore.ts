@@ -31,6 +31,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     set({ accessToken: token });
   },
 
+  updateUser: (patch: Partial<User>) => {
+    const current = get().user;
+    if (current) set({ user: { ...current, ...patch } });
+  },
+
   // Safe to call from many components / twice in React StrictMode: only one refresh request is made
   // (refresh tokens rotate, so a second parallel call would fail and sign the user out).
   initialize: () => {

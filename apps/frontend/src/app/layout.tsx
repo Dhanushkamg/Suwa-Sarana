@@ -15,6 +15,7 @@ import { SITE_URL } from '@/lib/constants';
 import { ThemeProvider, THEME_INIT_SCRIPT } from '@/components/theme/ThemeProvider';
 import { SkipLink } from '@/components/ui/SkipLink';
 import { ToastProvider } from '@/components/ui/Toast';
+import { LanguageSync } from '@/components/LanguageSync';
 import './globals.css';
 
 // Latin: Geist for UI, Instrument Serif for editorial headings, Geist Mono for small captions.
@@ -69,6 +70,7 @@ export default function RootLayout({
           <GoogleAuthProvider>
             <I18nProvider defaultLocale="en">
               <ToastProvider>
+                <LanguageSync />
                 <SkipLink />
                 {children}
                 <DonorFaqChatbot />

@@ -1,4 +1,6 @@
 import type { User } from '@/types';
+import { apiErrorText } from '@/lib/apiError';
+import { translateCurrent } from '@/lib/i18n';
 
 /** Shape of the backend's AuthResponse (inside the ApiResponse envelope). */
 export interface AuthData {
@@ -8,6 +10,10 @@ export interface AuthData {
   role: string;
   accessToken: string;
   verificationStatus?: User['verificationStatus'];
+  firstName?: string;
+  lastName?: string;
+  emailVerified?: boolean;
+  preferredLanguage?: string;
 }
 
 export function toUser(auth: AuthData): User {
@@ -17,6 +23,10 @@ export function toUser(auth: AuthData): User {
     phoneNumber: auth.phoneNumber || '',
     role: auth.role as User['role'],
     verificationStatus: auth.verificationStatus,
+    firstName: auth.firstName ?? undefined,
+    lastName: auth.lastName ?? undefined,
+    emailVerified: auth.emailVerified,
+    preferredLanguage: auth.preferredLanguage ?? undefined,
   };
 }
 
@@ -42,10 +52,12 @@ export function unwrap<T>(body: unknown): T {
   return (wrapped && 'data' in wrapped && wrapped.data !== undefined ? wrapped.data : body) as T;
 }
 
-/** The user-facing message from a failed API call, or the fallback. */
+/**
+ * The user-facing message from a failed API call: the server's error `code` translated into the language on screen,
+ * else the server's English message, else `fallback`. 429 / lock-out answers get the wait time appended.
+ */
 export function apiMessage(err: unknown, fallback: string): string {
-  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
-  return typeof message === 'string' && message.trim() ? message : fallback;
+  return apiErrorText(err, translateCurrent, fallback);
 }
 
 /** Sri Lankan numbers are accepted as 07XXXXXXXX or +947XXXXXXXX; the API wants the +94 form. */

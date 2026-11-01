@@ -671,13 +671,13 @@
     "newPasswordSubtitle": "Pick a password you haven't used anywhere else.",
     "requestNewLink": "Request a new link",
     "verifyEmailTitle": "Verify your email",
-    "verifyEmailIdle": "Open the link in the email we sent you. Didn't get it? We can send another.",
+    "verifyEmailIdle": "Open the link in the email we sent you. Link missing or expired? Sign in and we can send a new one.",
     "verifying": "Verifying your email…",
     "emailVerified": "Email verified",
     "emailVerifiedDesc": "Your email address is confirmed. You can sign in now.",
     "resendVerification": "Send a new link",
-    "resendVerificationHelp": "Link expired or missing? Enter your email and we'll send a new one.",
-    "verificationSent": "If that address still needs verifying, a new link is on its way.",
+    "resendVerificationHelp": "We will email a new link to {email}.",
+    "verificationSent": "A new link is on its way to your email. It can take a minute to arrive.",
     "errors": {
       "INVALID_CREDENTIALS": "The email or password is incorrect. Please check and try again.",
       "ACCOUNT_LOCKED": "This account is temporarily locked after too many failed attempts. Please try again in a few minutes.",
@@ -694,7 +694,245 @@
       "TOKEN_EXPIRED": "This link has expired. Request a new one.",
       "WEAK_PASSWORD": "This password is too weak. Use at least 10 characters.",
       "NETWORK": "We couldn't reach the server. Check your connection and try again.",
-      "SERVER_ERROR": "Something went wrong on our side. Please try again in a few minutes."
+      "SERVER_ERROR": "Something went wrong on our side. Please try again in a few minutes.",
+      "validation": {
+        "failed": "Please correct the highlighted fields."
+      },
+      "request": {
+        "malformed": "The request could not be read. Please check the details and try again.",
+        "requester_not_verified": "Only verified requesters can create critical requests. Choose a lower urgency or ask an administrator to verify your account.",
+        "not_found": "This request was not found.",
+        "not_owned": "This request belongs to someone else.",
+        "not_active": "This request is no longer active.",
+        "already_closed": "This request is already closed.",
+        "duplicate": "You already have an active request for this blood type at this hospital.",
+        "limit_reached": "You have reached the limit of 3 active requests. Close one to create another.",
+        "report_already_filed": "You have already reported this request.",
+        "cannot_report_own": "You cannot report your own request."
+      },
+      "auth": {
+        "unauthorized": "Please sign in to continue.",
+        "invalid_credentials": "The sign-in details are not valid.",
+        "forbidden": "Your account is not allowed to do this.",
+        "email": {
+          "required": "Enter your email address.",
+          "invalid": "Enter a valid email address."
+        },
+        "phone": {
+          "required": "Enter your phone number.",
+          "invalid": "Enter a valid Sri Lankan mobile number.",
+          "inUse": "This phone number is already in use.",
+          "notVerified": "Verify this phone number with a code first."
+        },
+        "password": {
+          "required": "Enter your password.",
+          "tooShort": "The password must be at least 10 characters.",
+          "tooLong": "The password is too long (at most 128 characters).",
+          "common": "This password is too common. Choose a different one.",
+          "sameAsIdentifier": "The password must not contain your email address or phone number.",
+          "wrong": "The current password is incorrect."
+        },
+        "firstName": {
+          "required": "Enter your first name."
+        },
+        "lastName": {
+          "required": "Enter your last name."
+        },
+        "name": {
+          "tooLong": "The name is too long (at most 100 characters)."
+        },
+        "role": {
+          "required": "Choose a role.",
+          "notAllowed": "This role cannot be chosen when registering."
+        },
+        "nic": {
+          "invalid": "Enter a valid NIC number.",
+          "inUse": "This NIC number is already registered."
+        },
+        "consent": {
+          "required": "You must accept the Terms of Service and Privacy Policy to continue."
+        },
+        "otp": {
+          "required": "Enter the verification code.",
+          "invalid": "The verification code is incorrect or has expired. Request a new one if needed.",
+          "cooldown": "Please wait a little before asking for another code."
+        },
+        "token": {
+          "required": "The link is incomplete. Open the link from your email again."
+        },
+        "register": {
+          "duplicate": "An account with these details already exists. Try signing in instead."
+        },
+        "credentials": {
+          "invalid": "The email or password is incorrect. Please check and try again."
+        },
+        "account": {
+          "locked": "This account is temporarily locked after too many failed attempts.",
+          "suspended": "This account has been suspended by an administrator. Contact us if you think this is a mistake.",
+          "deleted": "This account has been deleted."
+        },
+        "sms": {
+          "failed": "The text message could not be sent. Please try again in a moment."
+        },
+        "session": {
+          "expired": "Your session has expired. Please sign in again.",
+          "notSignedIn": "Please sign in to continue."
+        },
+        "origin": {
+          "blocked": "This request came from a website that is not allowed."
+        },
+        "emailVerification": {
+          "invalid": "This verification link is not valid or has expired. Sign in to get a new one.",
+          "cooldown": "We emailed you a link a moment ago. Please wait a little before asking again.",
+          "alreadyVerified": "Your email address is already verified."
+        },
+        "reset": {
+          "tokenInvalid": "This reset link is not valid, has expired or was already used. Request a new one.",
+          "notAllowed": "The password cannot be reset for this account. Contact us for help."
+        },
+        "google": {
+          "invalid": "Google sign-in could not be verified. Please try again.",
+          "unavailable": "Google sign-in is not available right now. Use your email and password.",
+          "linkNeedsPassword": "An account with this email already exists. Enter its password to link your Google account.",
+          "accountMismatch": "This Google account does not match the account you are linking."
+        },
+        "invite": {
+          "invalid": "This invitation is not valid or has expired. Ask for a new invitation."
+        }
+      },
+      "data": {
+        "conflict": "This conflicts with existing data. Refresh the page and try again."
+      },
+      "rate": {
+        "limited": "Too many requests. Please wait a moment and try again."
+      },
+      "internal": {
+        "error": "Something went wrong on our side. Please try again in a few minutes."
+      },
+      "http": {
+        "not_found": "We could not find what you asked for.",
+        "method_not_allowed": "This action is not allowed.",
+        "not_acceptable": "The server cannot return this in the requested format.",
+        "payload_too_large": "The data you sent is too large.",
+        "unsupported_media_type": "This kind of data is not supported.",
+        "error": "The request failed. Please try again."
+      },
+      "common": {
+        "notFound": "We could not find what you asked for."
+      },
+      "user": {
+        "language": {
+          "invalid": "Choose English, Sinhala or Tamil."
+        },
+        "phone": {
+          "unchanged": "This is already your phone number."
+        }
+      },
+      "admin": {
+        "reason": {
+          "required": "Enter a reason (at least 3 characters).",
+          "tooLong": "The reason is too long (at most 500 characters)."
+        },
+        "target": {
+          "protected": "This account cannot be changed.",
+          "self": "You cannot do this to your own account."
+        },
+        "verification": {
+          "notApplicable": "Verification does not apply to this account.",
+          "alreadyDecided": "A decision was already made on this account."
+        },
+        "status": {
+          "unchanged": "The account already has this status."
+        },
+        "role": {
+          "invalid": "This role change is not allowed."
+        },
+        "invite": {
+          "userExists": "A user with this email address already exists."
+        }
+      },
+      "email": {
+        "verificationRequired": "Confirm your email address first: open the link we emailed you."
+      },
+      "verification": {
+        "required": "An administrator must verify your organisation before you can do this.",
+        "rejected": "The verification of this account was rejected, so this action is not available."
+      },
+      "privacy": {
+        "delete": {
+          "confirmationRequired": "Enter your password or the code we text you to delete the account.",
+          "confirmationInvalid": "The password or code is not correct. The account was not deleted.",
+          "adminForbidden": "Administrator accounts cannot be deleted here."
+        }
+      },
+      "geo": {
+        "unknown_district": "Choose one of the 25 districts of Sri Lanka.",
+        "outside_sri_lanka": "The location must be inside Sri Lanka."
+      },
+      "match": {
+        "not_found": "This match was not found.",
+        "already_answered": "This match was already answered.",
+        "not_accepted": "The donor has not accepted this request."
+      },
+      "donation": {
+        "already_recorded": "This donation was already recorded."
+      },
+      "donor": {
+        "profile_not_found": "Create your donor profile first.",
+        "ineligible": "You are not eligible to donate at that time."
+      },
+      "circle": {
+        "not_found": "This invitation was not found.",
+        "expired": "This invitation has expired."
+      },
+      "camp": {
+        "not_found": "This camp was not found.",
+        "in_past": "The camp date cannot be in the past."
+      },
+      "time": {
+        "range_invalid": "The end time must be after the start time."
+      },
+      "blood": {
+        "group_invalid": "One of the blood groups is not valid."
+      },
+      "slot": {
+        "not_found": "This time slot was not found.",
+        "full": "This time slot is fully booked.",
+        "duplicate_booking": "You have already booked this time slot.",
+        "in_past": "This time slot has already started.",
+        "not_bookable": "This time slot can no longer be booked.",
+        "booking_overlap": "You already have a booking at an overlapping time."
+      },
+      "inventory": {
+        "stock_not_found": "This stock batch was not found.",
+        "insufficient_stock": "There are not enough usable units in stock.",
+        "threshold_invalid": "The critical level cannot be higher than the low level.",
+        "date_invalid": "The collection or expiry date is not valid."
+      },
+      "notification": {
+        "not_found": "This notification was not found."
+      },
+      "poster": {
+        "unverified_requester": "Urgent request posters can only be made by verified requesters.",
+        "patient_name_not_allowed": "Posters must not contain a patient's name or personal details.",
+        "unknown_fact": "The poster contains a detail that is not supported.",
+        "invalid_fact": "One of the poster details is not valid. Check the blood type, district and phone number.",
+        "missing_fact": "A required poster detail is missing."
+      },
+      "retryInSeconds": "Try again in {seconds, plural, one {# second} other {# seconds}}.",
+      "retryInMinutes": "Try again in {minutes, plural, one {# minute} other {# minutes}}."
+    },
+    "signInToResend": "Sign in to get a new verification link.",
+    "emailAlreadyVerified": "Your email address is already verified.",
+    "googleLinkTitle": "Link your Google account",
+    "googleLinkDesc": "An account for {email} already exists. Enter its password once to link it to your Google account.",
+    "googleLinkButton": "Link and sign in",
+    "invite": {
+      "title": "Accept your invitation",
+      "subtitle": "You have been invited to help run Suwa Sarana as an administrator. Set up your account below.",
+      "sentTo": "Invitation sent to {email}",
+      "create": "Verify and create account",
+      "missingToken": "This invitation link is incomplete. Open the link from your invitation email again."
     }
   },
   "errors": {
@@ -1204,7 +1442,8 @@
       "shareFallbackDesc": "A blood request in Sri Lanka. Open it to see the details and volunteer.",
       "circleDesc": "{units, plural, one {# unit} other {# units}} of {bloodType} blood needed in {district}. Please volunteer or share with your contacts.",
       "circleFallbackTitle": "Blood request",
-      "circleFallbackDesc": "An urgent blood request in Sri Lanka. Open it to see the details and volunteer."
+      "circleFallbackDesc": "An urgent blood request in Sri Lanka. Open it to see the details and volunteer.",
+      "acceptInvite": "Accept invitation"
     },
     "contactNameRequired": "Please enter your name",
     "contactSubjectRequired": "Please enter a subject",
@@ -1263,7 +1502,8 @@
     "posterCtaTitle": "Be a lifesaver",
     "posterCtaSub": "Scan to book your slot",
     "posterFailed": "Couldn't create the poster. Please try again.",
-    "posterPreviewLabel": "Preview of the poster for {name}"
+    "posterPreviewLabel": "Preview of the poster for {name}",
+    "eyebrowInvite": "Invitation"
   },
   "theme": {
     "label": "Colour theme",
