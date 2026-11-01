@@ -10,7 +10,7 @@ import apiClient from '@/lib/apiClient';
 import { API_BASE_URL } from '@/lib/constants';
 import { apiMessage, apiStatus, asDate, asList, unwrap } from '@/lib/api/common';
 import { closeRequest, fetchRequest, fulfilRequest, isRequestLive, type CloseReason } from '@/lib/api/requests';
-import { NOTIFICATION_PATHS } from '@/lib/api/notifications';
+import { NOTIFICATION_PATHS, notificationText, toNotification } from '@/lib/api/notifications';
 import { lowDataInterval, useLowData } from '@/lib/lowData';
 import { buttonClasses, Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -52,13 +52,6 @@ interface CircleVolunteer {
   bloodType: string;
   notes?: string;
   respondedAt: string;
-}
-
-interface StreamPayload {
-  referenceId?: number;
-  requestId?: number;
-  body?: string;
-  message?: string;
 }
 
 /** Errors that must stop the stream for good (e.g. 401), as opposed to transient ones we retry. */
@@ -177,9 +170,10 @@ export default function RequestLiveStatusPage() {
       onmessage: (event) => {
         if (!event.data) return;
         try {
-          const data = JSON.parse(event.data) as StreamPayload;
-          if (Number(data.referenceId ?? data.requestId) === Number(requestId)) {
-            setUpdates((prev) => [data.body || data.message || '', ...prev].slice(0, 5));
+          // One NotificationDto per event; its text is built from titleKey/bodyKey in the UI language
+          const data = toNotification({ ...(JSON.parse(event.data) as Record<string, unknown>) });
+          if (data.referenceId !== undefined && data.referenceId === Number(requestId)) {
+            setUpdates((prev) => [notificationText(data, t, format).body || notificationText(data, t, format).title, ...prev].slice(0, 5));
             loadRequest();
             loadCircleResponses();
           }
@@ -202,6 +196,8 @@ export default function RequestLiveStatusPage() {
     return () => {
       abortController.abort();
     };
+    // t and format change only with the language; the stream must not restart for that
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId, hasToken, ready, lowData, loadRequest, loadCircleResponses]);
 
   const handleGenerateCircle = async () => {

@@ -599,7 +599,49 @@
     "newMatch": "New Blood Match Dispatch",
     "escalation": "Search Radius Escalation",
     "platformAlert": "Platform Alert",
-    "active": "Active"
+    "active": "Active",
+    "match": {
+      "title": "Urgent blood request",
+      "body": "{bloodType} blood needed at {hospital} ({district}). Urgency: {urgency}."
+    },
+    "accepted": {
+      "title": "A donor accepted",
+      "body": "A donor accepted your request at {hospital}. {accepted} of {needed} donors have accepted."
+    },
+    "fulfilled": {
+      "title": "Request fulfilled",
+      "body": "Your request at {hospital} is marked fulfilled. Thank you."
+    },
+    "closed": {
+      "title": "Request closed",
+      "body": "The request at {hospital} has been closed. You do not need to go."
+    },
+    "expired": {
+      "title": "Request expired",
+      "body": "Your request at {hospital} expired without being fulfilled."
+    },
+    "reopened": {
+      "title": "Request needs donors again",
+      "body": "The donor for your request at {hospital} did not confirm in time. We are looking for more donors."
+    },
+    "lowStock": {
+      "title": "Low blood stock",
+      "body": "{bloodType} {component} stock is {status}: {units} units available."
+    },
+    "pledge": {
+      "title": "A friend pledged to donate",
+      "body": "{volunteerName} ({bloodType}) pledged through your private circle. {pledgeCount} pledge(s) so far."
+    },
+    "generic": {
+      "title": "{title}",
+      "body": "{body}"
+    },
+    "slot": {
+      "confirmed": {
+        "title": "Slot booked",
+        "body": "Your donation slot at {host} is confirmed for {start}."
+      }
+    }
   },
   "publicPages": {
     "circleTitle": "Donation Circle",
@@ -1236,7 +1278,8 @@
       "liveOnly": "The saved inbox is not available yet. Only live alerts received while this page is open are shown.",
       "open": "Open",
       "polling": "Low-Data Mode: checking less often",
-      "unreadHint": "Unread notifications"
+      "unreadHint": "Unread notifications",
+      "loadMore": "Show older notifications"
     },
     "donor": {
       "bloodType": "Blood type",

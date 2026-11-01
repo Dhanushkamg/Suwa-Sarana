@@ -122,3 +122,7 @@ Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-elig
 | `dashUi.donor.reason.*` (AGE_OUT_OF_RANGE, AGE_ABOVE_FIRST_TIME_LIMIT, UNDERWEIGHT, RECENT_DONATION, ACTIVE_DEFERRAL, UNKNOWN) | "You donated recently. Wait for the minimum time between donations." | si/ta drafts | Sensitive: a donor is told why they cannot give; keep neutral and kind |
 | `dashUi.donor.rules*`, `rule*` | What are the rules? / Age 18 to 60 / Weight above 50 kg / These figures come from the national blood service website and are still being confirmed | si/ta drafts | The 50 / 55 kg and 3 / 2 year rulings are still open with NBTS (docs/AI.md section 8) |
 | `dashUi.donor.source.*`, `weightTooLow`, `dash.weightHint` | Blood request / Booked time slot / Weight must be above {kg} kg | si/ta drafts | "above 50" is a strict limit now (was "minimum 50") |
+
+## FE integration: notifications inbox - needs native-speaker review
+
+`notifications.<type>.title/body` (match, accepted, fulfilled, closed, expired, reopened, lowStock, pledge, generic, slot.confirmed) are rendered from the inbox `titleKey`/`bodyKey` + `params`. `match` and `slot.confirmed` re-use the backend's own si/ta wording (`NotificationTemplates.java`); the others (accepted, fulfilled, closed, expired, reopened, lowStock, pledge) are new si/ta drafts here and the backend has no si/ta text for them yet (it falls back to English for SMS/e-mail). Also `dashUi.notif.loadMore` ("Show older notifications").
