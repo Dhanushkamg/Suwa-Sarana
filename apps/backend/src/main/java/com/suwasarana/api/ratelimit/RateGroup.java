@@ -17,6 +17,8 @@ public enum RateGroup {
     AUTH_OTHER("auth-other"),
     FAQ("faq"),
     AI_DRAFT("ai-draft"),
+    /** POST /api/ai/poster-copy: spends LLM tokens, so it is limited per IP, per user and per user per day like ai-draft. */
+    POSTER_COPY("poster-copy"),
     CONTACT("contact"),
     CIRCLE_RESPOND("circle-respond"),
     REQUEST_CREATE("request-create"),
@@ -82,6 +84,9 @@ public enum RateGroup {
         }
         if (path.equals("/api/requests/ai-draft")) {
             return AI_DRAFT;
+        }
+        if (path.equals("/api/ai/poster-copy")) {
+            return POSTER_COPY;
         }
         if (path.equals("/api/requests")) {
             return REQUEST_CREATE;

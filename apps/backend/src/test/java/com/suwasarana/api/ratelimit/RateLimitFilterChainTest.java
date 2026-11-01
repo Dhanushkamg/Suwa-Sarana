@@ -67,6 +67,7 @@ class RateLimitFilterChainTest {
                 new Spec("auth-other", "POST", i -> "/api/auth/forgot-password", i -> "{\"email\":\"user" + i + "@x.com\"}", 10),
                 new Spec("faq", "POST", i -> "/api/faq/ask", i -> "{}", 10),
                 new Spec("ai-draft", "POST", i -> "/api/requests/ai-draft", i -> "{}", 20),
+                new Spec("poster-copy", "POST", i -> "/api/ai/poster-copy", i -> "{}", 20),
                 new Spec("contact", "POST", i -> "/api/contact", i -> "{}", 5),
                 new Spec("circle-respond", "POST", i -> "/api/circle/token" + i + "/respond", i -> "{}", 10),
                 new Spec("request-create", "POST", i -> "/api/requests", i -> "{}", 20),
@@ -311,6 +312,23 @@ class RateLimitFilterChainTest {
         assertTrue(Long.parseLong(blocked.getResponse().getHeader("Retry-After")) >= 1);
         assertEquals("rate.limited", mapper.readTree(blocked.getResponse().getContentAsString()).get("code").asText());
         assertNotEquals(429, postAs(mvc, "/api/requests/ai-draft", "bob@test.com"));
+    }
+
+    @Test
+    @DisplayName("Poster copy (LLM cost): 5 per user per minute, then 429 rate.limited; other users are unaffected")
+    void posterCopy_perUser() throws Exception {
+        MockMvc mvc = mvc();
+        for (int i = 1; i <= 5; i++) {
+            assertNotEquals(429, postAs(mvc, "/api/ai/poster-copy", "pia@test.com"), "call " + i);
+        }
+        MvcResult blocked = mvc.perform(post("/api/ai/poster-copy").contentType(JSON).content("{}")
+                .with(peer("192.0.2.77")).with(asUser("pia@test.com"))).andReturn();
+        assertEquals(429, blocked.getResponse().getStatus());
+        assertTrue(Long.parseLong(blocked.getResponse().getHeader("Retry-After")) >= 1);
+        JsonNode body = mapper.readTree(blocked.getResponse().getContentAsString());
+        assertEquals("rate.limited", body.get("code").asText());
+        assertEquals(false, body.get("success").asBoolean());
+        assertNotEquals(429, postAs(mvc, "/api/ai/poster-copy", "paul@test.com"));
     }
 
     @Test

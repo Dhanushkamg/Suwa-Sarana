@@ -74,6 +74,21 @@ class RateLimitServiceTest {
     }
 
     @Test
+    @DisplayName("Poster copy has a per-user daily cap and a per-IP daily cap by default")
+    void posterCopyDefaults() {
+        RateLimitProperties.Effective e = bind(Map.of()).effective(RateGroup.POSTER_COPY);
+        assertEquals(5, e.userLimit());
+        assertEquals(50, e.userDailyLimit());
+        assertEquals(20, e.ipLimit());
+        assertEquals(200, e.ipDailyLimit());
+        RateLimitService s = service(Map.of("app.rate-limit.groups.poster-copy.user-limit", "1000",
+                "app.rate-limit.groups.poster-copy.user-daily-limit", "2"));
+        assertTrue(s.checkUser(RateGroup.POSTER_COPY, "alice@test.com").allowed());
+        assertTrue(s.checkUser(RateGroup.POSTER_COPY, "alice@test.com").allowed());
+        assertFalse(s.checkUser(RateGroup.POSTER_COPY, "alice@test.com").allowed());
+    }
+
+    @Test
     @DisplayName("Per-IP and per-user limits are independent of each other")
     void scopesAreIndependent() {
         RateLimitService s = service(Map.of("app.rate-limit.groups.request-create.ip-limit", "2"));
@@ -119,6 +134,8 @@ class RateLimitServiceTest {
         assertNull(RateGroup.match("GET", "/api/auth/me"));
         assertEquals(RateGroup.FAQ, RateGroup.match("POST", "/api/faq/ask"));
         assertEquals(RateGroup.AI_DRAFT, RateGroup.match("POST", "/api/requests/ai-draft"));
+        assertEquals(RateGroup.POSTER_COPY, RateGroup.match("POST", "/api/ai/poster-copy"));
+        assertNull(RateGroup.match("GET", "/api/ai/poster-copy"));
         assertEquals(RateGroup.REQUEST_CREATE, RateGroup.match("POST", "/api/requests"));
         assertNull(RateGroup.match("GET", "/api/requests"));
         assertEquals(RateGroup.REQUEST_REPORT, RateGroup.match("POST", "/api/requests/42/report"));

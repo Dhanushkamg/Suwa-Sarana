@@ -211,6 +211,8 @@ class RoleMatrixTest extends IntegrationTestBase {
 
             // ---- public / misc --------------------------------------------------------------------------------------------
             ep(HttpMethod.POST, "/api/faq/ask", "{}", EVERYONE),
+            // poster copy: any signed-in role passes security; URGENT_REQUEST additionally needs a VERIFIED requester (422, see AiControllersIntegrationTest)
+            ep(HttpMethod.POST, "/api/ai/poster-copy", "{}", SIGNED_IN),
             ep(HttpMethod.GET, "/api/inventory/stock-signals", EVERYONE),
             ep(HttpMethod.POST, "/api/contact", "{}", EVERYONE),
             // the IVR webhook is public for Twilio; whatever it answers (signature check) must not depend on the caller's role

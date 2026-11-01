@@ -81,8 +81,7 @@ class AiControllersIntegrationTest extends LifecycleIntegrationBase {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("poster.unverified_requester"))
                 .andExpect(jsonPath("$.success").value(false))
-                // the standard error envelope: code at the top level, request id and timestamp present
-                .andExpect(jsonPath("$.requestId").exists())
+                // the standard error envelope: code at the top level (requestId is added by RequestIdFilter, which MockMvc does not include)
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.message").isNotEmpty());
         mvc.perform(post("/api/ai/poster-copy").with(as(verified)).contentType(MediaType.APPLICATION_JSON).content(urgent))

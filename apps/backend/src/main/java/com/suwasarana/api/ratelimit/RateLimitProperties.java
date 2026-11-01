@@ -107,6 +107,7 @@ public class RateLimitProperties {
         DEFAULTS.put(RateGroup.AUTH_OTHER,     new Effective(10, TEN_MINUTES,   0,    5, ONE_HOUR,        0, ONE_MINUTE,  0));
         DEFAULTS.put(RateGroup.FAQ,            new Effective(10, ONE_MINUTE,  300,    0, ONE_HOUR,        0, ONE_MINUTE,  0));
         DEFAULTS.put(RateGroup.AI_DRAFT,       new Effective(20, ONE_MINUTE,  200,    0, ONE_HOUR,        5, ONE_MINUTE, 50));
+        DEFAULTS.put(RateGroup.POSTER_COPY,    new Effective(20, ONE_MINUTE,  200,    0, ONE_HOUR,        5, ONE_MINUTE, 50));
         DEFAULTS.put(RateGroup.CONTACT,        new Effective( 5, ONE_HOUR,     20,    0, ONE_HOUR,        0, ONE_MINUTE,  0));
         DEFAULTS.put(RateGroup.CIRCLE_RESPOND, new Effective(10, TEN_MINUTES,  60,   30, ONE_HOUR,        0, ONE_MINUTE,  0));
         DEFAULTS.put(RateGroup.REQUEST_CREATE, new Effective(20, TEN_MINUTES,   0,    0, ONE_HOUR,        5, TEN_MINUTES, 20));
