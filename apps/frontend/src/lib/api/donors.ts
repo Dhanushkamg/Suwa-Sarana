@@ -1,7 +1,7 @@
 import apiClient from '@/lib/apiClient';
 import { asDate, asList, num, str, unwrap } from './common';
 
-/** Donor endpoints (relative to the API base URL). */
+/** Donor endpoints (relative to the API base URL). Contract: docs/API-CONTRACT.md section 3. */
 export const DONOR_PATHS = {
   me: '/donors/me',
   availability: '/donors/me/availability',
@@ -10,42 +10,100 @@ export const DONOR_PATHS = {
   donations: '/donors/me/donations',
 } as const;
 
-/** GET /api/donors/me/eligibility -> { eligible: boolean, nextEligibleDate?: 'YYYY-MM-DD', reasons: string[] } */
+/** Weight must be strictly above this to donate (server rule; 400 validation.failed on weightKg for 50 or less). */
+export const MIN_WEIGHT_KG_EXCLUSIVE = 50;
+
+/** The reason codes DeferralService can return (docs/API-CONTRACT.md section 3). Anything else is shown with a generic text. */
+export const ELIGIBILITY_REASONS = ['AGE_OUT_OF_RANGE', 'AGE_ABOVE_FIRST_TIME_LIMIT', 'UNDERWEIGHT', 'RECENT_DONATION', 'ACTIVE_DEFERRAL'] as const;
+export type EligibilityReason = (typeof ELIGIBILITY_REASONS)[number];
+
+export interface EligibilityRules {
+  minAge: number | null;
+  maxAge: number | null;
+  maxAgeFirstTimeDonor: number | null;
+  minWeightKgExclusive: number | null;
+  donationIntervalMonths: number | null;
+  minHaemoglobinGdLExclusive: number | null;
+  source: string | null;
+  /** False = the figures come from the NBTS website and the NBTS Medical Officer has not signed them off yet. */
+  ownerConfirmed: boolean;
+}
+
+/** GET /api/donors/me/eligibility */
 export interface Eligibility {
   eligible: boolean;
+  /** Only set when waiting is the whole reason (recent donation / deferral). */
   nextEligibleDate: Date | null;
+  /** Codes, e.g. RECENT_DONATION: translate with dashUi.donor.reason.<code>. */
   reasons: string[];
+  evaluatedOn: Date | null;
+  lastDonationDate: Date | null;
+  totalDonations: number | null;
+  rules: EligibilityRules | null;
+  rulesConfirmedByOwner: boolean;
+}
+
+const optionalNum = (v: unknown): number | null => (v == null ? null : num(v));
+
+export function toEligibility(body: Record<string, unknown>): Eligibility {
+  const r = body.rules && typeof body.rules === 'object' ? (body.rules as Record<string, unknown>) : null;
+  return {
+    eligible: body.eligible === true,
+    nextEligibleDate: asDate(body.nextEligibleDate),
+    reasons: Array.isArray(body.reasons) ? body.reasons.map(String) : [],
+    evaluatedOn: asDate(body.evaluatedOn),
+    lastDonationDate: asDate(body.lastDonationDate),
+    totalDonations: optionalNum(body.totalDonations),
+    rules: r && {
+      minAge: optionalNum(r.minAge),
+      maxAge: optionalNum(r.maxAge),
+      maxAgeFirstTimeDonor: optionalNum(r.maxAgeFirstTimeDonor),
+      minWeightKgExclusive: optionalNum(r.minWeightKgExclusive),
+      donationIntervalMonths: optionalNum(r.donationIntervalMonths),
+      minHaemoglobinGdLExclusive: optionalNum(r.minHaemoglobinGdLExclusive),
+      source: str(r.source) ?? null,
+      ownerConfirmed: r.ownerConfirmed === true,
+    },
+    rulesConfirmedByOwner: body.rulesConfirmedByOwner === true || r?.ownerConfirmed === true,
+  };
 }
 
 export async function fetchEligibility(): Promise<Eligibility> {
   const res = await apiClient.get(DONOR_PATHS.eligibility);
-  const body = (unwrap<Record<string, unknown>>(res.data) ?? {}) as Record<string, unknown>;
-  const reasons = Array.isArray(body.reasons) ? body.reasons.map(String) : [];
+  return toEligibility((unwrap<Record<string, unknown>>(res.data) ?? {}) as Record<string, unknown>);
+}
+
+/** DonationSource of the server: where the donation was recorded. */
+export type DonationSource = 'MATCH' | 'SLOT_CHECKIN' | string;
+
+/** GET /api/donors/me/donations -> [{ id, donatedOn: 'YYYY-MM-DD', source, hostName, district, bloodType, requestId }], newest first */
+export interface Donation {
+  id: number;
+  /** Calendar day of the donation (a date, no time). */
+  donatedOn: Date | null;
+  source: DonationSource;
+  /** Hospital, blood bank or camp that collected it. */
+  hostName: string | null;
+  district: string | null;
+  bloodType: string | null;
+  requestId: number | null;
+}
+
+export function toDonation(d: Record<string, unknown>, index = 0): Donation {
   return {
-    eligible: body.eligible === true,
-    nextEligibleDate: asDate(body.nextEligibleDate),
-    reasons,
+    id: num(d.id, index),
+    donatedOn: asDate(d.donatedOn),
+    source: String(d.source ?? ''),
+    hostName: str(d.hostName) ?? null,
+    district: str(d.district) ?? null,
+    bloodType: str(d.bloodType) ?? null,
+    requestId: optionalNum(d.requestId),
   };
 }
 
-/** GET /api/donors/me/donations -> [{ id, donatedAt: ISO date, location?, bloodType?, units?, component? }] */
-export interface Donation {
-  id: number;
-  donatedAt: Date | null;
-  location?: string;
-  units?: number;
-  component?: string;
-}
-
-export async function fetchDonations(): Promise<Donation[]> {
-  const res = await apiClient.get(DONOR_PATHS.donations);
+export async function fetchDonations(limit = 100): Promise<Donation[]> {
+  const res = await apiClient.get(DONOR_PATHS.donations, { params: { limit } });
   return asList<Record<string, unknown>>(res.data)
-    .map((d, i) => ({
-      id: num(d.id, i),
-      donatedAt: asDate(d.donatedAt ?? d.donationDate ?? d.date ?? d.createdAt),
-      location: str(d.location) ?? str(d.hospitalName) ?? str(d.campName) ?? str(d.hostName),
-      units: d.units == null ? undefined : num(d.units),
-      component: str(d.component),
-    }))
-    .sort((a, b) => (b.donatedAt?.getTime() ?? 0) - (a.donatedAt?.getTime() ?? 0));
+    .map(toDonation)
+    .sort((a, b) => (b.donatedOn?.getTime() ?? 0) - (a.donatedOn?.getTime() ?? 0));
 }

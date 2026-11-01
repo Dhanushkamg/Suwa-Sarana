@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/pub/Alert';
 import { focusFirstInvalid, parseApiError } from '@/components/pub/apiErrors';
-import { DISTRICTS, DISTRICT_COORDS } from '@/lib/districts';
+import { FALLBACK_META, useDistricts } from '@/lib/api/meta';
+import { todayInColombo } from '@/lib/dates';
 import apiClient from '@/lib/apiClient';
 import { useI18n } from '@/lib/i18n';
 
@@ -17,14 +18,15 @@ interface CreateCampModalProps {
   onSuccess: () => void;
 }
 
-const centre = (district: string) => DISTRICT_COORDS[district] ?? DISTRICT_COORDS.Colombo;
+// The form opens on Colombo; once the server list arrives, other districts use the server's centre points
+const COLOMBO = FALLBACK_META.districts.find((d) => d.name === 'Colombo') ?? FALLBACK_META.districts[0];
 
 const INITIAL_FORM = {
   name: '',
   district: 'Colombo',
   location: '',
-  latitude: String(centre('Colombo')[0]),
-  longitude: String(centre('Colombo')[1]),
+  latitude: String(COLOMBO.latitude),
+  longitude: String(COLOMBO.longitude),
   scheduledDate: '',
   startTime: '09:00',
   endTime: '15:00',
@@ -33,12 +35,10 @@ const INITIAL_FORM = {
 
 type FormState = typeof INITIAL_FORM;
 
-// Sri Lanka's bounding box: catches swapped or mistyped coordinates before they reach the API
-const LAT_RANGE: [number, number] = [5.8, 10];
-const LNG_RANGE: [number, number] = [79.4, 82];
-
 export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCampModalProps) {
   const { t } = useI18n();
+  // District names, their centre points and Sri Lanka's bounding box (catches swapped or mistyped coordinates) come from GET /api/meta/districts
+  const { districts, bounds, centre } = useDistricts();
   const formRef = useRef<HTMLFormElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -75,9 +75,10 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
     if (!form.location.trim()) errors.location = t('pub.campLocationRequired');
     const lat = Number(form.latitude);
     const lng = Number(form.longitude);
-    if (form.latitude === '' || !Number.isFinite(lat) || lat < LAT_RANGE[0] || lat > LAT_RANGE[1]) errors.latitude = t('pub.coordsOutOfRange');
-    if (form.longitude === '' || !Number.isFinite(lng) || lng < LNG_RANGE[0] || lng > LNG_RANGE[1]) errors.longitude = t('pub.coordsOutOfRange');
+    if (form.latitude === '' || !Number.isFinite(lat) || lat < bounds.minLat || lat > bounds.maxLat) errors.latitude = t('pub.coordsOutOfRange');
+    if (form.longitude === '' || !Number.isFinite(lng) || lng < bounds.minLon || lng > bounds.maxLon) errors.longitude = t('pub.coordsOutOfRange');
     if (!form.scheduledDate) errors.scheduledDate = t('pub.campDateRequired');
+    else if (form.scheduledDate < todayInColombo()) errors.scheduledDate = t('authFlow.errors.camp.in_past');
     if (form.startTime && form.endTime && form.endTime <= form.startTime) errors.endTime = t('pub.campEndAfterStart');
     return errors;
   };
@@ -135,7 +136,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
               label={t('modals.district')}
               value={form.district}
               onChange={handleChange}
-              options={DISTRICTS.map((d) => ({ value: d, label: d }))}
+              options={districts.map((d) => ({ value: d.name, label: d.name }))}
               error={fieldErrors.district}
             />
             <Input
@@ -185,6 +186,7 @@ export default function CreateCampModal({ isOpen, onClose, onSuccess }: CreateCa
               name="scheduledDate"
               label={t('modals.date')}
               type="date"
+              min={todayInColombo()}
               value={form.scheduledDate}
               onChange={handleChange}
               error={fieldErrors.scheduledDate}

@@ -114,3 +114,11 @@ Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-elig
 | `dashUi.matchesSummary`, `req.progress`, `req.progressShort` | "{accepted} accepted, {confirmed} donations confirmed, {needed} units needed" | si/ta drafts | Counter wording |
 | `dashUi.req.closeReason.*`, `closeReasonLegend` | The blood is no longer needed / I found a donor elsewhere / Another reason | si/ta drafts | |
 | `dashUi.req.closedOn*`, `coarseLocation` | Closed on {date}. Reason: {reason}. / The location is shown only approximately | si/ta drafts | |
+
+## FE integration: donor eligibility and history - needs native-speaker review
+
+| Key | English | Wording used (si / ta) | Why unsure |
+|---|---|---|---|
+| `dashUi.donor.reason.*` (AGE_OUT_OF_RANGE, AGE_ABOVE_FIRST_TIME_LIMIT, UNDERWEIGHT, RECENT_DONATION, ACTIVE_DEFERRAL, UNKNOWN) | "You donated recently. Wait for the minimum time between donations." | si/ta drafts | Sensitive: a donor is told why they cannot give; keep neutral and kind |
+| `dashUi.donor.rules*`, `rule*` | What are the rules? / Age 18 to 60 / Weight above 50 kg / These figures come from the national blood service website and are still being confirmed | si/ta drafts | The 50 / 55 kg and 3 / 2 year rulings are still open with NBTS (docs/AI.md section 8) |
+| `dashUi.donor.source.*`, `weightTooLow`, `dash.weightHint` | Blood request / Booked time slot / Weight must be above {kg} kg | si/ta drafts | "above 50" is a strict limit now (was "minimum 50") |

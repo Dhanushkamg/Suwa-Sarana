@@ -11,9 +11,10 @@ import { useToast } from '@/components/ui/Toast';
 import { useI18n } from '@/lib/i18n';
 import apiClient from '@/lib/apiClient';
 import { apiMessage, apiStatus, asDateInput, num, unwrap } from '@/lib/api/common';
-import { DONOR_PATHS } from '@/lib/api/donors';
+import { parseApiError } from '@/lib/apiError';
+import { DONOR_PATHS, MIN_WEIGHT_KG_EXCLUSIVE } from '@/lib/api/donors';
 import { useLowData } from '@/lib/lowData';
-import { DISTRICTS, districtCenter } from '@/lib/districts';
+import { useDistricts } from '@/lib/api/meta';
 import MyBookings from '@/components/slots/MyBookings';
 import { ButtonLink } from '@/components/dash/ButtonLink';
 import { DonationHistory, EligibilityCard } from '@/components/dash/DonorPanels';
@@ -67,6 +68,8 @@ export default function DonorProfilePage() {
   const { t } = useI18n();
   const toast = useToast();
   const { lowData, setLowData } = useLowData();
+  // The 25 official districts (and their centre points) come from GET /api/meta/districts
+  const { districts, centre: districtCenter } = useDistricts();
 
   const [bloodType, setBloodType] = useState('O+');
   const [district, setDistrict] = useState('Colombo');
@@ -98,7 +101,7 @@ export default function DonorProfilePage() {
     { value: 'O-', label: t('bloodTypes.ONegative') },
   ];
 
-  const districtOptions = DISTRICTS.map((d) => ({ value: d, label: d }));
+  const districtOptions = districts.map((d) => ({ value: d.name, label: d.name }));
 
   const applyProfile = useCallback((p: DonorProfile) => {
     setProfile(p);
@@ -204,8 +207,10 @@ export default function DonorProfilePage() {
       if (age < MIN_AGE || age > MAX_AGE) errors.dob = t('dash.dobInvalid');
     }
     const weight = weightKg.trim() === '' ? null : Number(weightKg);
-    if (weight !== null && (!Number.isFinite(weight) || weight < 30 || weight > 300)) {
+    if (weight !== null && (!Number.isFinite(weight) || weight > 300)) {
       errors.weight = t('dash.weightInvalid');
+    } else if (weight !== null && weight <= MIN_WEIGHT_KG_EXCLUSIVE) {
+      errors.weight = t('dashUi.donor.weightTooLow', { kg: MIN_WEIGHT_KG_EXCLUSIVE });
     }
     setFieldErrors(errors);
     if (errors.dob || errors.weight) return;
@@ -230,7 +235,13 @@ export default function DonorProfilePage() {
       if (saved) applyProfile({ ...saved, available: isNew ? isAvailable : saved.available });
       toast.show(t('donorDashboard.profileSaved'), 'success');
     } catch (err: unknown) {
-      setErrorMessage(apiMessage(err, t('donorDashboard.updateError')));
+      // Field problems from the server (English sentences) are replaced by our own localised texts
+      const parsed = parseApiError(err, t, { fallback: t('donorDashboard.updateError') });
+      const serverFields: { dob?: string; weight?: string } = {};
+      if (parsed.fields.weightKg) serverFields.weight = t('dashUi.donor.weightTooLow', { kg: MIN_WEIGHT_KG_EXCLUSIVE });
+      if (parsed.fields.dateOfBirth) serverFields.dob = t('dash.dobInvalid');
+      if (serverFields.dob || serverFields.weight) setFieldErrors(serverFields);
+      setErrorMessage(parsed.message);
     } finally {
       setSaving(false);
     }

@@ -1026,8 +1026,8 @@
     "dobHint": "You must be between 18 and 60 years old to donate blood.",
     "dobInvalid": "Donors must be between 18 and 60 years old.",
     "weight": "Weight (kg)",
-    "weightHint": "Minimum 50 kg to donate blood (optional).",
-    "weightInvalid": "Enter a weight between 30 and 300 kg.",
+    "weightHint": "Must be above 50 kg to donate blood (optional).",
+    "weightInvalid": "Enter your weight in kilograms (up to 300).",
     "useMyLocation": "Use my location",
     "locationSaved": "Using your saved location",
     "locationDevice": "Using your device location",
@@ -1272,7 +1272,30 @@
       "eligibleNow": "Eligible to donate",
       "notEligibleYet": "Not eligible yet",
       "eligibleDesc": "You can donate whole blood now if you feel well. Always follow the guidance of the donation centre.",
-      "nextEligible": "You can donate again from {date}."
+      "nextEligible": "You can donate again from {date}.",
+      "reason": {
+        "AGE_OUT_OF_RANGE": "Your age is outside the range for donating blood.",
+        "AGE_ABOVE_FIRST_TIME_LIMIT": "First-time donors must be younger than the first-time age limit.",
+        "UNDERWEIGHT": "Your weight is not above the minimum for donating blood.",
+        "RECENT_DONATION": "You donated recently. Wait for the minimum time between donations.",
+        "ACTIVE_DEFERRAL": "A waiting period is still active on your account.",
+        "UNKNOWN": "You cannot donate right now. The blood bank's Medical Officer can tell you more."
+      },
+      "lastDonation": "Last donation recorded: {date}",
+      "rulesToggle": "What are the rules?",
+      "ruleAge": "Age {min} to {max}.",
+      "ruleAgeFirst": "First-time donors: up to {max}.",
+      "ruleWeight": "Weight above {kg} kg.",
+      "ruleInterval": "At least {months} months between donations.",
+      "rulesConfirmed": "These rules were confirmed by the blood service.",
+      "rulesUnconfirmed": "These figures come from the national blood service website and are still being confirmed.",
+      "rulesOfficer": "The Medical Officer at the blood bank makes the final decision.",
+      "source": {
+        "MATCH": "Blood request",
+        "SLOT_CHECKIN": "Booked time slot",
+        "OTHER": "Recorded donation"
+      },
+      "weightTooLow": "Weight must be above {kg} kg to donate blood."
     },
     "admin": {
       "reviewVerifications": "Review verifications",

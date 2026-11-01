@@ -6,15 +6,16 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useI18n } from '@/lib/i18n';
 import { fetchDonations, fetchEligibility, type Donation, type Eligibility } from '@/lib/api/donors';
+import { InfoDisclosure } from './InfoDisclosure';
 import { Notice } from './Notice';
 import { useAsync } from './useAsync';
 import { Panel, SectionHeader } from './Panel';
 
-/** Eligibility reasons come from the server; a known code is translated, anything else is shown as sent. */
-function reasonText(t: (key: string) => string, reason: string): string {
+/** Eligibility reasons are codes (RECENT_DONATION ...): translated here; an unknown code from a newer server gets a generic sentence, never the raw code. */
+export function reasonText(t: (key: string) => string, reason: string): string {
   const key = `dashUi.donor.reason.${reason}`;
   const translated = t(key);
-  return translated === key ? reason : translated;
+  return translated === key ? t('dashUi.donor.reason.UNKNOWN') : translated;
 }
 
 /** "Can I donate now?" card: eligible / next eligible date and the reasons, from GET /donors/me/eligibility. */
@@ -70,6 +71,25 @@ export function EligibilityCard() {
               ))}
             </ul>
           )}
+          {state.data.lastDonationDate && (
+            <p className="text-sm text-gray-400">{t('dashUi.donor.lastDonation', { date: format.date(state.data.lastDonationDate, { dateStyle: 'long' }) })}</p>
+          )}
+          {state.data.rules && (
+            <InfoDisclosure label={t('dashUi.donor.rulesToggle')}>
+              <ul className="list-disc space-y-1 ps-5">
+                {state.data.rules.minAge !== null && state.data.rules.maxAge !== null && (
+                  <li>
+                    {t('dashUi.donor.ruleAge', { min: state.data.rules.minAge, max: state.data.rules.maxAge })}
+                    {state.data.rules.maxAgeFirstTimeDonor !== null && ` ${t('dashUi.donor.ruleAgeFirst', { max: state.data.rules.maxAgeFirstTimeDonor })}`}
+                  </li>
+                )}
+                {state.data.rules.minWeightKgExclusive !== null && <li>{t('dashUi.donor.ruleWeight', { kg: state.data.rules.minWeightKgExclusive })}</li>}
+                {state.data.rules.donationIntervalMonths !== null && <li>{t('dashUi.donor.ruleInterval', { months: state.data.rules.donationIntervalMonths })}</li>}
+              </ul>
+              <p className="mt-2 text-gray-400">{state.data.rulesConfirmedByOwner ? t('dashUi.donor.rulesConfirmed') : t('dashUi.donor.rulesUnconfirmed')}</p>
+              <p className="mt-1 text-gray-400">{t('dashUi.donor.rulesOfficer')}</p>
+            </InfoDisclosure>
+          )}
         </div>
       )}
     </Panel>
@@ -116,10 +136,12 @@ export function DonationHistory() {
             {state.data.map((d) => (
               <li key={d.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 py-4">
                 <div className="min-w-0">
-                  <p className="text-base font-medium text-foreground">{d.donatedAt ? format.date(d.donatedAt, { dateStyle: 'long' }) : t('dashUi.noData')}</p>
-                  {d.location && <p className="break-words text-sm text-gray-400">{d.location}</p>}
+                  <p className="text-base font-medium text-foreground">{d.donatedOn ? format.date(d.donatedOn, { dateStyle: 'long' }) : t('dashUi.noData')}</p>
+                  {(d.hostName || d.district) && <p className="break-words text-sm text-gray-400">{[d.hostName, d.district].filter(Boolean).join(', ')}</p>}
                 </div>
-                {d.units !== undefined && <p className="text-sm text-gray-400">{t('dashUi.units', { count: d.units })}</p>}
+                <p className="text-sm text-gray-400">
+                  {[d.bloodType, t(`dashUi.donor.source.${d.source === 'MATCH' || d.source === 'SLOT_CHECKIN' ? d.source : 'OTHER'}`)].filter(Boolean).join(' · ')}
+                </p>
               </li>
             ))}
           </ul>
