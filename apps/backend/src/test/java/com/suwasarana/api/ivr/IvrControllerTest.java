@@ -36,7 +36,8 @@ class IvrControllerTest {
     void setUp() {
         properties = new IvrProperties();
         properties.setSignatureRequired(false); // signature handling has its own tests
-        facts = new IvrFacts();
+        facts = new IvrFacts(new com.suwasarana.api.ai.kb.EligibilityFacts(
+                new com.suwasarana.api.ai.kb.KnowledgeBase(new com.suwasarana.api.ai.AiProperties())));
         controller = new IvrController(new IvrService(requestRepository, properties, facts),
                 new TwilioSignatureValidator(properties), properties);
     }
@@ -159,7 +160,7 @@ class IvrControllerTest {
     }
 
     @Test
-    @DisplayName("2: eligibility facts come from IvrFacts and match the NBTS-published values")
+    @DisplayName("2: eligibility facts come from EligibilityFacts and match the NBTS-published values")
     void eligibilityFacts() {
         String body = call("2").getBody();
         assertTrue(body.contains("between 18 and 60 years old"), body);
@@ -173,14 +174,16 @@ class IvrControllerTest {
     }
 
     @Test
-    @DisplayName("2: changing IvrFacts changes what is spoken; tattoo/surgery figures only when configured")
-    void eligibilityFollowsConfiguration() {
-        facts.setIntervalMonths(5);
-        facts.setTattooMonths(9);
+    @DisplayName("2: the script is built from EligibilityFacts and names no tattoo, surgery or other unsourced figure")
+    void eligibilityHasNoUnsourcedFigures() {
         String body = call("2").getBody();
-        assertTrue(body.contains("at least 5 months"));
-        assertTrue(body.contains("wait 9 months"));
+        com.suwasarana.api.ai.kb.EligibilityFacts f = new com.suwasarana.api.ai.kb.EligibilityFacts(
+                new com.suwasarana.api.ai.kb.KnowledgeBase(new com.suwasarana.api.ai.AiProperties()));
+        assertTrue(body.contains("at least " + f.getDonationIntervalMonths() + " months"));
+        assertTrue(body.contains("between " + f.getMinAge() + " and " + f.getMaxAge()));
+        assertFalse(body.contains("After a tattoo"));
         assertFalse(body.contains("After surgery"));
+        assertFalse(body.toLowerCase().contains("wait 6") || body.toLowerCase().contains("wait 12"));
     }
 
     @Test

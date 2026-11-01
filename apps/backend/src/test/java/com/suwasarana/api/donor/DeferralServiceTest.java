@@ -3,7 +3,6 @@ package com.suwasarana.api.donor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,14 +28,18 @@ public class DeferralServiceTest {
     @Mock
     private DeferralRepository deferralRepository;
 
-    @InjectMocks
     private DeferralService deferralService;
+    private DeferralRulesConfig rules;
 
     private DonorProfile donor;
     private final LocalDate today = LocalDate.of(2026, 10, 28);
 
     @BeforeEach
     void setUp() {
+        // the real knowledge base: the thresholds are read from EligibilityFacts, not from constants
+        rules = new DeferralRulesConfig(new com.suwasarana.api.ai.kb.EligibilityFacts(
+                new com.suwasarana.api.ai.kb.KnowledgeBase(new com.suwasarana.api.ai.AiProperties())));
+        deferralService = new DeferralService(deferralRepository, rules);
         donor = new DonorProfile();
         donor.setId(1L);
         // Valid by default: age 25, 60 kg, has donated before
@@ -138,7 +141,7 @@ public class DeferralServiceTest {
         DonorDeferral recent = new DonorDeferral();
         recent.setReason(DeferralService.RECENT_DONATION);
         recent.setDeferredFrom(donated);
-        recent.setDeferredUntil(DeferralRulesConfig.deferralEndAfterDonation(donated));
+        recent.setDeferredUntil(rules.deferralEndAfterDonation(donated));
         when(deferralRepository.findActiveDeferrals(1L, today)).thenReturn(List.of(recent));
 
         EligibilityResult result = deferralService.checkEligibility(donor, today);
@@ -192,9 +195,23 @@ public class DeferralServiceTest {
     @Test
     void testIntervalHelpersAgreeWithTheDeferralRow() {
         LocalDate donated = LocalDate.of(2026, 1, 31);
-        assertEquals(LocalDate.of(2026, 5, 31), DeferralRulesConfig.nextEligibleDateAfterDonation(donated));
-        assertEquals(LocalDate.of(2026, 5, 30), DeferralRulesConfig.deferralEndAfterDonation(donated));
+        assertEquals(LocalDate.of(2026, 5, 31), rules.nextEligibleDateAfterDonation(donated));
+        assertEquals(LocalDate.of(2026, 5, 30), rules.deferralEndAfterDonation(donated));
         // a deferral that ends on day X blocks X (deferred_until >= date) and frees X+1
-        assertEquals(donated.plusMonths(4), DeferralRulesConfig.deferralEndAfterDonation(donated).plusDays(1));
+        assertEquals(donated.plusMonths(4), rules.deferralEndAfterDonation(donated).plusDays(1));
+    }
+
+    @Test
+    void testRulesAreTheKnowledgeBaseFacts() {
+        com.suwasarana.api.ai.kb.EligibilityFacts f = new com.suwasarana.api.ai.kb.EligibilityFacts(
+                new com.suwasarana.api.ai.kb.KnowledgeBase(new com.suwasarana.api.ai.AiProperties()));
+        assertEquals(f.getMinAge(), rules.minAge());
+        assertEquals(f.getMaxAge(), rules.maxAge());
+        assertEquals(f.getFirstTimeMaxAge(), rules.firstTimeMaxAge());
+        assertEquals(0, f.getWeightKgAbove().compareTo(rules.minWeightKgExclusive()));
+        assertEquals(f.getDonationIntervalMonths(), rules.donationIntervalMonths());
+        // the endpoint shows exactly these numbers and nothing that has no source
+        assertEquals(4, rules.verifiedRules().get("donationIntervalMonths"));
+        assertFalse(rules.verifiedRules().keySet().stream().anyMatch(k -> k.matches("(?i).*(tattoo|surgery|dental|antibiotic|alcohol|pregnan).*")));
     }
 }

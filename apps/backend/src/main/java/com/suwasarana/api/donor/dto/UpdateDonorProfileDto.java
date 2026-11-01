@@ -22,8 +22,8 @@ public class UpdateDonorProfileDto {
     @Past(message = "Date of birth must be in the past")
     private LocalDate dateOfBirth;
 
-    // NBTS: donors must weigh above 50 kg (DeferralRulesConfig.MIN_DONOR_WEIGHT_KG); the profile only stores donors who can give
-    @DecimalMin(value = "50.0", inclusive = false, message = "Weight must be above 50 kg to donate blood")
+    // the minimum (NBTS: above 50 kg) comes from EligibilityFacts, the same source as DeferralService; the profile only stores donors who can give
+    @MinDonorWeight
     @DecimalMax(value = "300.0", message = "Weight must be at most 300 kg")
     private BigDecimal weightKg;
 

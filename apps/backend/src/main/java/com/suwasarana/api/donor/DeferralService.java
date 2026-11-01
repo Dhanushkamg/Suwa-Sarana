@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Decides whether a donor may donate on a given date. Every number comes from {@link DeferralRulesConfig}.
+ * Decides whether a donor may donate on a given date. Every number comes from {@link DeferralRulesConfig}, which reads {@code EligibilityFacts} (the knowledge base).
  *
  * <p>Reason codes (stable, localised by the frontend):
  * <ul>
@@ -27,10 +27,12 @@ public class DeferralService {
     public static final String RECENT_DONATION = "RECENT_DONATION";
 
     private final DeferralRepository deferralRepository;
+    private final DeferralRulesConfig rules;
 
     @Autowired
-    public DeferralService(DeferralRepository deferralRepository) {
+    public DeferralService(DeferralRepository deferralRepository, DeferralRulesConfig rules) {
         this.deferralRepository = deferralRepository;
+        this.rules = rules;
     }
 
     /** Eligibility on {@code onDate} (today for matching, the slot date for bookings). */
@@ -40,14 +42,14 @@ public class DeferralService {
         if (donor.getDateOfBirth() != null) {
             int age = DeferralRulesConfig.ageOn(donor.getDateOfBirth(), onDate);
             boolean firstTime = donor.getTotalDonations() == null || donor.getTotalDonations() == 0;
-            if (age < DeferralRulesConfig.MIN_DONOR_AGE || age > DeferralRulesConfig.MAX_DONOR_AGE) {
+            if (age < rules.minAge() || age > rules.maxAge()) {
                 reasons.add("AGE_OUT_OF_RANGE");
-            } else if (!DeferralRulesConfig.isAgeAcceptable(age, firstTime)) {
+            } else if (!rules.isAgeAcceptable(age, firstTime)) {
                 reasons.add("AGE_ABOVE_FIRST_TIME_LIMIT");
             }
         }
 
-        if (!DeferralRulesConfig.isWeightAcceptable(donor.getWeightKg())) {
+        if (!rules.isWeightAcceptable(donor.getWeightKg())) {
             reasons.add("UNDERWEIGHT");
         }
 

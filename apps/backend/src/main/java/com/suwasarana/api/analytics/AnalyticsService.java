@@ -61,6 +61,9 @@ public class AnalyticsService {
     @Autowired
     private AppClock clock;
 
+    @Autowired
+    private DeferralRulesConfig rules;
+
     @Value("${app.analytics.window-days:30}")
     private int windowDays = 30;
 
@@ -230,10 +233,10 @@ public class AnalyticsService {
                                 + "AND (d.weightKg IS NULL OR d.weightKg > :minWeight) "
                                 + "AND NOT EXISTS (SELECT f.id FROM DonorDeferral f WHERE f.donor.id = d.id AND f.deferredUntil >= :today) "
                                 + "GROUP BY d.district")
-                .setParameter("oldEnough", today.minusYears(DeferralRulesConfig.MIN_DONOR_AGE))
-                .setParameter("notTooOld", today.minusYears(DeferralRulesConfig.MAX_DONOR_AGE + 1))
-                .setParameter("notTooOldFirstTime", today.minusYears(DeferralRulesConfig.MAX_FIRST_TIME_DONOR_AGE + 1))
-                .setParameter("minWeight", DeferralRulesConfig.MIN_DONOR_WEIGHT_KG)
+                .setParameter("oldEnough", today.minusYears(rules.minAge()))
+                .setParameter("notTooOld", today.minusYears(rules.maxAge() + 1))
+                .setParameter("notTooOldFirstTime", today.minusYears(rules.firstTimeMaxAge() + 1))
+                .setParameter("minWeight", rules.minWeightKgExclusive())
                 .setParameter("today", today)
                 .getResultList();
         for (Object[] row : availRows) {

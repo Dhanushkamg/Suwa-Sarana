@@ -38,16 +38,18 @@ public class DonationRecorder {
     private final DeferralRepository deferralRepository;
     private final ReliabilityScoreService reliabilityScoreService;
     private final AppClock clock;
+    private final DeferralRulesConfig rulesConfig;
 
     @Autowired
     public DonationRecorder(DonationRecordRepository recordRepository, DonorRepository donorRepository,
                             DeferralRepository deferralRepository, ReliabilityScoreService reliabilityScoreService,
-                            AppClock clock) {
+                            AppClock clock, DeferralRulesConfig rulesConfig) {
         this.recordRepository = recordRepository;
         this.donorRepository = donorRepository;
         this.deferralRepository = deferralRepository;
         this.reliabilityScoreService = reliabilityScoreService;
         this.clock = clock;
+        this.rulesConfig = rulesConfig;
     }
 
     /** A requester/hospital confirmed that the donor of this ACCEPTED match gave blood. */
@@ -107,7 +109,7 @@ public class DonationRecorder {
         deferral.setDonor(donor);
         deferral.setReason(DeferralService.RECENT_DONATION);
         deferral.setDeferredFrom(on);
-        deferral.setDeferredUntil(DeferralRulesConfig.deferralEndAfterDonation(on));
+        deferral.setDeferredUntil(rulesConfig.deferralEndAfterDonation(on));
         deferralRepository.save(deferral);
 
         reliabilityScoreService.recordSuccessfulDonation(donor.getId());

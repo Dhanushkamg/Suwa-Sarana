@@ -135,6 +135,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private ObjectMapper mapper;
     @Autowired private AppClock clock;
+    @Autowired private com.suwasarana.api.donor.DeferralRulesConfig rulesConfig;
     @Autowired private Environment environment;
 
     @Value("${DEMO_PASSWORD:}")
@@ -331,12 +332,12 @@ public class DemoDataSeeder implements ApplicationRunner {
             donationRecordRepository.save(r);
             d.setTotalDonations(d.getTotalDonations() + 1);
             d.setLivesHelpedEstimate(d.getLivesHelpedEstimate() + 3);
-            if (!DeferralRulesConfig.nextEligibleDateAfterDonation(on).isBefore(today)) {
+            if (!rulesConfig.nextEligibleDateAfterDonation(on).isBefore(today)) {
                 DonorDeferral f = new DonorDeferral();
                 f.setDonor(d);
                 f.setReason(DeferralService.RECENT_DONATION);
                 f.setDeferredFrom(on);
-                f.setDeferredUntil(DeferralRulesConfig.deferralEndAfterDonation(on));
+                f.setDeferredUntil(rulesConfig.deferralEndAfterDonation(on));
                 deferralRepository.save(f);
                 donorsWithDonationInWindow.add(d.getId());
             }
