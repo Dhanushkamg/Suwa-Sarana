@@ -98,6 +98,12 @@ The dev profile additionally runs the older `DataInitializer`, which adds `admin
 * Swagger UI is ADMIN-only: log in as admin, then open `/swagger-ui/index.html` with the bearer token.
 * `/api/analytics/summary` and `/api/analytics/district-summary` require a signed-in user (any role); only
   `/api/meta/districts`, `/api/inventory/stock-signals`, `/api/camps`, circle pages, `/api/faq/ask` and `/api/contact` are public.
+* **AI features need no key**: `POST /api/faq/ask`, `POST /api/requests/ai-draft` and `POST /api/ai/poster-copy` work without
+  `GROQ_API_KEY` (deterministic answers from the knowledge base, rule-based intake, template poster copy; the start-up log
+  warns once that no LLM key is set). Set `GROQ_API_KEY` (or `APP_AI_GROQ_API_KEY`) only to enable the optional LLM polish /
+  extraction; all `APP_AI_*` options are in `docs/AI.md` section 5. Responses: `docs/API-CONTRACT.md` sections 11.1-11.3.
+  Per-user AI limits apply locally too (5 requests/minute for ai-draft and poster-copy); raise them with
+  `APP_RATE_LIMIT_MULTIPLIER=20` when exploring.
 * Tests: `./mvnw.cmd -q -B test` from `apps/backend` (set `REQUIRE_DOCKER=true` so the Testcontainers/Postgres tests fail
   instead of being skipped when Docker is down).
 * API reference: `docs/API-CONTRACT.md`.

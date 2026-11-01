@@ -3,6 +3,8 @@
 Derived from the controllers and DTOs in `apps/backend` (branch `chore/completion`) and checked against a running
 instance (dev profile, demo data). If code and this file disagree, the code wins; please fix the file.
 
+AI endpoints (chatbot, request intake, triage, poster copy) are specified in sections 11.1-11.3 and in more depth in [`AI.md`](AI.md).
+
 Base URL: `http://localhost:8081` locally (see `docs/LOCAL-RUN.md`), every path below starts with `/api`.
 
 ## 0. Conventions
@@ -70,9 +72,10 @@ Every JSON response except the "raw" ones listed in 0.7 is
 ### 0.5 Rate limiting (429)
 
 Per client IP (and per identifier for OTP / circle / login): login, register, send-otp, verify-otp, reset-password,
-google, other auth POSTs, `/api/faq/**`, `POST /api/requests/ai-draft`, `POST /api/contact`, `POST /api/circle/*/respond`,
+google, other auth POSTs, `/api/faq/**`, `POST /api/requests/ai-draft`, `POST /api/ai/poster-copy`, `POST /api/contact`, `POST /api/circle/*/respond`,
 `POST /api/requests` (create), `POST /api/requests/*/report`, IVR. Answer:
 `429 { code: "rate.limited", data: { retryAfterSeconds }, message: "Too many requests..." }` + `Retry-After` header.
+The AI endpoints that cost LLM tokens also have per-user and per-day caps (checked after authentication, same `429 rate.limited`): `ai-draft` and `poster-copy` allow 20 requests/min/IP, 200/day/IP, 5/min/user and 50/day/user; `/api/faq/**` allows 10/min/IP and 300/day/IP. Every number can be overridden with `app.rate-limit.groups.<group>.*` (see `RateLimitProperties`).
 Account lockout after repeated bad logins: 429 `auth.account.locked` with the same data/header. Behind a proxy the client IP is
 only trusted when the proxy is in `TRUSTED_PROXY_REGEX`.
 
@@ -166,11 +169,11 @@ preferredLanguage, authProvider ("LOCAL"|"GOOGLE"), hasPassword, googleLinked, c
 | Method + path | Body / query | Response `data` |
 |---|---|---|
 | `GET /donors/me` | - | `DonorProfile`: `{ bloodType, dateOfBirth, weightKg, district, latitude, longitude, available, reliabilityScore, quietHoursStart, quietHoursEnd, totalDonations, livesHelpedEstimate }` (404 "Donor profile not found" until the first PUT) |
-| `PUT /donors/me` | `{ bloodType, dateOfBirth(past), weightKg(>50, optional), district, latitude, longitude, quietHoursStart?, quietHoursEnd? }` | `DonorProfile` |
+| `PUT /donors/me` | `{ bloodType, dateOfBirth(past), weightKg(strictly above the knowledge-base minimum, 50; optional), district, latitude, longitude, quietHoursStart?, quietHoursEnd? }`; 400 `validation.failed` with `data.weightKg = "Weight must be above 50 kg to donate blood"` for 50 or less | `DonorProfile` |
 | `PATCH /donors/me/availability` | `{ isAvailable: boolean }` (alias `available` accepted) | `DonorProfile` (field is `available`) |
 | `GET /donors/me/matches` | - | `[{ id, status, createdAt, respondedAt, distanceKm, request: { id, patientBloodType, urgency, hospitalName, district, unitsNeeded, status, expiresAt, latitude, longitude, currentRadiusKm } }]` |
 | `GET /donors/me/donations?limit=100` | - | `[{ id, donatedOn, source, hostName, district, bloodType, requestId }]`, newest first |
-| `GET /donors/me/eligibility` | - | `{ eligible, nextEligibleDate, reasons:[ "RECENT_DONATION" ...], evaluatedOn, lastDonationDate, totalDonations, rules:{minAge,maxAge,maxAgeFirstTimeDonor,minWeightKgExclusive,donationIntervalMonths,minHaemoglobinGdLExclusive,source,ownerConfirmed}, rulesConfirmedByOwner }` |
+| `GET /donors/me/eligibility` | - | `{ eligible, nextEligibleDate, reasons:[ "AGE_OUT_OF_RANGE" \| "AGE_ABOVE_FIRST_TIME_LIMIT" \| "UNDERWEIGHT" \| "RECENT_DONATION" \| "ACTIVE_DEFERRAL" ], evaluatedOn, lastDonationDate, totalDonations, rules:{minAge,maxAge,maxAgeFirstTimeDonor,minWeightKgExclusive,donationIntervalMonths,minHaemoglobinGdLExclusive,source,ownerConfirmed}, rulesConfirmedByOwner }` |
 | `GET /donors/me/bookings` | - | `[SlotBooking]` (section 7) |
 | `POST /matches/{id}/respond?response=ACCEPTED\|DECLINED` | - | `null` (404 `match.not_found`, 409 `match.already_answered`) |
 
@@ -184,7 +187,7 @@ confirmedDonations, coarseLocation }`. `fraudRiskScore/aiFlagReason/triagedAt` a
 | Method + path | Auth | Body | Response | Errors |
 |---|---|---|---|---|
 | `POST /requests` | REQUESTER, HOSPITAL, ADMIN | `{ patientBloodType, unitsNeeded(1-10), urgency, hospitalName(<=150), district(one of the 25), latitude, longitude }` (coordinates inside Sri Lanka) | `Request` | 400 `geo.unknown_district`, `geo.outside_sri_lanka`, 409 `request.duplicate`, 429 `request.limit_reached` (max 3 active) / `rate.limited`, 403 `request.requester_not_verified`, `verification.*` |
-| `POST /requests/ai-draft` | same | `{ text(<=2000), locale? }` | `{ patientBloodType, unitsNeeded, urgency, hospitalName, district, latitude, longitude, extractedSuccessfully, message }` | 429 |
+| `POST /requests/ai-draft` | same | `{ text(<=2000), locale? }` | see section 11.1 (every field can be `null`, nothing is saved) | 400, 429 |
 | `GET /requests` | any signed-in | - | `[Request]` admins: all; others: only OPEN/ESCALATING, coarse location | |
 | `GET /requests/me` | REQUESTER, HOSPITAL, ADMIN | - | `[Request]` | |
 | `GET /requests/{id}` | any signed-in | - | `Request` (owner, admin or a matched donor; otherwise 404 `request.not_found`) | |
@@ -295,8 +298,8 @@ authProvider, registeredAt, verificationReviewedBy, verificationReviewedAt, veri
 | `POST /admin/invitations` | `{ email, firstName?, preferredLanguage? }` | `{ email, expiresAt }` (the token is only in the e-mail); 409 `admin.invite.userExists` |
 | `GET /admin/audit?action=&targetUserId=&actorId=&page=&size=` | | `PageDto<{ id, actorId, actorRole, action, targetUserId, reason, details, ipAddress, createdAt }>` |
 | `GET /admin/reports` | | `[{ id, requestId, reason, createdAt, reporterId }]` |
-| `GET /admin/triage/queue` | | `[Request]` ordered by `fraudRiskScore` desc |
-| `PUT /admin/triage/{id}/review` | `{ notes?(<=200) }` | `null` |
+| `GET /admin/triage/queue` | | `[TriageItem]` = `Request` + `{ reasons:[{ code, weight }], engineVersion, humanReviewRecommended, reviewed, reviewedBy, reviewedAt, reviewDecision, reviewNote }`; ordered by `fraudRiskScore` desc, requests already reviewed after the pending ones. `reasons[].code` is one of `REQUESTER_HIGH_FREQUENCY`(45) `REQUESTER_REPEAT_24H`(20) `UNVERIFIED_HIGH_UNITS`(35) `UNVERIFIED_MODERATE_UNITS`(15) `SUSPICIOUS_HOSPITAL_NAME`(30) `UNVERIFIED_CRITICAL`(25); the frontend localises by code. The score is rule-based, not machine learning |
+| `PUT /admin/triage/{id}/review` | `{ notes?(<=200), decision?("REVIEWED"\|"DISMISSED"\|"CONFIRMED", default REVIEWED) }` | `null`. The AI score is **not** changed; reviewer id, time, decision and note are stored beside it and an `admin_audit_log` row `TRIAGE_REVIEWED` is written (`GET /admin/audit?action=TRIAGE_REVIEWED`). 404 for an unknown request, 400 `validation.failed` for another decision |
 | `GET /admin/contact-messages?status=&page=&size=` | | `{ items:[{ id, name, email, subject, message, status, createdAt, handledAt? }], page, size, totalElements, totalPages }` |
 | `PATCH /admin/contact-messages/{id}` | `{ status: "HANDLED"\|"NEW" }` | the message |
 
@@ -305,10 +308,90 @@ authProvider, registeredAt, verificationReviewedBy, verificationReviewedAt, veri
 | Method + path | Body | Response |
 |---|---|---|
 | `POST /contact` | `{ name, email, subject(3-200), message(10-2000), website? }` (`website` is a honeypot: leave empty) | `data: "..."` text; 429 |
-| `POST /faq/ask` | `{ question(<=500), locale? }` | `{ question, answer, locale, groundedInRules, disclaimer }` - **existing shape; the AI engineer is extending it (sources, follow-ups)**; 429 |
 | `GET\|POST /ivr/webhook` | Twilio form, header `X-Twilio-Signature` | TwiML XML; 403 without a valid signature |
 | `GET /actuator/health/liveness`, `/readiness` | public | `{ "status": "UP" }`; the aggregate `/actuator/health`, `/actuator/metrics`, swagger are ADMIN only |
-| `POST /ai/poster-copy` | **planned (AI engineer), not implemented yet** | 404 today |
+| `POST /faq/ask` | public, see section 11.2 | | |
+| `POST /ai/poster-copy` | authenticated, see section 11.3 | | |
+
+### 11.1 `POST /api/requests/ai-draft` (REQUESTER, HOSPITAL_REQUESTER, ADMIN)
+
+Request: `{ "text": "<=2000 chars, required", "locale": "en|si|ta (optional)" }`. Phone numbers and NIC numbers are removed before the text can reach a language model. Nothing is saved.
+
+Response `data` (real output for "Need 2 units of O+ blood urgently at Karapitiya Teaching Hospital Galle"):
+
+```json
+{ "approximateCoordinates": true, "coordinateSource": "DISTRICT_CENTROID", "district": "Galle", "extractedSuccessfully": true,
+  "hospitalName": "Karapitiya Teaching Hospital", "latitude": 6.0535, "longitude": 80.221,
+  "message": "Draft ready. Please check every highlighted field before you submit; nothing has been sent.",
+  "missingFields": [],
+  "needsConfirmation": { "patientBloodType": false, "unitsNeeded": false, "urgency": false, "hospitalName": false, "district": false, "coordinates": true },
+  "patientBloodType": "O+", "source": "rules", "unitsNeeded": 2, "urgency": "URGENT", "warnings": [] }
+```
+
+`patientBloodType, unitsNeeded, urgency, hospitalName, district, latitude, longitude` can each be `null` (an unknown district is `null`, never Colombo; no invented hospital; no default unit count). `missingFields` lists them. `source` is `llm` or `rules`. Coordinates only ever come from the 25 district centroids (`coordinateSource = "DISTRICT_CENTROID"`, `approximateCoordinates = true`). `urgency: "CRITICAL"` is always flagged in `needsConfirmation`. The frontend must show flagged fields as "please check".
+
+### 11.2 `POST /api/faq/ask` (public)
+
+Request (`FaqQuestionDto`):
+
+```json
+{ "question": "What is the minimum age and weight to donate blood?",
+  "history": [ { "role": "user|assistant", "content": "<=2000 chars" } ],
+  "language": "en|si|ta|auto", "replyStyle": "auto|script|romanised", "locale": "en|si|ta" }
+```
+
+`question` required, <= 500 chars; `history` optional, <= 20 messages (the server uses the last 6); `language`, `replyStyle` optional; `locale` is a deprecated hint. Violations: `400 validation.failed` with `data = { "question": "Question cannot be blank" }` (or `language`, `replyStyle`, `history`).
+
+Response `data` (`FaqAnswerDto`, real output; `answer` shortened here):
+
+```json
+{ "answer": "• Donors must be between 18 and 60 years of age. ...",
+  "disclaimer": "General information only, not medical advice or a diagnosis. The Medical Officer at the blood bank makes the final decision on whether you can donate.",
+  "followUps": ["What haemoglobin level do I need to donate?", "How often can I donate blood?", "I am 57 and have never donated. Can I donate?"],
+  "grounded": true, "groundedInRules": true, "inputStyle": "en", "kind": "ANSWER", "language": "en", "locale": "en",
+  "needsConfirmation": true, "replyStyle": "script",
+  "sources": [ { "id": "ELIG-AGE", "title": "Donate Blood - National Blood Transfusion Service - Sri Lanka", "url": "https://nbts.health.gov.lk/donate-blood/",
+                 "lastReviewed": "2026-10-27", "status": "VERIFIED" } ],
+  "translationDraft": false, "translationNote": null, "usedLlm": false }
+```
+
+`kind` = `ANSWER | NO_ANSWER | EMERGENCY | OFF_TOPIC | REFUSAL | GREETING | SMALL_TALK | PLATFORM | EMPTY`; `sources[].status` = `VERIFIED | CONFLICT | GAP | SECONDARY`; `inputStyle` = `en | si | ta | singlish | tanglish | unknown`. UI rule: show the green "grounded" badge only when `grounded && !needsConfirmation`; show an amber "confirm with NBTS" state when `needsConfirmation`; `translationNote` must be shown for si/ta drafts. `groundedInRules` and `locale` are deprecated aliases of `grounded` and `language`. Works without any LLM key (deterministic answers from the knowledge base). More: `docs/AI.md` sections 2-4.
+
+### 11.3 `POST /api/ai/poster-copy` (any signed-in role)
+
+Request (`PosterCopyRequestDto`):
+
+```json
+{ "template": "URGENT_REQUEST|CAMP|AWARENESS|THANK_YOU", "language": "en|si|ta",
+  "facts": { "bloodType": "O+", "units": "2", "hospital": "Karapitiya Teaching Hospital", "district": "Galle", "contactPhone": "0771234567" } }
+```
+
+Allowed `facts` keys: `bloodType, units, hospital, district, date (yyyy-MM-dd), time (HH:mm), venue, contactPhone, campName, organiser`; at most 20 entries. Required: URGENT_REQUEST `bloodType, units, hospital, district, contactPhone`; CAMP `campName, date, venue, district`; AWARENESS and THANK_YOU none.
+
+Response `data` (`PosterCopyResponseDto`, real output):
+
+```json
+{ "headline": "URGENT: O+ blood needed",
+  "body": "2 unit(s) of O+ blood are needed at Karapitiya Teaching Hospital, Galle.\nContact: 0771234567",
+  "hashtags": ["#BloodDonation", "#SriLanka", "#Galle", "#DonateBlood"],
+  "caption": "Urgent: O+ blood needed at Karapitiya Teaching Hospital, Galle. Please share and donate if you can. Contact 0771234567.",
+  "usedLlm": false }
+```
+
+Errors use the standard envelope with the code at the top level (`data` is `null`):
+
+| HTTP | `code` | When |
+|---|---|---|
+| 401 | `auth.unauthorized` | no token |
+| 400 | `validation.failed` | bad `template` / `language`, missing `facts`, more than 20 facts |
+| 400 | `poster.missing_fact` | a required fact is absent (`"Missing facts: date, venue, district"`) |
+| 400 | `poster.unknown_fact` | a key that is not in the allowed list |
+| 400 | `poster.invalid_fact` | bad blood type, district not one of the 25, bad phone, `<`, `>` or `{{` in a value, > 120 chars, a phone-like number hidden in free text |
+| 422 | `poster.unverified_requester` | URGENT_REQUEST by a requester whose `verificationStatus` is not `VERIFIED` (admins pass) |
+| 422 | `poster.patient_name_not_allowed` | a patient / personal key such as `patientName`, `nic`, `photo` |
+| 429 | `rate.limited` | see 0.5 |
+
+Real example: `{"success":false,"message":"Only verified requesters can create an urgent request poster.","code":"poster.unverified_requester","data":null,"timestamp":"..."}`. There is no institution-role guard: any signed-in user may generate AWARENESS / CAMP / THANK_YOU copy.
 
 ---
 
@@ -391,6 +474,14 @@ Field-level (appear in `data` of `validation.failed`, or as `code` for single-fi
 | `donor.profile_not_found` | 404 | Create the profile first |
 | `donor.ineligible` | 422 | Donor not eligible at that time |
 | `circle.not_found` / `circle.expired` | 404 / 410 | Private circle invitation |
+
+### AI
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `poster.unverified_requester` | 422 | URGENT_REQUEST poster by a non-VERIFIED requester |
+| `poster.patient_name_not_allowed` | 422 | Patient / personal field sent to poster-copy |
+| `poster.unknown_fact` / `poster.invalid_fact` / `poster.missing_fact` | 400 | Poster facts problems |
 
 ### Camps, slots, stock, notifications
 
