@@ -1,7 +1,7 @@
 import { FAQ_MAX_HISTORY, FAQ_MAX_QUESTION_LENGTH, type FaqAnswer, type FaqErrorKind, type FaqHistoryItem, type FaqReplyStyle } from '@/lib/api/faq';
 
 /** Answer details kept with a bot message. Only what the UI needs to render it. */
-export type StoredAnswer = Pick<FaqAnswer, 'grounded' | 'sources' | 'needsConfirmation' | 'disclaimer' | 'followUps' | 'language'>;
+export type StoredAnswer = Pick<FaqAnswer, 'grounded' | 'sources' | 'needsConfirmation' | 'disclaimer' | 'followUps' | 'language' | 'translationDraft' | 'translationNote'>;
 
 export interface ChatMessage {
   id: string;

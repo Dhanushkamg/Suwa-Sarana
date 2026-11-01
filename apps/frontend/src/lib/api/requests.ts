@@ -138,3 +138,92 @@ export { isEndpointMissing };
 
 /** A request is still "live" (can be fulfilled or closed) in these states. */
 export const isRequestLive = (status: string) => status === 'OPEN' || status === 'ESCALATING' || status === 'MATCHED';
+
+/* ------------------------------------------------------------------
+   Creating a request, and the AI intake draft (docs/API-CONTRACT.md 11.1)
+------------------------------------------------------------------- */
+
+export const URGENCIES = ['ROUTINE', 'URGENT', 'CRITICAL'] as const;
+export type Urgency = (typeof URGENCIES)[number];
+
+/** Fields the server can flag with needsConfirmation in an AI draft. */
+export const DRAFT_FIELDS = ['patientBloodType', 'unitsNeeded', 'urgency', 'hospitalName', 'district', 'coordinates'] as const;
+export type DraftField = (typeof DRAFT_FIELDS)[number];
+
+/**
+ * POST /api/requests/ai-draft -> a DRAFT, nothing is saved. Every value can be null: an unknown district is null (never Colombo),
+ * there is no invented hospital, no default unit count, no guessed urgency. `needsConfirmation[field]` = the person must check it.
+ */
+export interface AiDraft {
+  patientBloodType: string | null;
+  unitsNeeded: number | null;
+  urgency: Urgency | null;
+  hospitalName: string | null;
+  district: string | null;
+  /** Always the centre of the district (coordinateSource DISTRICT_CENTROID), never the hospital's real position. */
+  latitude: number | null;
+  longitude: number | null;
+  extractedSuccessfully: boolean;
+  needsConfirmation: Record<DraftField, boolean>;
+  approximateCoordinates: boolean;
+  missingFields: string[];
+  source: 'llm' | 'rules' | null;
+  /** English texts from the server; shown as they are. */
+  warnings: string[];
+}
+
+export function toAiDraft(body: Record<string, unknown>): AiDraft {
+  const flags = (body.needsConfirmation && typeof body.needsConfirmation === 'object' ? body.needsConfirmation : {}) as Record<string, unknown>;
+  const urgency = String(body.urgency ?? '');
+  return {
+    patientBloodType: str(body.patientBloodType) ?? null,
+    unitsNeeded: body.unitsNeeded == null ? null : num(body.unitsNeeded),
+    urgency: (URGENCIES as readonly string[]).includes(urgency) ? (urgency as Urgency) : null,
+    hospitalName: str(body.hospitalName) ?? null,
+    district: str(body.district) ?? null,
+    latitude: body.latitude == null ? null : num(body.latitude),
+    longitude: body.longitude == null ? null : num(body.longitude),
+    extractedSuccessfully: body.extractedSuccessfully === true,
+    needsConfirmation: Object.fromEntries(DRAFT_FIELDS.map((f) => [f, flags[f] === true])) as Record<DraftField, boolean>,
+    approximateCoordinates: body.approximateCoordinates === true,
+    missingFields: Array.isArray(body.missingFields) ? body.missingFields.map(String) : [],
+    source: body.source === 'llm' || body.source === 'rules' ? body.source : null,
+    warnings: Array.isArray(body.warnings) ? body.warnings.filter((w): w is string => typeof w === 'string' && w.trim() !== '') : [],
+  };
+}
+
+/** Text longer than this is refused (400); the server also cuts what it sends to the model. */
+export const AI_DRAFT_MAX_CHARS = 2000;
+
+export async function requestAiDraft(text: string, locale: 'en' | 'si' | 'ta'): Promise<AiDraft> {
+  const res = await apiClient.post('/requests/ai-draft', { text: text.trim().slice(0, AI_DRAFT_MAX_CHARS), locale });
+  return toAiDraft((unwrap<Record<string, unknown>>(res.data) ?? {}) as Record<string, unknown>);
+}
+
+export interface NewRequestInput {
+  patientBloodType: string;
+  /** 1 to 10 */
+  unitsNeeded: number;
+  urgency: Urgency;
+  /** at most 150 characters */
+  hospitalName: string;
+  /** one of the 25 official districts */
+  district: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** POST /api/requests. Errors: 409 request.duplicate, 429 request.limit_reached / rate.limited, 403 request.requester_not_verified, 400 geo.*. */
+export async function createRequest(input: NewRequestInput): Promise<BloodRequest | null> {
+  const res = await apiClient.post(REQUEST_PATHS.all, {
+    patientBloodType: input.patientBloodType,
+    unitsNeeded: input.unitsNeeded,
+    urgency: input.urgency,
+    hospitalName: input.hospitalName.trim(),
+    district: input.district,
+    latitude: input.latitude,
+    longitude: input.longitude,
+  });
+  const body = unwrap<Record<string, unknown> | null>(res.data);
+  return body ? toRequest(body) : null;
+}

@@ -48,6 +48,42 @@ describe('DonorFaqChatbot', () => {
     expect(screen.getAllByText('Verified source')).toHaveLength(1);
   });
 
+  it('shows a draft-translation note, and the real response fields do not break the widget', async () => {
+    post.mockResolvedValueOnce(
+      reply({
+        answer: 'දායකයන් වයස අවුරුදු 18 සිට 60 දක්වා විය යුතුය.',
+        language: 'si',
+        locale: 'si',
+        inputStyle: 'singlish',
+        replyStyle: 'script',
+        kind: 'ANSWER',
+        grounded: true,
+        groundedInRules: true,
+        needsConfirmation: false,
+        usedLlm: false,
+        translationDraft: true,
+        translationNote: 'Sinhala wording is a draft pending review.',
+        sources: [{ id: 'ELIG-AGE', title: 'Donate Blood - NBTS', url: 'https://nbts.health.gov.lk/donate-blood/', lastReviewed: '2026-10-27', status: 'VERIFIED' }],
+        followUps: [],
+      })
+    );
+    const user = await openChat();
+    await ask(user, 'wayasa kiyada');
+    expect(await screen.findByText(/දායකයන් වයස/)).toBeInTheDocument();
+    expect(screen.getByText('Sinhala wording is a draft pending review.')).toBeInTheDocument();
+    // fully sourced and nothing to confirm: the green badge
+    expect(screen.getByText('Verified source')).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith('/faq/ask', expect.objectContaining({ language: 'auto' }));
+  });
+
+  it('shows the generic draft note when the server sends none', async () => {
+    post.mockResolvedValueOnce(reply({ answer: 'Tamil answer', language: 'ta', grounded: false, translationDraft: true, translationNote: null }));
+    const user = await openChat();
+    await ask(user, 'question');
+    await screen.findByText('Tamil answer');
+    expect(screen.getByText('Draft translation, still waiting for review.')).toBeInTheDocument();
+  });
+
   it('never claims NBTS grounding statically', async () => {
     await openChat();
     expect(screen.queryByText(/NBTS Grounded/i)).not.toBeInTheDocument();
@@ -88,7 +124,9 @@ describe('DonorFaqChatbot', () => {
     expect(within(details).getByText('Verified')).toBeInTheDocument();
     expect(within(details).getByText('Sources disagree')).toBeInTheDocument();
 
-    expect(screen.getByText(/confirm this with the staff at your blood bank/i)).toBeInTheDocument();
+    expect(screen.getByText(/confirm this with the National Blood Transfusion Service/i)).toBeInTheDocument();
+    // grounded but still needs confirming: amber note, no green badge
+    expect(screen.queryByText('Verified source')).not.toBeInTheDocument();
     expect(screen.getByText('The Medical Officer decides.')).toBeInTheDocument();
     expect(screen.getByText('Reply language: English')).toBeInTheDocument();
     // the follow-up chip replaces the starter questions

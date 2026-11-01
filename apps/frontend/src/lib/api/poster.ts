@@ -10,6 +10,15 @@ export const POSTER_PATHS = {
 /** Error code the backend sends (HTTP 422) when an URGENT_REQUEST poster is asked for by a requester who is not VERIFIED. */
 export const UNVERIFIED_REQUESTER_CODE = 'poster.unverified_requester';
 
+/**
+ * The error `code` is at the top level of the envelope ({success:false, message, code, data:null}); older builds also put it in data.code.
+ */
+export function posterErrorCode(body: unknown): string | undefined {
+  const o = body as { code?: unknown; data?: { code?: unknown } | null } | null | undefined;
+  if (typeof o?.code === 'string') return o.code;
+  return typeof o?.data?.code === 'string' ? o.data.code : undefined;
+}
+
 export type PosterCopyErrorKind = 'unverified' | 'rate_limit' | 'unavailable';
 
 export class PosterCopyError extends Error {
@@ -31,17 +40,21 @@ export interface PosterCopyResponse {
 
 const hhmm = (v?: string) => (v ? /^(\d{1,2}):(\d{2})/.exec(v)?.slice(1).map((p) => p.padStart(2, '0')).join(':') : undefined);
 
-/** Facts in the shape of the contract: all optional strings/numbers, empty ones left out. */
+/**
+ * Facts in the shape of the contract (docs/API-CONTRACT.md 11.3): all optional strings, empty ones left out.
+ * The server accepts ONE blood type (a camp that asks for several sends none; the poster artwork still lists them) and a single
+ * time of day (HH:mm), not a range: sending "O+, O-" or "09:00-15:00" is refused with 400 poster.invalid_fact.
+ */
 export function toBackendFacts(facts: PosterFacts) {
   const start = hhmm(facts.startTime);
-  const end = hhmm(facts.endTime);
+  const bloodType = facts.bloodTypes && facts.bloodTypes.length > 0 ? (facts.bloodTypes.length === 1 ? facts.bloodTypes[0] : undefined) : facts.bloodType;
   const entries: Record<string, string | number | undefined> = {
-    bloodType: facts.bloodTypes && facts.bloodTypes.length > 0 ? facts.bloodTypes.join(', ') : facts.bloodType,
+    bloodType,
     units: facts.units,
     hospital: facts.hospital,
     district: facts.district,
     date: facts.date ? String(facts.date).slice(0, 10) : undefined,
-    time: start && end ? `${start}-${end}` : start,
+    time: start,
     venue: facts.venue,
     contactPhone: facts.contactPhone,
     campName: facts.campName,
@@ -64,8 +77,8 @@ export async function requestPosterCopy(
     const data = (unwrap<Record<string, unknown> | null>(res.data) ?? {}) as Record<string, unknown>;
     return { headline: data.headline, body: data.body, caption: data.caption, hashtags: data.hashtags, usedLlm: data.usedLlm !== false };
   } catch (err) {
-    const response = (err as { response?: { status?: number; data?: { code?: unknown } } } | null)?.response;
-    if (response?.status === 422 && response.data?.code === UNVERIFIED_REQUESTER_CODE) throw new PosterCopyError('unverified');
+    const response = (err as { response?: { status?: number; data?: unknown } } | null)?.response;
+    if (response?.status === 422 && posterErrorCode(response.data) === UNVERIFIED_REQUESTER_CODE) throw new PosterCopyError('unverified');
     if (response?.status === 429) throw new PosterCopyError('rate_limit');
     throw new PosterCopyError('unavailable');
   }

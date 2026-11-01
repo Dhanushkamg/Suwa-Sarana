@@ -126,3 +126,12 @@ Every `answer_si` / `answer_ta` in `apps/backend/src/main/resources/kb/nbts-elig
 ## FE integration: notifications inbox - needs native-speaker review
 
 `notifications.<type>.title/body` (match, accepted, fulfilled, closed, expired, reopened, lowStock, pledge, generic, slot.confirmed) are rendered from the inbox `titleKey`/`bodyKey` + `params`. `match` and `slot.confirmed` re-use the backend's own si/ta wording (`NotificationTemplates.java`); the others (accepted, fulfilled, closed, expired, reopened, lowStock, pledge) are new si/ta drafts here and the backend has no si/ta text for them yet (it falls back to English for SMS/e-mail). Also `dashUi.notif.loadMore` ("Show older notifications").
+
+## FE integration: AI request intake and chatbot notes - needs native-speaker review
+
+| Key | English | Wording used (si / ta) | Why unsure |
+|---|---|---|---|
+| `aiRequest.pleaseCheck`, `thisIsCorrect`, `checkFirst` | Please check this. It was filled in from your text and may be wrong. / This is correct | si: කරුණාකර මෙය පරීක්ෂා කරන්න ... / මෙය නිවැරදියි; ta: இதைச் சரிபார்க்கவும் ... / இது சரியானது | Safety-relevant: the person must confirm AI-filled values before a request is broadcast |
+| `aiRequest.notFound`, `field.*`, `draftReady`, `draftNone`, `verifyEditAi`, `aiPrivacy` | We could not find these in your text ... / Phone numbers and ID numbers are removed before the text is analysed | si/ta drafts | Privacy sentence must match the real behaviour (docs/AI.md section 4: phone numbers and NICs removed, names are not) |
+| `aiRequest.choose`, `chooseBloodType`, `unitsInvalid`, `chooseUrgency`, `hospitalRequired`, `chooseDistrict`, `locationNeedsDistrict` | Choose... / Choose the hospital's district. | si/ta drafts | |
+| `chatUi.translationDraft`, `chatUi.sourceStatus.SECONDARY`, `chatUi.needsConfirmation` | Draft translation, still waiting for review. / Secondary source (not official) / ... confirm with the National Blood Transfusion Service | si/ta drafts | NBTS official Sinhala/Tamil name is still marked unsure in the glossary |

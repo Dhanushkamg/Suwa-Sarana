@@ -177,6 +177,8 @@ export default function DonorFaqChatbot() {
           disclaimer: answer.disclaimer,
           followUps: answer.followUps,
           language: answer.language,
+          translationDraft: answer.translationDraft,
+          translationNote: answer.translationNote,
         },
       };
       setMessages([...withQuestion, reply]);
@@ -353,7 +355,8 @@ export default function DonorFaqChatbot() {
                       <>
                         {(m.answer.grounded || m.answer.language) && (
                           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                            {m.answer.grounded && <GroundedBadge label={t('chatUi.grounded')} />}
+                            {/* Green only for a fully sourced answer; anything that needs confirming gets the amber note below instead */}
+                            {m.answer.grounded && !m.answer.needsConfirmation && <GroundedBadge label={t('chatUi.grounded')} />}
                             {m.answer.language && (
                               <span className="inline-flex items-center gap-1 text-[11px] text-muted">
                                 <Languages className="h-3 w-3" aria-hidden="true" />
@@ -366,6 +369,12 @@ export default function DonorFaqChatbot() {
                           <div className="mt-2 flex items-start gap-1.5 rounded-lg border border-warning/30 bg-warning-soft px-2.5 py-2 text-xs leading-relaxed text-foreground">
                             <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning-text" aria-hidden="true" />
                             <span>{t('chatUi.needsConfirmation')}</span>
+                          </div>
+                        )}
+                        {m.answer.translationDraft && (
+                          <div className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-muted">
+                            <Languages className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                            <span className="min-w-0 break-words">{m.answer.translationNote || t('chatUi.translationDraft')}</span>
                           </div>
                         )}
                         <SourcesDisclosure sources={m.answer.sources} />

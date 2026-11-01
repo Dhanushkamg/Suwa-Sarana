@@ -4,7 +4,7 @@ const http = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn(), post: vi.fn(), dele
 vi.mock('@/lib/apiClient', () => ({ default: http }));
 
 import { effectiveMatchStatus } from '@/components/dash/matchStatus';
-import { CLOSE_REASONS, closeRequest, fetchRequest, fetchRequestMatches, fetchRequests, fulfilRequest, recordDonation, reportRequest } from '../requests';
+import { CLOSE_REASONS, closeRequest, createRequest, fetchRequest, fetchRequestMatches, fetchRequests, fulfilRequest, recordDonation, reportRequest, requestAiDraft, toAiDraft } from '../requests';
 
 const envelope = (data: unknown) => ({ data: { success: true, message: 'Success', data, timestamp: '2026-10-31T08:47:50.712Z' } });
 
@@ -105,5 +105,56 @@ describe('closing the loop', () => {
     http.post.mockResolvedValue(envelope(null));
     await reportRequest(41, 'SPAM', '  looks like an advert ');
     expect(http.post).toHaveBeenCalledWith('/requests/41/report', { reason: 'SPAM', details: 'looks like an advert' });
+  });
+});
+
+/** Real POST /api/requests/ai-draft output (docs/API-CONTRACT.md 11.1). */
+const draftBody = {
+  approximateCoordinates: true, coordinateSource: 'DISTRICT_CENTROID', district: 'Galle', extractedSuccessfully: true,
+  hospitalName: 'Karapitiya Teaching Hospital', latitude: 6.0535, longitude: 80.221,
+  message: 'Draft ready. Please check every highlighted field before you submit; nothing has been sent.',
+  missingFields: [],
+  needsConfirmation: { patientBloodType: false, unitsNeeded: false, urgency: false, hospitalName: false, district: false, coordinates: true },
+  patientBloodType: 'O+', source: 'rules', unitsNeeded: 2, urgency: 'URGENT', warnings: [],
+};
+
+describe('AI draft', () => {
+  it('reads a complete draft', async () => {
+    http.post.mockResolvedValueOnce(envelope(draftBody));
+    const draft = await requestAiDraft('  Need 2 units of O+ blood urgently at Karapitiya Teaching Hospital Galle ', 'en');
+    expect(http.post).toHaveBeenCalledWith('/requests/ai-draft', { text: 'Need 2 units of O+ blood urgently at Karapitiya Teaching Hospital Galle', locale: 'en' });
+    expect(draft).toMatchObject({ patientBloodType: 'O+', unitsNeeded: 2, urgency: 'URGENT', hospitalName: 'Karapitiya Teaching Hospital', district: 'Galle', source: 'rules', approximateCoordinates: true });
+    expect(draft.needsConfirmation).toEqual({ patientBloodType: false, unitsNeeded: false, urgency: false, hospitalName: false, district: false, coordinates: true });
+  });
+
+  it('keeps nulls: an unknown district stays null (never Colombo), no invented hospital, no default units', () => {
+    const draft = toAiDraft({
+      ...draftBody, district: null, hospitalName: null, unitsNeeded: null, latitude: null, longitude: null, urgency: null,
+      extractedSuccessfully: true, approximateCoordinates: false, coordinateSource: null,
+      missingFields: ['unitsNeeded', 'hospitalName', 'district', 'urgency'],
+      needsConfirmation: { patientBloodType: false, unitsNeeded: true, urgency: true, hospitalName: true, district: true, coordinates: false },
+      warnings: ['Could not tell which district the hospital is in.'],
+    });
+    expect(draft).toMatchObject({ district: null, hospitalName: null, unitsNeeded: null, urgency: null, latitude: null, longitude: null });
+    expect(draft.missingFields).toEqual(['unitsNeeded', 'hospitalName', 'district', 'urgency']);
+    expect(draft.needsConfirmation.district).toBe(true);
+    expect(draft.warnings).toEqual(['Could not tell which district the hospital is in.']);
+  });
+
+  it('a CRITICAL guess is flagged and an unknown urgency word becomes null', () => {
+    expect(toAiDraft({ ...draftBody, urgency: 'CRITICAL', needsConfirmation: { ...draftBody.needsConfirmation, urgency: true } }).needsConfirmation.urgency).toBe(true);
+    expect(toAiDraft({ ...draftBody, urgency: 'PANIC' }).urgency).toBeNull();
+  });
+
+  it('an empty answer is not a draft', () => {
+    expect(toAiDraft({})).toMatchObject({ extractedSuccessfully: false, patientBloodType: null, district: null });
+  });
+
+  it('creates a request with the contract fields', async () => {
+    http.post.mockResolvedValueOnce(envelope(owned));
+    await createRequest({ patientBloodType: 'O+', unitsNeeded: 3, urgency: 'URGENT', hospitalName: '  Karapitiya Teaching Hospital ', district: 'Galle', latitude: 6.0535, longitude: 80.221 });
+    expect(http.post).toHaveBeenCalledWith('/requests', {
+      patientBloodType: 'O+', unitsNeeded: 3, urgency: 'URGENT', hospitalName: 'Karapitiya Teaching Hospital', district: 'Galle', latitude: 6.0535, longitude: 80.221,
+    });
   });
 });

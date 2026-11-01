@@ -5,7 +5,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useI18n } from '@/lib/i18n';
 import { safeSourceUrl, type FaqSource } from '@/lib/api/faq';
 
-const STATUS_TONE = { VERIFIED: 'success', CONFLICT: 'warning', GAP: 'neutral' } as const;
+const STATUS_TONE = { VERIFIED: 'success', CONFLICT: 'warning', GAP: 'neutral', SECONDARY: 'neutral' } as const;
 
 /**
  * "Show source": the stored sources an answer cites, collapsed by default. A native <details>, so it is keyboard and

@@ -71,3 +71,55 @@ describe('safeSourceUrl', () => {
     expect(safeSourceUrl('')).toBeNull();
   });
 });
+
+describe('the real /faq/ask response (docs/API-CONTRACT.md 11.2)', () => {
+  const real = {
+    success: true,
+    message: 'Success',
+    data: {
+      answer: 'Donors must be between 18 and 60 years of age.',
+      disclaimer: 'General information only, not medical advice or a diagnosis.',
+      followUps: ['What haemoglobin level do I need to donate?', 'How often can I donate blood?'],
+      grounded: true,
+      groundedInRules: true,
+      inputStyle: 'en',
+      kind: 'ANSWER',
+      language: 'en',
+      locale: 'en',
+      needsConfirmation: true,
+      replyStyle: 'script',
+      sources: [
+        { id: 'ELIG-AGE', title: 'Donate Blood - National Blood Transfusion Service - Sri Lanka', url: 'https://nbts.health.gov.lk/donate-blood/', lastReviewed: '2026-10-27', status: 'VERIFIED' },
+        { id: 'NEWS-1', title: 'Press report', url: 'https://example.org/news', lastReviewed: null, status: 'SECONDARY' },
+      ],
+      translationDraft: false,
+      translationNote: null,
+      usedLlm: false,
+    },
+    timestamp: '2026-10-31T08:47:50.712Z',
+  };
+
+  it('reads every field, including kind, inputStyle, SECONDARY sources and translation fields', () => {
+    const a = normalizeFaqAnswer(real);
+    expect(a).toMatchObject({ kind: 'ANSWER', inputStyle: 'en', language: 'en', grounded: true, needsConfirmation: true, usedLlm: false, translationDraft: false, translationNote: null });
+    expect(a.sources.map((s) => s.status)).toEqual(['VERIFIED', 'SECONDARY']);
+    expect(a.sources[1].lastReviewed).toBeNull();
+    expect(a.followUps).toHaveLength(2);
+  });
+
+  it('a Sinhala draft carries the note', () => {
+    const a = normalizeFaqAnswer({ data: { ...real.data, language: 'si', inputStyle: 'singlish', translationDraft: true, translationNote: 'Draft translation' } });
+    expect(a).toMatchObject({ language: 'si', inputStyle: 'singlish', translationDraft: true, translationNote: 'Draft translation' });
+  });
+
+  it('unknown kinds and styles become null instead of leaking through', () => {
+    const a = normalizeFaqAnswer({ data: { ...real.data, kind: 'SURPRISE', inputStyle: 'klingon' } });
+    expect(a.kind).toBeNull();
+    expect(a.inputStyle).toBeNull();
+  });
+
+  it('a 429 reads retryAfterSeconds from the body before the header', () => {
+    const err = toFaqError({ response: { status: 429, headers: {}, data: { success: false, code: 'rate.limited', data: { retryAfterSeconds: 42 } } } });
+    expect(err).toMatchObject({ kind: 'rate_limit', retryAfterSeconds: 42 });
+  });
+});

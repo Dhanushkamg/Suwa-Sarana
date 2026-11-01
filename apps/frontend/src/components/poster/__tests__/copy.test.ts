@@ -90,7 +90,9 @@ describe('hashtags and caption', () => {
 describe('toBackendFacts', () => {
   it('sends only supplied system facts in the contract shape', () => {
     const facts = toBackendFacts({ ...fixtureFacts('CAMP', 'en'), organiser: 'a@b.lk' });
-    expect(facts).toMatchObject({ campName: 'Community Blood Drive', date: '2026-12-12', time: '09:00-15:00', bloodType: 'O+, O-, A+, B+' });
+    expect(facts).toMatchObject({ campName: 'Community Blood Drive', date: '2026-12-12', time: '09:00' });
+    // several blood types are not one valid bloodType for the server: omitted (the artwork still lists them)
+    expect(facts).not.toHaveProperty('bloodType');
     expect(facts).not.toHaveProperty('organiser'); // e-mail addresses are never sent
     expect(facts).not.toHaveProperty('units');
   });

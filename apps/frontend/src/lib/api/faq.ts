@@ -1,4 +1,5 @@
 import apiClient from '@/lib/apiClient';
+import { retryAfterOf } from '@/lib/apiError';
 import { asDate, unwrap } from './common';
 
 /** FAQ chatbot endpoint. Kept in one place so the path can change without touching the UI. */
@@ -12,7 +13,12 @@ export const FAQ_MAX_HISTORY = 6;
 
 export type FaqLanguage = 'en' | 'si' | 'ta';
 export type FaqReplyStyle = 'auto' | 'script' | 'romanised';
-export type FaqSourceStatus = 'VERIFIED' | 'CONFLICT' | 'GAP';
+/** SECONDARY = a source that is not the official one (shown, but never as "verified"). */
+export type FaqSourceStatus = 'VERIFIED' | 'CONFLICT' | 'GAP' | 'SECONDARY';
+
+/** Kinds of reply (docs/AI.md section 4). Only ANSWER can carry sources. */
+export type FaqKind = 'ANSWER' | 'NO_ANSWER' | 'EMERGENCY' | 'OFF_TOPIC' | 'REFUSAL' | 'GREETING' | 'SMALL_TALK' | 'PLATFORM' | 'EMPTY';
+export type FaqInputStyle = 'en' | 'si' | 'ta' | 'singlish' | 'tanglish' | 'unknown';
 
 export interface FaqHistoryItem {
   role: 'user' | 'assistant';
@@ -30,8 +36,15 @@ export interface FaqSource {
 
 export interface FaqAnswer {
   answer: string;
+  /** Language of the reply (never the deprecated `locale`). */
   language: FaqLanguage | null;
-  /** True only when the answer was built from stored, citable sources. Drives the "Verified source" badge. */
+  kind: FaqKind | null;
+  /** How the question was written (Sinhala letters, Singlish ...). */
+  inputStyle: FaqInputStyle | null;
+  /** True when the reply is an unreviewed draft translation (si / ta). `translationNote` is the localised notice. */
+  translationDraft: boolean;
+  translationNote: string | null;
+  /** True only when at least one stored source was used. The green "Verified source" badge needs `grounded && !needsConfirmation`. */
   grounded: boolean;
   sources: FaqSource[];
   needsConfirmation: boolean;
@@ -92,20 +105,24 @@ function readHeader(headers: unknown, name: string): unknown {
 /** Turns whatever axios threw into a FaqError. */
 export function toFaqError(err: unknown): FaqError {
   if (err instanceof FaqError) return err;
-  const response = (err as { response?: { status?: number; headers?: unknown } } | null)?.response;
+  const response = (err as { response?: { status?: number; headers?: unknown; data?: unknown } } | null)?.response;
   if (!response) {
     return new FaqError('offline');
   }
   const status = response.status ?? 0;
   if (status === 429) {
-    return new FaqError('rate_limit', { retryAfterSeconds: parseRetryAfter(readHeader(response.headers, 'retry-after')) });
+    // data.retryAfterSeconds first (same number as the Retry-After header), then the header
+    const seconds = retryAfterOf(response);
+    return new FaqError('rate_limit', { retryAfterSeconds: seconds ? parseRetryAfter(seconds) : parseRetryAfter(readHeader(response.headers, 'retry-after')) });
   }
   if (status === 400 || status === 413 || status === 422) return new FaqError('invalid');
   return new FaqError('server');
 }
 
 const LANGUAGES: FaqLanguage[] = ['en', 'si', 'ta'];
-const STATUSES: FaqSourceStatus[] = ['VERIFIED', 'CONFLICT', 'GAP'];
+const STATUSES: FaqSourceStatus[] = ['VERIFIED', 'CONFLICT', 'GAP', 'SECONDARY'];
+const KINDS: FaqKind[] = ['ANSWER', 'NO_ANSWER', 'EMERGENCY', 'OFF_TOPIC', 'REFUSAL', 'GREETING', 'SMALL_TALK', 'PLATFORM', 'EMPTY'];
+const INPUT_STYLES: FaqInputStyle[] = ['en', 'si', 'ta', 'singlish', 'tanglish', 'unknown'];
 
 const text = (v: unknown): string => (typeof v === 'string' ? v : '');
 
@@ -135,6 +152,10 @@ export function normalizeFaqAnswer(body: unknown): FaqAnswer {
   return {
     answer: text(data.answer).trim(),
     language,
+    kind: KINDS.includes(data.kind as FaqKind) ? (data.kind as FaqKind) : null,
+    inputStyle: INPUT_STYLES.includes(data.inputStyle as FaqInputStyle) ? (data.inputStyle as FaqInputStyle) : null,
+    translationDraft: data.translationDraft === true,
+    translationNote: text(data.translationNote).trim() || null,
     grounded: data.grounded === true,
     sources,
     needsConfirmation: data.needsConfirmation === true,

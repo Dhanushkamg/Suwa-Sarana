@@ -287,7 +287,30 @@
     "autoDetectGPS": "Auto-detect GPS",
     "geospatialCoords": "Geospatial Coordinates",
     "accountVerificationReq": "Account Verification Required:",
-    "criticalRestricted": "CRITICAL urgency is restricted to admin-verified requesters and hospitals. Your current status is"
+    "criticalRestricted": "CRITICAL urgency is restricted to admin-verified requesters and hospitals. Your current status is",
+    "choose": "Choose...",
+    "pleaseCheck": "Please check this. It was filled in from your text and may be wrong.",
+    "thisIsCorrect": "This is correct",
+    "checkFirst": "Check this value and press \"This is correct\" (or change it) before you send.",
+    "chooseBloodType": "Choose the patient's blood type.",
+    "unitsInvalid": "Enter the number of units, a whole number from 1 to 10.",
+    "chooseUrgency": "Choose how urgent the request is.",
+    "hospitalRequired": "Enter the hospital name.",
+    "hospitalTooLong": "The hospital name can have at most {max} characters.",
+    "chooseDistrict": "Choose the hospital's district.",
+    "locationNeedsDistrict": "Choose a district first. The search starts from the centre of the district.",
+    "draftReady": "Draft ready. Check every highlighted field before you send; nothing has been sent yet.",
+    "draftNone": "We could not find the details in your text. Please fill in the form yourself.",
+    "verifyEditAi": "Nothing has been sent. Check every field, especially the ones marked \"Please check this\", and fill in what is missing.",
+    "notFound": "We could not find these in your text:",
+    "field": {
+      "patientBloodType": "Blood type",
+      "unitsNeeded": "Units needed",
+      "urgency": "Urgency",
+      "hospitalName": "Hospital name",
+      "district": "District"
+    },
+    "aiPrivacy": "Phone numbers and ID numbers are removed before the text is analysed. Do not write the patient's name."
   },
   "campManager": {
     "managedCamps": "My Managed Donation Camps",
@@ -1718,10 +1741,11 @@
     "sourceStatus": {
       "VERIFIED": "Verified",
       "CONFLICT": "Sources disagree",
-      "GAP": "No verified answer yet"
+      "GAP": "No verified answer yet",
+      "SECONDARY": "Secondary source (not official)"
     },
     "lastReviewed": "Last reviewed {date}",
-    "needsConfirmation": "Please confirm this with the staff at your blood bank before you rely on it.",
+    "needsConfirmation": "Please confirm this with the National Blood Transfusion Service or the staff at your blood bank before you rely on it.",
     "replyLanguage": "Reply language: {language}",
     "lang": {
       "en": "English",
@@ -1744,7 +1768,8 @@
       "invalid": "That question could not be processed. Please shorten it or ask it a different way."
     },
     "inputHint": "Enter to send, Shift+Enter for a new line",
-    "charsLeft": "{count, plural, one {# character left} other {# characters left}}"
+    "charsLeft": "{count, plural, one {# character left} other {# characters left}}",
+    "translationDraft": "Draft translation, still waiting for review."
   },
   "poster": {
     "create": "Create poster",
