@@ -5,20 +5,29 @@ import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
- * Skips PostgreSQL-backed tests when neither Docker nor an external test database is available, so a plain
- * {@code mvn test} still works on a laptop without Docker. CI sets {@code REQUIRE_DOCKER=true}: there the tests must
- * run, and a missing Docker daemon fails the build instead of silently skipping coverage of the migrations.
+ * Skips PostgreSQL-backed tests when no PostgreSQL can be provided - neither Docker (Testcontainers) nor an external
+ * server configured with {@code -Dsuwa.test.pg.url} / {@code SUWA_TEST_PG_URL} - so a plain {@code mvn test} still works
+ * on a laptop without either. CI sets {@code REQUIRE_POSTGRES=true} (the old name {@code REQUIRE_DOCKER=true} still
+ * works): there the tests must run, and a missing database fails the build instead of silently skipping coverage of the
+ * migrations.
  */
-public class DockerAvailableCondition implements ExecutionCondition {
+public class PostgresAvailableCondition implements ExecutionCondition {
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
         if (SharedPostgres.isAvailable()) {
-            return ConditionEvaluationResult.enabled("PostgreSQL available");
+            return ConditionEvaluationResult.enabled("PostgreSQL available (" + SharedPostgres.mode() + ")");
         }
-        if ("true".equalsIgnoreCase(System.getenv("REQUIRE_DOCKER"))) {
-            throw new IllegalStateException("REQUIRE_DOCKER=true but no Docker daemon (or PGTEST_JDBC_URL) is available");
+        if (isRequired()) {
+            throw new IllegalStateException("REQUIRE_POSTGRES (or REQUIRE_DOCKER) is true but neither a Docker daemon nor "
+                    + "an external PostgreSQL (-Dsuwa.test.pg.url / SUWA_TEST_PG_URL) is available");
         }
-        return ConditionEvaluationResult.disabled("Docker is not available: skipping PostgreSQL integration test");
+        return ConditionEvaluationResult.disabled("No Docker and no external PostgreSQL: skipping PostgreSQL integration test");
+    }
+
+    /** True when {@code REQUIRE_POSTGRES} or the legacy {@code REQUIRE_DOCKER} is {@code true}. */
+    public static boolean isRequired() {
+        return "true".equalsIgnoreCase(System.getenv("REQUIRE_POSTGRES"))
+                || "true".equalsIgnoreCase(System.getenv("REQUIRE_DOCKER"));
     }
 }
