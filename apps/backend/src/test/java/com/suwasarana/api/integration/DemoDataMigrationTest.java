@@ -1,6 +1,6 @@
 package com.suwasarana.api.integration;
 
-import com.suwasarana.api.support.DockerAvailableCondition;
+import com.suwasarana.api.support.PostgresAvailableCondition;
 import com.suwasarana.api.support.SharedPostgres;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.DisplayName;
@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * kept in the dev environment, removed in prod, and never touching real data - including real donors that booked a
  * slot at a demo hospital.
  */
-@ExtendWith(DockerAvailableCondition.class)
+@ExtendWith(PostgresAvailableCondition.class)
 class DemoDataMigrationTest {
 
     private static final String SQL_USERS_DEMO = "SELECT count(*) FROM users WHERE email LIKE '%@test.com'";
@@ -36,8 +36,7 @@ class DemoDataMigrationTest {
     }
 
     private void migrateTo(String dbName, String environment, String targetVersion) throws Exception {
-        String url = SharedPostgres.jdbcUrl();
-        String dbUrl = url.substring(0, url.lastIndexOf('/') + 1) + dbName + (url.contains("?") ? url.substring(url.indexOf('?')) : "");
+        String dbUrl = SharedPostgres.databaseUrl(dbName);
         Flyway.configure()
                 .dataSource(dbUrl, SharedPostgres.username(), SharedPostgres.password())
                 .locations("classpath:db/migration")
