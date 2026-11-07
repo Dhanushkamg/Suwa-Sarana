@@ -51,6 +51,13 @@ class PostgresSmokeTest extends PostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("V24: contact_messages.id is bigint, matching the Long mapping that ddl-auto=validate checks")
+    void contactMessageIdIsBigint() {
+        assertThat(jdbc.queryForObject("SELECT data_type FROM information_schema.columns "
+                + "WHERE table_name = 'contact_messages' AND column_name = 'id'", String.class)).isEqualTo("bigint");
+    }
+
+    @Test
     @DisplayName("PostgreSQL contrib extensions needed by geo matching are installed")
     void geoExtensionsInstalled() {
         List<String> ext = jdbc.queryForList("SELECT extname FROM pg_extension", String.class);
