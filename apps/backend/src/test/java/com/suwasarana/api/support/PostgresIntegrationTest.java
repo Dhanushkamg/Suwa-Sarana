@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Base class for tests that need the REAL stack: PostgreSQL 16 (Testcontainers), every Flyway migration applied,
+ * Base class for tests that need the REAL stack: PostgreSQL (Testcontainers, or an external server via SUWA_TEST_PG_URL when Docker is unavailable), every Flyway migration applied,
  * Hibernate {@code ddl-auto=validate} against that schema, the full Spring Security filter chain via MockMvc.
  *
  * <p>Profile {@code pgtest} (src/test/resources/application-pgtest.yml) runs the application exactly like a
@@ -38,12 +38,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * demo data), JSON-free test logging. Subclasses share ONE Spring context and ONE database; give your test data unique
  * values (random e-mail / phone numbers) instead of assuming an empty database.</p>
  *
- * <p>Skipped automatically when Docker is unavailable (see {@link DockerAvailableCondition}); CI requires it.</p>
+ * <p>Skipped automatically when neither Docker nor an external PostgreSQL is available (see {@link PostgresAvailableCondition}); CI sets REQUIRE_POSTGRES=true.</p>
  */
 @SpringBootTest
 @ActiveProfiles("pgtest")
 @AutoConfigureMockMvc
-@ExtendWith(DockerAvailableCondition.class)
+@ExtendWith(PostgresAvailableCondition.class)
 public abstract class PostgresIntegrationTest {
 
     /**
