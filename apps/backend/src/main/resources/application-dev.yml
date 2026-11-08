@@ -44,6 +44,8 @@ app:
   seed-data:
     # Demo accounts (admin@test.com, donor@test.com ... password in DataInitializer) + sample requests/camps.
     enabled: ${SEED_DATA_ENABLED:true}
+  rate-limit:
+    multiplier: ${RATE_LIMIT_MULTIPLIER:10.0}
 
 logging:
   level:
