@@ -3,7 +3,7 @@
 # Production uses the backend image's default `prod` profile with secrets from AWS Secrets Manager / SSM.
 services:
   db:
-    image: postgres:16.15-alpine3.23
+    image: postgres:18.4-alpine3.23
     container_name: suwasarana-db
     restart: unless-stopped
     environment:
