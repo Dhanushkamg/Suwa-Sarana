@@ -16,13 +16,15 @@ import com.suwasarana.api.user.User;
 import com.suwasarana.api.user.UserRepository;
 import com.suwasarana.api.user.VerificationStatus;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import com.suwasarana.api.support.PostgresAvailableCondition;
+import com.suwasarana.api.support.SharedPostgres;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.jpa.repository.Query;
@@ -48,65 +50,44 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Runs the matching SQL, the Flyway migrations, the entities and the demo seeder against a REAL
- * PostgreSQL: the dev container {@code suwa-pg-dev} on localhost:55432 (docker start suwa-pg-dev).
- * A scratch database is created for the class and dropped afterwards. When the server cannot be reached the whole class
- * is skipped, so CI without Docker stays green (H2 cannot run earthdistance).
+ * Runs the matching SQL, the Flyway migrations, the entities and the demo seeder against a REAL PostgreSQL: the
+ * Testcontainers instance, or the external server given by {@code -Dsuwa.test.pg.url} / {@code SUWA_TEST_PG_URL} when
+ * Docker is unavailable (see {@link SharedPostgres}). A scratch database is created for the class and dropped
+ * afterwards. Skipped only when neither is available (H2 cannot run earthdistance); {@code REQUIRE_POSTGRES=true} turns
+ * that into a failure.
  */
 @SpringBootTest
 @ActiveProfiles("test")
 @DirtiesContext
+@ExtendWith(PostgresAvailableCondition.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class MatchingPostgresTest {
 
-    private static final String HOST = System.getProperty("suwa.pg.host", "localhost");
-    private static final String PORT = System.getProperty("suwa.pg.port", "55432");
-    private static final String USER = System.getProperty("suwa.pg.user", "postgres");
-    private static final String PASSWORD = System.getProperty("suwa.pg.password", "devonly123");
-    private static final String ADMIN_URL = "jdbc:postgresql://" + HOST + ":" + PORT + "/postgres";
-
-    private static String dbName;
+    private static final String DB = "matching_class";
 
     @BeforeAll
-    static void createScratchDatabase() {
-        String name = "suwa_c_test_" + System.currentTimeMillis();
-        boolean ok;
-        try (Connection c = DriverManager.getConnection(ADMIN_URL, USER, PASSWORD); Statement st = c.createStatement()) {
-            st.execute("CREATE DATABASE " + name);
-            ok = true;
-        } catch (Exception e) {
-            ok = false;
-            System.out.println("PostgreSQL not reachable at " + ADMIN_URL + ": " + e.getMessage());
-        }
-        Assumptions.assumeTrue(ok, "PostgreSQL dev container not reachable on " + HOST + ":" + PORT + " (docker start suwa-pg-dev); skipping");
-        dbName = name;
-
+    static void createScratchDatabase() throws Exception {
+        String url = SharedPostgres.createDatabase(DB);
         // Run every migration with Flyway directly (the same V1..Vn files the application ships), then drop the demo rows
         // that old migrations (V3, V10) insert: nothing here may depend on seeded data.
-        String url = "jdbc:postgresql://" + HOST + ":" + PORT + "/" + name;
-        org.flywaydb.core.Flyway.configure().dataSource(url, USER, PASSWORD).locations("classpath:db/migration").placeholders(java.util.Map.of("environment", "dev")).load().migrate();
-        try (Connection c = DriverManager.getConnection(url, USER, PASSWORD); Statement st = c.createStatement()) {
+        org.flywaydb.core.Flyway.configure().dataSource(url, SharedPostgres.username(), SharedPostgres.password())
+                .locations("classpath:db/migration").placeholders(java.util.Map.of("environment", "dev")).load().migrate();
+        try (Connection c = DriverManager.getConnection(url, SharedPostgres.username(), SharedPostgres.password());
+             Statement st = c.createStatement()) {
             st.execute("TRUNCATE users, blood_bank_inventory RESTART IDENTITY CASCADE");
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
         }
     }
 
     @AfterAll
     static void dropScratchDatabase() {
-        if (dbName == null) return;
-        try (Connection c = DriverManager.getConnection(ADMIN_URL, USER, PASSWORD); Statement st = c.createStatement()) {
-            st.execute("DROP DATABASE IF EXISTS " + dbName + " WITH (FORCE)");
-        } catch (Exception e) {
-            System.out.println("Could not drop scratch database " + dbName + ": " + e.getMessage());
-        }
+        SharedPostgres.dropDatabase(DB);
     }
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", () -> "jdbc:postgresql://" + HOST + ":" + PORT + "/" + dbName);
-        r.add("spring.datasource.username", () -> USER);
-        r.add("spring.datasource.password", () -> PASSWORD);
+        r.add("spring.datasource.url", () -> SharedPostgres.databaseUrl(DB));
+        r.add("spring.datasource.username", SharedPostgres::username);
+        r.add("spring.datasource.password", SharedPostgres::password);
         // The entities must match what the migrations created
         r.add("spring.flyway.enabled", () -> "false"); // migrated in @BeforeAll
         r.add("spring.jpa.hibernate.ddl-auto", () -> "none");
@@ -194,19 +175,19 @@ class MatchingPostgresTest {
 
     @Test
     @Order(3)
-    @DisplayName("With 20,000 donors the candidate query is answered from the GiST index (earth_box), not a sequential scan")
+    @DisplayName("With 50,000 donors the candidate query is answered from the GiST index (earth_box), not a sequential scan")
     void candidateQuery_usesTheGistIndex() throws Exception {
         clearDonorData();
         User u = newUser("bulk");
         jdbc.update("INSERT INTO donor_profiles (user_id, blood_type, date_of_birth, weight_kg, district, latitude, longitude, is_available, reliability_score) "
                 + "SELECT ?, (ARRAY['O+','A+','B+','AB+','O-','A-','B-','AB-'])[1 + floor(random() * 8)::int], DATE '1990-05-05', 65, 'Colombo', "
-                + "5.9 + random() * 3.9, 79.7 + random() * 2.1, true, round((random() * 100)::numeric, 2) FROM generate_series(1, 20000)", u.getId());
+                + "5.9 + random() * 3.9, 79.7 + random() * 2.1, true, round((random() * 100)::numeric, 2) FROM generate_series(1, 50000)", u.getId());
         jdbc.execute("ANALYZE donor_profiles");
-        assertEquals(20000, jdbc.queryForObject("SELECT COUNT(*) FROM donor_profiles", Integer.class));
+        assertEquals(50000, jdbc.queryForObject("SELECT COUNT(*) FROM donor_profiles", Integer.class));
 
         String sql = candidateSqlWithLiterals(5000);
         String plan = String.join("\n", jdbc.queryForList("EXPLAIN (ANALYZE, BUFFERS OFF) " + sql, String.class));
-        System.out.println("===== candidate query plan (20,000 donors, 5 km) =====\n" + plan);
+        System.out.println("===== candidate query plan (50,000 donors, 5 km) =====\n" + plan);
         assertTrue(plan.contains("idx_donor_geo"), "the GiST index must be used:\n" + plan);
         assertFalse(plan.contains("Seq Scan on donor_profiles"), "no sequential scan of donor_profiles:\n" + plan);
 
