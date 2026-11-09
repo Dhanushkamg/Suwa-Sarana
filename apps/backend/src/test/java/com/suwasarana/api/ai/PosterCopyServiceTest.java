@@ -35,15 +35,25 @@ class PosterCopyServiceTest {
 
     @BeforeEach
     void setUp() {
-        users = Mockito.mock(UserRepository.class);
         User verified = new User();
         verified.setRole(Role.HOSPITAL_REQUESTER);
         verified.setVerificationStatus(VerificationStatus.VERIFIED);
         User pending = new User();
         pending.setRole(Role.REQUESTER);
         pending.setVerificationStatus(VerificationStatus.PENDING);
-        Mockito.when(users.findById(1L)).thenReturn(Optional.of(verified));
-        Mockito.when(users.findById(2L)).thenReturn(Optional.of(pending));
+        users = (UserRepository) java.lang.reflect.Proxy.newProxyInstance(
+                UserRepository.class.getClassLoader(),
+                new Class<?>[]{UserRepository.class},
+                (proxy, method, args) -> {
+                    if ("findById".equals(method.getName()) && args != null && args.length == 1) {
+                        Long id = (Long) args[0];
+                        if (Long.valueOf(1L).equals(id)) return Optional.of(verified);
+                        if (Long.valueOf(2L).equals(id)) return Optional.of(pending);
+                        return Optional.empty();
+                    }
+                    return null;
+                }
+        );
     }
 
     private PosterCopyService service(LlmClient llm) {
