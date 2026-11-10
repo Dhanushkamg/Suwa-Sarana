@@ -10,30 +10,27 @@ import com.suwasarana.api.user.VerificationStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Proxy;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 public class RequestTriageAiServiceTest {
 
-    @Mock
+    private final Map<Long, List<BloodRequest>> requesterRequests = new HashMap<>();
+    private final Map<Long, AiTriageRecord> recordsByRequestId = new HashMap<>();
+    private final List<AiTriageRecord> savedRecords = new ArrayList<>();
+
     private RequestRepository requestRepository;
-
-    @Mock
     private AiTriageRecordRepository recordRepository;
-
-    @InjectMocks
     private RequestTriageAiService triageService;
 
     private User unverifiedUser;
@@ -41,6 +38,44 @@ public class RequestTriageAiServiceTest {
 
     @BeforeEach
     void setUp() {
+        requesterRequests.clear();
+        recordsByRequestId.clear();
+        savedRecords.clear();
+
+        requestRepository = (RequestRepository) Proxy.newProxyInstance(
+                RequestRepository.class.getClassLoader(),
+                new Class<?>[]{RequestRepository.class},
+                (proxy, method, args) -> {
+                    if ("findByRequesterId".equals(method.getName()) && args != null && args.length == 1) {
+                        Long uid = (Long) args[0];
+                        return requesterRequests.getOrDefault(uid, Collections.emptyList());
+                    }
+                    if ("save".equals(method.getName()) && args != null && args.length == 1) {
+                        return args[0];
+                    }
+                    return null;
+                }
+        );
+
+        recordRepository = (AiTriageRecordRepository) Proxy.newProxyInstance(
+                AiTriageRecordRepository.class.getClassLoader(),
+                new Class<?>[]{AiTriageRecordRepository.class},
+                (proxy, method, args) -> {
+                    if ("save".equals(method.getName()) && args != null && args.length == 1) {
+                        AiTriageRecord rec = (AiTriageRecord) args[0];
+                        savedRecords.add(rec);
+                        return rec;
+                    }
+                    if ("findFirstByRequestIdOrderByCreatedAtDescIdDesc".equals(method.getName()) && args != null && args.length == 1) {
+                        Long rid = (Long) args[0];
+                        return Optional.ofNullable(recordsByRequestId.get(rid));
+                    }
+                    return null;
+                }
+        );
+
+        triageService = new RequestTriageAiService(requestRepository, recordRepository);
+
         unverifiedUser = new User();
         unverifiedUser.setId(10L);
         unverifiedUser.setEmail("user10@test.com");
@@ -73,8 +108,7 @@ public class RequestTriageAiServiceTest {
         currentReq.setUrgency(Urgency.URGENT);
         currentReq.setStatus(RequestStatus.OPEN);
 
-        when(requestRepository.findByRequesterId(10L)).thenReturn(Arrays.asList(req1, req2, currentReq));
-        when(requestRepository.save(any(BloodRequest.class))).thenAnswer(i -> i.getArgument(0));
+        requesterRequests.put(10L, Arrays.asList(req1, req2, currentReq));
 
         BloodRequest result = triageService.triageRequest(currentReq);
 
@@ -95,8 +129,7 @@ public class RequestTriageAiServiceTest {
         currentReq.setUrgency(Urgency.URGENT);
         currentReq.setStatus(RequestStatus.OPEN);
 
-        when(requestRepository.findByRequesterId(10L)).thenReturn(Collections.singletonList(currentReq));
-        when(requestRepository.save(any(BloodRequest.class))).thenAnswer(i -> i.getArgument(0));
+        requesterRequests.put(10L, Collections.singletonList(currentReq));
 
         BloodRequest result = triageService.triageRequest(currentReq);
 
@@ -116,8 +149,7 @@ public class RequestTriageAiServiceTest {
         currentReq.setUrgency(Urgency.CRITICAL);
         currentReq.setStatus(RequestStatus.OPEN);
 
-        when(requestRepository.findByRequesterId(10L)).thenReturn(Collections.emptyList());
-        when(requestRepository.save(any(BloodRequest.class))).thenAnswer(i -> i.getArgument(0));
+        requesterRequests.put(10L, Collections.emptyList());
 
         BloodRequest result = triageService.triageRequest(currentReq);
 
@@ -137,8 +169,7 @@ public class RequestTriageAiServiceTest {
         currentReq.setUrgency(Urgency.URGENT);
         currentReq.setStatus(RequestStatus.OPEN);
 
-        when(requestRepository.findByRequesterId(20L)).thenReturn(Collections.singletonList(currentReq));
-        when(requestRepository.save(any(BloodRequest.class))).thenAnswer(i -> i.getArgument(0));
+        requesterRequests.put(20L, Collections.singletonList(currentReq));
 
         BloodRequest result = triageService.triageRequest(currentReq);
 
@@ -157,8 +188,7 @@ public class RequestTriageAiServiceTest {
         req.setUnitsNeeded((short) 8);
         req.setUrgency(Urgency.CRITICAL);
         req.setStatus(RequestStatus.OPEN);
-        when(requestRepository.findByRequesterId(10L)).thenReturn(Collections.emptyList());
-        when(requestRepository.save(any(BloodRequest.class))).thenAnswer(i -> i.getArgument(0));
+        requesterRequests.put(10L, Collections.emptyList());
 
         TriageResult result = triageService.evaluate(req);
         assertEquals(List.of("UNVERIFIED_HIGH_UNITS", "SUSPICIOUS_HOSPITAL_NAME", "UNVERIFIED_CRITICAL"),
@@ -168,11 +198,11 @@ public class RequestTriageAiServiceTest {
         assertTrue(result.humanReviewRecommended());
 
         triageService.triageRequest(req);
-        org.mockito.ArgumentCaptor<AiTriageRecord> cap = org.mockito.ArgumentCaptor.forClass(AiTriageRecord.class);
-        org.mockito.Mockito.verify(recordRepository).save(cap.capture());
-        assertEquals(501L, cap.getValue().getRequestId());
-        assertEquals(90, cap.getValue().getScore());
-        assertTrue(cap.getValue().getReasonsJson().contains("UNVERIFIED_HIGH_UNITS"));
+        assertEquals(1, savedRecords.size());
+        AiTriageRecord saved = savedRecords.get(0);
+        assertEquals(501L, saved.getRequestId());
+        assertEquals(90, saved.getScore());
+        assertTrue(saved.getReasonsJson().contains("UNVERIFIED_HIGH_UNITS"));
     }
 
     @Test
@@ -183,7 +213,7 @@ public class RequestTriageAiServiceTest {
         rec.setScore(65);
         rec.setRawScore(65);
         rec.setReasonsJson("[]");
-        when(recordRepository.findFirstByRequestIdOrderByCreatedAtDescIdDesc(601L)).thenReturn(java.util.Optional.of(rec));
+        recordsByRequestId.put(601L, rec);
 
         assertTrue(triageService.recordReview(601L, 7L, "dismissed", "called the hospital"));
         assertEquals(65, rec.getScore(), "the original AI score must be kept");
@@ -192,7 +222,6 @@ public class RequestTriageAiServiceTest {
         assertEquals("DISMISSED", rec.getReviewDecision());
         assertEquals("called the hospital", rec.getReviewNote());
 
-        when(recordRepository.findFirstByRequestIdOrderByCreatedAtDescIdDesc(602L)).thenReturn(java.util.Optional.empty());
-        org.junit.jupiter.api.Assertions.assertFalse(triageService.recordReview(602L, 7L, null, null));
+        assertFalse(triageService.recordReview(602L, 7L, null, null));
     }
 }
