@@ -47,6 +47,13 @@ public class RequestTriageAiService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    public RequestTriageAiService() {}
+
+    RequestTriageAiService(RequestRepository requestRepository, AiTriageRecordRepository recordRepository) {
+        this.requestRepository = requestRepository;
+        this.recordRepository = recordRepository;
+    }
+
     private LocalDateTime utcNow() {
         return Times.utcNow(clock);
     }
