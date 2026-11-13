@@ -131,7 +131,7 @@
           "පළමු වතාව",
           "අලුත් දායක",
           "කවදාවත් දී නැත",
-          "පළමු රුධිර දානය"
+          "පළමු දානය"
         ],
         "ta": [
           "முதல் முறை",
@@ -344,7 +344,6 @@
           "how often",
           "interval",
           "frequency",
-          "again",
           "every 3 months",
           "every month",
           "gap between donations",
@@ -352,6 +351,10 @@
           "since last donation",
           "months between",
           "donate again",
+          "give blood again",
+          "do it again",
+          "months back",
+          "blood again",
           "repeat",
           "regular donor",
           "how many times",
@@ -361,25 +364,21 @@
           "once a year"
         ],
         "si": [
-          "නැවත",
-          "නැවතත්",
-          "වරක්",
+          "නැවත දානය",
+          "නැවත රුධිර දානය",
+          "නැවත දීමට",
           "අතර කාලය",
           "පරතරය",
-          "ආයෙත්",
-          "ආයේ",
-          "ආපහු",
+          "ආයෙත් දීමට",
           "අවසන් වරට",
           "මාසයකට වරක්",
-          "මාස",
           "වසරකට",
           "අවුරුද්දකට"
         ],
         "ta": [
-          "மீண்டும்",
+          "மீண்டும் இரத்த தானம்",
           "இடைவெளி",
           "எத்தனை மாதங்களுக்கு ஒருமுறை",
-          "மாதங்களுக்கு",
           "கடைசியாக",
           "மாதத்திற்கு ஒருமுறை",
           "வருடத்திற்கு",
@@ -388,10 +387,10 @@
         "singlish": [
           "aye",
           "ayeth",
+          "aye denna",
+          "ayeth denna",
           "kochchara kalayakin",
-          "masa",
           "masayakata ekapaara",
-          "ekapaara",
           "passe aye"
         ]
       },
@@ -715,8 +714,8 @@
           "foreign travel",
           "trip",
           "returned",
-          "came back",
-          "back from",
+          "returned from abroad",
+          "stayed abroad",
           "visited",
           "flight",
           "holiday",
@@ -763,7 +762,7 @@
       },
       "question_examples": {
         "en": [
-          "I came back from abroad last month. Can I donate?"
+          "I returned from abroad last month. Can I donate?"
         ],
         "si": [
           "විදේශ ගමනකින් පසු රුධිර දානය කළ හැකිද?"
@@ -1551,36 +1550,36 @@
         "en": [
           "malaria",
           "malaria country",
-          "how long",
-          "wait",
-          "look back",
+          "malaria wait",
+          "how long after malaria",
+          "malaria lookback",
           "deferral",
           "deferred",
           "two years",
           "three years",
           "years after travel",
-          "how many years"
+          "how many years after travel"
         ],
         "si": [
           "මැලේරියා",
-          "කොපමණ කාලයක්",
+          "මැලේරියා කොපමණ කාලයක්",
           "කල් දැමීම",
           "අවුරුදු දෙක",
           "අවුරුදු තුන",
-          "බලා සිටිය"
+          "මැලේරියා බලා සිටිය"
         ],
         "ta": [
           "மலேரியா",
-          "எவ்வளவு காலம்",
-          "காத்திருக்க",
+          "மலேரியா எவ்வளவு காலம்",
+          "மலேரியா காத்திருக்க",
           "தடை",
           "இரண்டு ஆண்டு",
           "மூன்று ஆண்டு"
         ],
         "singlish": [
           "malaria",
-          "kochchara kalayak",
-          "inna one",
+          "malaria kochchara kalayak",
+          "malaria inna one",
           "avurudu deka",
           "avurudu thuna"
         ]
@@ -2370,10 +2369,7 @@
         ],
         "si": [
           "දානයෙන් පසු",
-          "පසු",
-          "පසුව",
-          "පස්සේ",
-          "පස්සෙ",
+          "ලේ දුන්නාට පසු",
           "ප්ලාස්ටරය",
           "තුවාලය",
           "ව්‍යායාම",
@@ -2386,9 +2382,7 @@
         ],
         "ta": [
           "தானத்திற்குப் பிறகு",
-          "பிறகு",
           "தானத்திற்கு பின்",
-          "பின்னர்",
           "பிளாஸ்திரி",
           "கட்டு",
           "உடற்பயிற்சி",
@@ -2397,9 +2391,9 @@
           "மயக்கம்"
         ],
         "singlish": [
-          "passe",
           "dunnata passe",
-          "after",
+          "after donating",
+          "after donation",
           "plaster",
           "gym",
           "exercise",
