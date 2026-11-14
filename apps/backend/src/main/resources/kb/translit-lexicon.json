@@ -629,6 +629,10 @@
     "tatoos",
     "tatu",
     "tattu",
+    "ink",
+    "inked",
+    "got+inked",
+    "getting+inked",
     "pachcha",
     "pachchak",
     "pachchaya",
@@ -1564,6 +1568,12 @@
  },
  "stopwords": {
   "latin": [
+   "stop",
+   "stops",
+   "stopped",
+   "stopping",
+   "prevent",
+   "disqualify",
    "last",
    "next",
    "give",
@@ -1725,6 +1735,11 @@
    "thank"
   ],
   "si": [
+   "කරන්න",
+   "කරන්නේ",
+   "කරන",
+   "බැරිද",
+   "ගත්තොත්",
    "කළාට",
    "ගියාට",
    "ඊයේ",
@@ -1809,9 +1824,7 @@
  "domain": {
   "latin": [
    "blood",
-   "donate",
-   "after",
-   "before"
+   "donate"
   ],
   "si": [
    "ලේ",
@@ -1820,19 +1833,13 @@
    "දාන",
    "දානය",
    "දායක",
-   "පරිත්‍යාග",
-   "පසු",
-   "පස්සේ",
-   "පස්සෙ",
-   "කලින්"
+   "පරිත්‍යාග"
   ],
   "ta": [
    "இரத்த",
    "ரத்த",
    "தான",
-   "கொடை",
-   "பிறகு",
-   "பின்னர்"
+   "கொடை"
   ]
  }
 }
