@@ -68,7 +68,8 @@ public final class TextNormalizer {
                 case LATIN -> i = latin(toks, i, out);
                 case SINHALA -> script(t.text(), true, out);
                 case TAMIL -> script(t.text(), false, out);
-                default -> { /* numbers carry no retrieval signal */ }
+                case DIGIT -> digit(t.text(), toks, i, out);
+                default -> { /* ignore */ }
             }
         }
         return out;
@@ -79,9 +80,33 @@ public final class TextNormalizer {
         List<String> out = new ArrayList<>();
         for (Term t : terms) if (!t.soft()) out.add(t.text());
         for (int i = 0; i + 1 < terms.size(); i++) {
-            out.add(terms.get(i).text() + "_" + terms.get(i + 1).text());
+            Term t1 = terms.get(i);
+            Term t2 = terms.get(i + 1);
+            if (t1.soft() && t2.soft()) continue;
+            out.add(t1.text() + "_" + t2.text());
         }
         return out;
+    }
+
+    private void digit(String text, List<TextUtil.Tok> toks, int i, List<Term> out) {
+        try {
+            int val = Integer.parseInt(text);
+            boolean isWeight = false;
+            if (i + 1 < toks.size()) {
+                String next = toks.get(i + 1).text();
+                if (next.equals("kg") || next.equals("kgs") || next.startsWith("kilo")) isWeight = true;
+            }
+            if (i > 0) {
+                String prev = toks.get(i - 1).text();
+                if (prev.equals("weigh") || prev.equals("weight") || prev.equals("බර") || prev.equals("நிறை")) isWeight = true;
+            }
+            if (isWeight) {
+                out.add(new Term("weight", false));
+            } else if (val >= 16 && val <= 85) {
+                out.add(new Term("age", false));
+            }
+        } catch (NumberFormatException ignored) {
+        }
     }
 
     // ------------------------------------------------------------------ Latin
