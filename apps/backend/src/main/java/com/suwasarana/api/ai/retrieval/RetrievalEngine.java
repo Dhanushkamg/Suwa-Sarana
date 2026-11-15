@@ -45,7 +45,7 @@ public class RetrievalEngine {
     private static final int MAX_PER_SEGMENT = 3;
     private static final int MAX_TOTAL = 4;
     /** Unit words: they score, but can never be the only reason an entry is selected ("3 months" alone is not a topic). */
-    private static final Set<String> WEAK = Set.of("month", "year", "day", "hour", "week", "time", "long");
+    private static final Set<String> WEAK = Set.of("month", "year", "day", "hour", "week", "time", "long", "again", "back");
     /** Without any blood/donation word, at least this share of the content words must be known to the knowledge base. */
     private static final double MIN_KNOWN_SHARE = 0.3;
 
@@ -150,6 +150,16 @@ public class RetrievalEngine {
                     }
                 }
                 if (!topicalMatch) break;
+                if (fromSegment > 0) {
+                    boolean hasTopicalUnigram = false;
+                    for (String t : matched) {
+                        if (!t.contains("_") && index.idf(t) >= TOPICAL_IDF && !WEAK.contains(t)) {
+                            hasTopicalUnigram = true;
+                            break;
+                        }
+                    }
+                    if (!hasTopicalUnigram) break;
+                }
                 picked.put(best.entry().id(), new Hit(best.entry(), bestScore, segNo));
                 remaining.removeAll(matched);
                 fromSegment++;
