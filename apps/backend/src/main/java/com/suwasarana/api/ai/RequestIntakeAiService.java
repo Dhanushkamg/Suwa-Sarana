@@ -46,15 +46,18 @@ public class RequestIntakeAiService {
             """;
 
     private static final Pattern BLOOD = Pattern.compile("(?<![A-Za-z])(AB|A|B|O)\\s*([+\\-]|positive|negative|pos|neg)(?![A-Za-z])", Pattern.CASE_INSENSITIVE);
-    private static final Pattern UNITS_AFTER = Pattern.compile("(\\d{1,3})\\s*(?:units?|bottles?|pints?|packs?|bags?|යුනිට්|யூனிட்)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern UNITS_BEFORE = Pattern.compile("(?:units?|යුනිට්|யூனிட்)\\s*[:=]?\\s*(\\d{1,3})", Pattern.CASE_INSENSITIVE);
+    private static final Pattern UNITS_AFTER = Pattern.compile("(\\d{1,3})(?:ක්|ක)?\\s*(?:units?|bottles?|pints?|packs?|bags?|යුනිට්|ඒකක|බෝතල්|පැකට්|யூனிட்|அலகு|அலகுகள்|பாட்டில்|பாட்டில்கள்|பை|பைகள்)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern UNITS_BEFORE = Pattern.compile("(?:units?|යුනිට්|ඒකක|யூனிட்|அலகு|அலகுகள்|பாட்டில்|பாட்டில்கள்|பை|பைகள்)\\s*[:=]?\\s*(\\d{1,3})(?:ක්|ක)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern UNITS_WORD = Pattern.compile("\\b(one|two|three|four|five|six|seven|eight|nine|ten)\\s+(?:units?|bottles?|pints?|packs?|bags?)\\b", Pattern.CASE_INSENSITIVE);
     private static final List<String> NUMBER_WORDS = List.of("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten");
     private static final Pattern HOSPITAL_EN = Pattern.compile(
-            "(?:\\bat|\\bin|\\bfrom|\\bto)\\s+((?:[\\p{L}][\\p{L}.'-]*\\s+){0,4}?(?:teaching\\s+|general\\s+|base\\s+|district\\s+|provincial\\s+)*(?:hospital|clinic))\\b",
+            "(?:\\b(?:at|in|from|to)|hospital\\s*[:=-])\\s+((?:[\\p{L}][\\p{L}.'-]*\\s+){0,4}?(?:teaching\\s+|general\\s+|base\\s+|district\\s+|provincial\\s+)*(?:hospital|clinic))\\b",
             Pattern.CASE_INSENSITIVE);
-    private static final Pattern HOSPITAL_SI = Pattern.compile("([\\p{L}\\p{M}]+)\\s+(?:රෝහල)");
-    private static final Pattern HOSPITAL_TA = Pattern.compile("([\\p{L}\\p{M}]+)\\s+(?:வைத்தியசாலை|மருத்துவமனை)");
+    private static final Pattern HOSPITAL_EN_STANDALONE = Pattern.compile(
+            "\\b([A-Z][\\p{L}.'-]*(?:\\s+[A-Z][\\p{L}.'-]*){0,3}?\\s*(?:teaching\\s+|general\\s+|base\\s+|district\\s+|provincial\\s+)*(?:hospital|clinic))\\b",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern HOSPITAL_SI = Pattern.compile("((?:[\\p{L}\\p{M}]+(?:\\s+[\\p{L}\\p{M}]+){0,2})\\s+(?:රෝහල[\\p{M}]*))");
+    private static final Pattern HOSPITAL_TA = Pattern.compile("((?:[\\p{L}\\p{M}]+(?:\\s+[\\p{L}\\p{M}]+){0,2})\\s+(?:வைத்தியசாலை[\\p{M}]*|மருத்துவமனை[\\p{M}]*))");
     private static final Pattern PHONE = Pattern.compile("(?<!\\d)(?:\\+?94|0)?[\\s-]?\\d{2,3}[\\s-]?\\d{3}[\\s-]?\\d{4}(?!\\d)");
     private static final Pattern NIC = Pattern.compile("(?<!\\d)(?:\\d{9}[vVxX]|\\d{12})(?![\\dA-Za-z])");
     private static final Pattern CRITICAL = Pattern.compile("(?i)\\b(critical|icu|life[- ]threatening|accident|haemorrhage|hemorrhage|bleeding)\\b|හදිසි|අසාධ්ය|அவசர|தீவிர");
@@ -146,8 +149,9 @@ public class RequestIntakeAiService {
         boolean hospitalKnown = known.isPresent();
         Matcher hm = HOSPITAL_EN.matcher(text);
         if (hm.find()) hospital = hm.group(1).trim();
-        else if ((hm = HOSPITAL_SI.matcher(text)).find()) hospital = hm.group(1) + " රෝහල";
-        else if ((hm = HOSPITAL_TA.matcher(text)).find()) hospital = hm.group(0).trim();
+        else if ((hm = HOSPITAL_EN_STANDALONE.matcher(text)).find()) hospital = hm.group(1).trim();
+        else if ((hm = HOSPITAL_SI.matcher(text)).find()) hospital = hm.group(1).trim();
+        else if ((hm = HOSPITAL_TA.matcher(text)).find()) hospital = hm.group(1).trim();
         else if (known.isPresent()) hospital = known.get().name();
         return new Fields(bloodType, units, clamped, urgency, sanitiseName(hospital), hospitalKnown, district.orElse(null), fromHospital);
     }
