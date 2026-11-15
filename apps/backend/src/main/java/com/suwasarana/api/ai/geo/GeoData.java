@@ -94,7 +94,7 @@ public class GeoData {
             names.add(d.name().toLowerCase(Locale.ROOT));
             for (String a : d.aliases()) names.add(a.toLowerCase(Locale.ROOT));
             for (String n : names) {
-                int pos = indexOfWord(t, n, false);
+                int pos = indexOfWord(t, n, !isLatin(n));
                 if (pos >= 0 && pos < bestPos) {
                     best = d;
                     bestPos = pos;
