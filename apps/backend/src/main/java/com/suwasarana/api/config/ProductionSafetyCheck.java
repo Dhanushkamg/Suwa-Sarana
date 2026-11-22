@@ -97,14 +97,17 @@ public class ProductionSafetyCheck implements BeanFactoryPostProcessor, Environm
             problems.add("DB_PASSWORD is a known/weak value or shorter than 12 characters; use a generated password.");
         }
 
+        boolean allowHttp = env.getProperty("app.allow-http", Boolean.class, false)
+                || "true".equalsIgnoreCase(env.getProperty("ALLOW_HTTP", ""));
+
         String cors = env.getProperty("cors.allowed-origin", "");
         if (cors.isBlank()) {
             problems.add("CORS_ALLOWED_ORIGIN must list the frontend origin(s), e.g. https://suwasarana.lk.");
         } else {
             try {
                 for (String origin : CorsConfig.parseOrigins(cors)) {
-                    if (!origin.startsWith("https://") && !isLocalhost(origin)) {
-                        problems.add("CORS origin '" + origin + "' must use https.");
+                    if (!origin.startsWith("https://") && !isLocalhost(origin) && !allowHttp) {
+                        problems.add("CORS origin '" + origin + "' must use https (or set ALLOW_HTTP=true for staging).");
                     }
                 }
             } catch (IllegalStateException e) {
@@ -112,8 +115,8 @@ public class ProductionSafetyCheck implements BeanFactoryPostProcessor, Environm
             }
         }
 
-        requireHttpsUrl(env, "app.frontend-url", "FRONTEND_URL", problems);
-        requireHttpsUrl(env, "app.public-base-url", "PUBLIC_BASE_URL", problems);
+        requireHttpsUrl(env, "app.frontend-url", "FRONTEND_URL", allowHttp, problems);
+        requireHttpsUrl(env, "app.public-base-url", "PUBLIC_BASE_URL", allowHttp, problems);
 
         if (env.getProperty("app.seed-data.enabled", Boolean.class, false)) {
             problems.add("SEED_DATA_ENABLED must be false: demo accounts use a publicly known password.");
@@ -125,7 +128,7 @@ public class ProductionSafetyCheck implements BeanFactoryPostProcessor, Environm
                 || env.getProperty("spring.flyway.out-of-order", Boolean.class, false)) {
             problems.add("Flyway baseline-on-migrate / out-of-order must be off outside the dev profile.");
         }
-        if (!env.getProperty("app.cookie.secure", Boolean.class, true)) {
+        if (!allowHttp && !env.getProperty("app.cookie.secure", Boolean.class, true)) {
             problems.add("COOKIE_SECURE must be true (the refresh-token cookie must only travel over HTTPS).");
         }
 
@@ -161,18 +164,18 @@ public class ProductionSafetyCheck implements BeanFactoryPostProcessor, Environm
         }
     }
 
-    private static void requireHttpsUrl(Environment env, String property, String envVar, List<String> problems) {
+    private static void requireHttpsUrl(Environment env, String property, String envVar, boolean allowHttp, List<String> problems) {
         String value = env.getProperty(property, "");
         if (value.isBlank()) {
-            problems.add(envVar + " must be set to the public https URL (no trailing slash).");
+            problems.add(envVar + " must be set to the public " + (allowHttp ? "http/https" : "https") + " URL (no trailing slash).");
             return;
         }
         try {
             URI uri = URI.create(value);
             boolean ok = uri.getHost() != null
-                    && ("https".equals(uri.getScheme()) || ("http".equals(uri.getScheme()) && isLocalhost(value)));
+                    && ("https".equals(uri.getScheme()) || ("http".equals(uri.getScheme()) && (isLocalhost(value) || allowHttp)));
             if (!ok) {
-                problems.add(envVar + " must be an absolute https URL.");
+                problems.add(envVar + " must be an absolute https URL (or set ALLOW_HTTP=true for staging).");
             }
             if (value.endsWith("/")) {
                 problems.add(envVar + " must not end with '/'.");
